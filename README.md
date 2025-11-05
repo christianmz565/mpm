@@ -1,6 +1,9 @@
 # Micro Patos Mania
 
 ## Integrantes
-- NOA CAMINO, Yenaro Joel
-- MESTAS ZEGARRA, Christian Raul
+- GUTIERREZ CCAMA, Juan Diego
 - JARA MAMANI, Mariel Alisson
+- MESTAS ZEGARRA, Christian Raul
+- NOA CAMINO, Yenaro Joel
+
+
