@@ -14,8 +14,25 @@ todo
 - NOA CAMINO, Yenaro Joel
 
 ## Dependencias
-- Java Development Kit (JDK) 21+
-- Gradle 7.0+
+- [Java JDK 21+](https://adoptium.net/)
+- [Gradle](https://gradle.org/) 
+- [Just](https://github.com/casey/just) (opcional, para automatización de tareas)
+
+### Documentación (opcional)
+*Doxygen recientemente tuvo un problema con cambios hechos en el kernel de LaTeX, por lo que cualquier versión <1.15 va a fallar con versiones de LaTeX del año 2025*
+- [Doxygen 1.15+](https://www.doxygen.nl/index.html) (para generar documentación)
+- [Graphviz](https://graphviz.org/download/) (para generar diagramas)
+- [Python 3+](https://www.python.org/) (para servir la documentación localmente)
+- [LaTeX](https://www.latex-project.org/get/) (para generar documentación en PDF)
+
+## Comandos útiles con Just (por si no te gusta el CLI de gradle)
+*todo: alguien puede decirme si powershell funciona con gradlew?*
+- `just build`: construye los fuentes y archivos de cada proyecto.
+- `just run`: inicia la aplicación.
+- `just clean`: elimina las carpetas `build`, que almacenan las clases compiladas
+- `just docs`: genera la documentación del proyecto.
+- `just docs-serve`: genera y sirve la documentación del proyecto en un servidor local.
+- `just docs-pdf`: genera la documentación del proyecto en formato PDF.
 
 ## Gradle
 
