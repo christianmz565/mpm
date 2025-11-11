@@ -2,12 +2,6 @@ name: Microgame Design Issue
 description: Create a new microgame design issue, explaining the concept and mechanics.
 title: "Microgame: [Name here]"
 body:
-  - type: markdown
-    attributes:
-      value: |
-      
-        Please fill out the following template to propose a new microgame design.
-
   - type: input
     id: microgame-subdivisions
     attributes:
@@ -17,7 +11,7 @@ body:
     validations:
       required: true
 
-  - type: textarea
+  - type: input
     id: microgame-leftouts
     attributes:
       label: Leftouts Handling
@@ -57,12 +51,23 @@ body:
     id: microgame-visuals
     attributes:
       label: Visual and Audio Elements
-      description: Describe any specific visual or audio elements that the microgame needs
+      description: Describe any specific visual or audio elements that the microgame needs.
       placeholder: "Describe the visual and audio elements here."
     validations:
       required: false
 
-  - type: markdown
+  - type: textarea
+    id: microgame-reference
     attributes:
-      value: |
-        Send a :+1: reaction to this issue to show that you would like it implemented, the top 6 most reacted will be included in the game. 
+      label: Reference Images
+      description: Add images or links to images that represent the microgame concept if it helps illustrate your idea.
+      placeholder: "Provide image links or descriptions here."
+    validations:
+      required: false
+
+  - type: input
+    id: microgame-vote
+    attributes:
+      label: Voting
+      description: Do NOT fill this field
+      value: Send a :+1: reaction to this issue to show that you would like it implemented, the top 6 most reacted will be included in the game. 
