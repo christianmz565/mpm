@@ -70,4 +70,4 @@ body:
     attributes:
       label: Voting
       description: Do NOT fill this field
-      value: Send a :+1: reaction to this issue to show that you would like it implemented, the top 6 most reacted will be included in the game. 
+      value: "Send a :+1: reaction to this issue to show that you would like it implemented, the top 6 most reacted will be included in the game."
