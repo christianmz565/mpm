@@ -1,0 +1,76 @@
+name: Microgame Design Issue
+description: Create a new microgame design issue, explaining the concept and mechanics.
+title: "Microgame: [Name here]"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill out the following template to propose a new microgame design.
+
+  - type: input
+    id: microgame-name
+    attributes:
+      label: Microgame Name
+      description: Provide a name for your microgame.
+      placeholder: "e.g., Speedy Runner"
+    validations:
+      required: true
+
+  - type: input
+    id: microgame-subdivisions
+    attributes:
+      label: Number of Subdivisions
+      description: If the microgame needs more than one instance due to its structure (e.g., 1v1), specify how many subdivisions would exist in a game of N players.
+      placeholder: "e.g., N/2 for 1v1 games"
+    validations:
+      required: true
+
+  - type: textarea
+    id: microgame-leftouts
+    attributes:
+      label: Leftouts Handling
+      description: If there is more than 1 subdivisions, it may happen that players are left out (N=3 in a 1v1 microgame), specify how leftouts are handled.
+      placeholder: "e.g., Dynamic subdivisions via balancing the teams with buffs/debuffs"
+    validations:
+      required: false
+
+  - type: textarea
+    id: microgame-description
+    attributes:
+      label: Microgame Description
+      description: Describe the microgame concept, mechanics, and objectives in detail.
+      placeholder: "Provide a detailed description of the microgame."
+    validations:
+      required: true
+
+  - type: textarea
+    id: microgame-rules
+    attributes:
+      label: Game Rules
+      description: Outline the rules and any special conditions for the microgame, be as detailed as possible.
+      placeholder: "List the rules and conditions here."
+    validations:
+      required: true
+
+  - type: textarea
+    id: microgame-scoring
+    attributes:
+      label: Scoring System
+      description: Explain how scoring works in the microgame, refer to the scoring section of the design document if needed.
+      placeholder: "Describe the scoring system here."
+    validations:
+      required: true
+
+  - type: textarea
+    id: microgame-visuals
+    attributes:
+      label: Visual and Audio Elements
+      description: Describe any specific visual or audio elements that the microgame needs
+      placeholder: "Describe the visual and audio elements here."
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        Send a :+1: reaction to this issue to show that you would like it implemented, the top 6 most reacted will be included in the game. 
