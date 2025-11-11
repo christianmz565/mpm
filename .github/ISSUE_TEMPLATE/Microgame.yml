@@ -5,16 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
+      
         Please fill out the following template to propose a new microgame design.
-
-  - type: input
-    id: microgame-name
-    attributes:
-      label: Microgame Name
-      description: Provide a name for your microgame.
-      placeholder: "e.g., Speedy Runner"
-    validations:
-      required: true
 
   - type: input
     id: microgame-subdivisions
