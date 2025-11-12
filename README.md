@@ -12,6 +12,7 @@ todo
 - JARA MAMANI, Mariel Alisson
 - MESTAS ZEGARRA, Christian Raul
 - NOA CAMINO, Yenaro Joel
+- VALDIVIA SEGOVIA, Ryan Fabian
 
 ## Dependencias
 - [Java JDK 21+](https://adoptium.net/)
