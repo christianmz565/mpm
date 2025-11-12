@@ -115,10 +115,8 @@ public class HostLobbyScreen implements Screen {
     }
 
     private void startGame() {
-        Packets.StartGame startPacket = new Packets.StartGame();
-        NetworkManager.getInstance().sendPacket(startPacket);
-
-        game.setScreen(new GameScreen(game));
+        // Go to minigame selection screen
+        game.setScreen(new MinigameSelectionScreen(game, true));
         dispose();
     }
 

@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
+import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkConfig;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
@@ -119,8 +120,21 @@ public class JoinLobbyScreen implements Screen {
     }
 
     private void onGameStart(Packets.StartGame packet) {
-        game.setScreen(new GameScreen(game));
-        dispose();
+        // Client receives the minigame type directly and starts the game
+        if (packet.minigameType != null && !packet.minigameType.isEmpty()) {
+            try {
+                MinigameType type = MinigameType.valueOf(packet.minigameType);
+                game.setScreen(new GameScreen(game, type));
+                dispose();
+            } catch (IllegalArgumentException e) {
+                Gdx.app.error("JoinLobbyScreen", "Unknown minigame type: " + packet.minigameType);
+                statusLabel.setText("Error: Unknown game type!");
+            }
+        } else {
+            // Old behavior: go to selection screen (shouldn't happen anymore)
+            game.setScreen(new MinigameSelectionScreen(game, false));
+            dispose();
+        }
     }
 
     @Override
