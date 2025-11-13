@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
+import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
 import to.mpm.ui.UIStyles;
@@ -129,8 +130,18 @@ public class JoinLobbyWaitingScreen implements Screen {
      * @param packet paquete de inicio de juego
      */
     private void onGameStart(Packets.StartGame packet) {
-        game.setScreen(new GameScreen(game));
-        dispose();
+        // Client receives the minigame type from the host
+        if (packet.minigameType != null && !packet.minigameType.isEmpty()) {
+            try {
+                MinigameType type = MinigameType.valueOf(packet.minigameType);
+                game.setScreen(new GameScreen(game, type));
+                dispose();
+            } catch (IllegalArgumentException e) {
+                Gdx.app.error("JoinLobbyWaitingScreen", "Unknown minigame type: " + packet.minigameType);
+            }
+        } else {
+            Gdx.app.error("JoinLobbyWaitingScreen", "Received StartGame packet without minigame type!");
+        }
     }
 
     /**

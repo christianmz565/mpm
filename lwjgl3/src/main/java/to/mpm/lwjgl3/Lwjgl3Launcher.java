@@ -52,7 +52,11 @@ public class Lwjgl3Launcher {
         // you want; they
         // are not intended for games that use GL30 (which is compatibility with OpenGL
         // ES 3.0).
-        configuration.setOpenGLEmulation(Lwjgl3ApplicationConfiguration.GLEmulation.ANGLE_GLES20, 0, 0);
+
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("win") || osName.contains("mac")) {
+            configuration.setOpenGLEmulation(Lwjgl3ApplicationConfiguration.GLEmulation.ANGLE_GLES20, 0, 0);
+        }
 
         return configuration;
     }

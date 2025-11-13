@@ -38,6 +38,7 @@ public class Packets {
      * Paquete enviado por el host para indicar a los clientes que inicien la partida.
      */
     public static class StartGame {
+        public String minigameType; //!< tipo de minijuego a iniciar (nombre del enum)
     }
 
     /**

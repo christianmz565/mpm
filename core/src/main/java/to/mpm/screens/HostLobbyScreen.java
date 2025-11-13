@@ -7,6 +7,9 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
+import to.mpm.minigames.MinigameType;
+import to.mpm.minigames.selection.GameSelectionStrategy;
+import to.mpm.minigames.selection.RandomGameSelection;
 import to.mpm.network.NetworkConfig;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
@@ -177,10 +180,21 @@ public class HostLobbyScreen implements Screen {
      * Inicia el juego y notifica a todos los jugadores conectados.
      */
     private void startGame() {
-        Packets.StartGame startPacket = new Packets.StartGame();
-        NetworkManager.getInstance().sendPacket(startPacket);
-
-        game.setScreen(new GameScreen(game));
+        // Use random selection strategy to pick a game
+        GameSelectionStrategy selectionStrategy = new RandomGameSelection();
+        int playerCount = NetworkManager.getInstance().getPlayerCount();
+        MinigameType selectedGame = selectionStrategy.selectGame(playerCount);
+        
+        Gdx.app.log("HostLobbyScreen", "Selected game: " + selectedGame.getDisplayName() + 
+                    " using " + selectionStrategy.getStrategyName());
+        
+        // Send the selected minigame to all clients
+        Packets.StartGame packet = new Packets.StartGame();
+        packet.minigameType = selectedGame.name();
+        NetworkManager.getInstance().sendPacket(packet);
+        
+        // Start the game locally
+        game.setScreen(new GameScreen(game, selectedGame));
         dispose();
     }
 

@@ -13,12 +13,12 @@ import to.mpm.ui.UIStyles;
 import to.mpm.ui.components.VolumeSlider;
 
 /**
- * Pantalla de ajustes que se superpone sobre la pantalla anterior.
- * Puede cerrarse para volver a la pantalla anterior sin recrearla.
+ * Pantalla de ajustes que se superpone sobre la pantalla actual como un overlay.
+ * No utiliza el sistema de setScreen(), sino que se renderiza sobre la pantalla activa.
  */
-public class SettingsScreen implements Screen {
+public class SettingsScreen {
     private final Main game; //!< instancia del juego principal
-    private final Screen previousScreen; //!< pantalla anterior a la que volver
+    private final Screen previousScreen; //!< pantalla sobre la que se renderiza (solo para referencia)
     private Stage stage; //!< stage para renderizar componentes de UI
     private Skin skin; //!< skin para estilizar componentes
     private ShapeRenderer shapeRenderer; //!< renderer para dibujar la capa de fondo semi-transparente
@@ -38,10 +38,9 @@ public class SettingsScreen implements Screen {
     /**
      * Inicializa y configura todos los componentes de la pantalla.
      */
-    @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
+        // Don't set input processor here - Main will handle it via InputMultiplexer
         shapeRenderer = new ShapeRenderer();
 
         skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
@@ -84,8 +83,7 @@ public class SettingsScreen implements Screen {
      * Regresa a la pantalla anterior y libera recursos.
      */
     private void goBack() {
-        game.setScreen(previousScreen);
-        dispose();
+        game.toggleSettings(); // Use the new toggle method instead of setScreen
     }
 
     /**
@@ -95,6 +93,15 @@ public class SettingsScreen implements Screen {
      */
     public Screen getPreviousScreen() {
         return previousScreen;
+    }
+
+    /**
+     * Obtiene el stage para manejo de input.
+     *
+     * @return stage de UI
+     */
+    public Stage getStage() {
+        return stage;
     }
 
     /**
@@ -108,16 +115,13 @@ public class SettingsScreen implements Screen {
     }
 
     /**
-     * Renderiza la pantalla anterior con una capa superpuesta y la UI de ajustes.
+     * Renderiza el overlay de ajustes sobre la pantalla actual.
+     * Este método es llamado por Main.render() después de renderizar la pantalla actual.
      *
      * @param delta tiempo transcurrido desde el último frame en segundos
      */
-    @Override
-    public void render(float delta) {
-        if (previousScreen != null) {
-            previousScreen.render(delta);
-        }
-
+    public void renderOverlay(float delta) {
+        // Draw semi-transparent overlay
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -131,51 +135,30 @@ public class SettingsScreen implements Screen {
     }
 
     /**
-     * Maneja el redimensionamiento de la ventana para esta pantalla y la anterior.
+     * Maneja el redimensionamiento de la ventana.
      *
      * @param width  nuevo ancho de la ventana
      * @param height nuevo alto de la ventana
      */
-    @Override
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
-        if (previousScreen != null) {
-            previousScreen.resize(width, height);
-        }
     }
 
     /**
      * Método llamado cuando la aplicación es pausada.
      */
-    @Override
     public void pause() {
-        if (previousScreen != null) {
-            previousScreen.pause();
-        }
     }
 
     /**
      * Método llamado cuando la aplicación es reanudada.
      */
-    @Override
     public void resume() {
-        if (previousScreen != null) {
-            previousScreen.resume();
-        }
-    }
-
-    /**
-     * Método llamado cuando esta pantalla deja de ser la pantalla actual.
-     */
-    @Override
-    public void hide() {
     }
 
     /**
      * Libera los recursos utilizados por esta pantalla.
-     * No libera la pantalla anterior ya que será reutilizada.
      */
-    @Override
     public void dispose() {
         stage.dispose();
         skin.dispose();

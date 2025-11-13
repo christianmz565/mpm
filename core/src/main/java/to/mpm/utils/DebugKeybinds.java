@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import to.mpm.Main;
+import to.mpm.minigames.MinigameType;
 import to.mpm.screens.*;
 
 /**
@@ -18,6 +19,7 @@ import to.mpm.screens.*;
  * - F6: Pantalla de Espectador
  * - F7: Pantalla de Marcador
  * - F8: Pantalla de Resultados
+ * - F9: Pantalla de Selección de Minijuego (debug)
  * - ESC: Alternar superposición de configuración
  */
 public class DebugKeybinds {
@@ -30,6 +32,7 @@ public class DebugKeybinds {
     private boolean f6Pressed = false;
     private boolean f7Pressed = false;
     private boolean f8Pressed = false;
+    private boolean f9Pressed = false;
     private boolean escPressed = false;
 
     public DebugKeybinds(Main game) {
@@ -96,9 +99,10 @@ public class DebugKeybinds {
         if (Gdx.input.isKeyPressed(Input.Keys.F5)) {
             if (!f5Pressed) {
                 f5Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Game Screen");
+                Gdx.app.log("DebugKeybinds", "Switching to Game Screen (Ball Movement)");
                 Screen currentScreen = game.getScreen();
-                game.setScreen(new GameScreen(game));
+                // Default to BALL_MOVEMENT for debug
+                game.setScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT));
                 if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
                     currentScreen.dispose();
                 }
@@ -149,18 +153,25 @@ public class DebugKeybinds {
             f8Pressed = false;
         }
 
+        if (Gdx.input.isKeyPressed(Input.Keys.F9)) {
+            if (!f9Pressed) {
+                f9Pressed = true;
+                Gdx.app.log("DebugKeybinds", "Switching to Minigame Selection Screen (debug)");
+                Screen currentScreen = game.getScreen();
+                game.setScreen(new MinigameSelectionScreen(game, true));
+                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
+                    currentScreen.dispose();
+                }
+            }
+        } else {
+            f9Pressed = false;
+        }
+
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
             if (!escPressed) {
                 escPressed = true;
-                Screen currentScreen = game.getScreen();
-                if (currentScreen instanceof SettingsScreen) {
-                    Gdx.app.log("DebugKeybinds", "Closing Settings overlay");
-                    ((SettingsScreen) currentScreen).dispose();
-                    game.setScreen(((SettingsScreen) currentScreen).getPreviousScreen());
-                } else {
-                    Gdx.app.log("DebugKeybinds", "Opening Settings overlay");
-                    game.setScreen(new SettingsScreen(game, currentScreen));
-                }
+                Gdx.app.log("DebugKeybinds", "Toggling Settings overlay");
+                game.toggleSettings();
             }
         } else {
             escPressed = false;
@@ -173,10 +184,11 @@ public class DebugKeybinds {
         Gdx.app.log("DebugKeybinds", "F2: Create Room Screen");
         Gdx.app.log("DebugKeybinds", "F3: Join Lobby Screen");
         Gdx.app.log("DebugKeybinds", "F4: Host Lobby Screen (starts server)");
-        Gdx.app.log("DebugKeybinds", "F5: Game Screen (requires network)");
+        Gdx.app.log("DebugKeybinds", "F5: Game Screen (Ball Movement)");
         Gdx.app.log("DebugKeybinds", "F6: Spectator Screen");
         Gdx.app.log("DebugKeybinds", "F7: Scoreboard Screen");
         Gdx.app.log("DebugKeybinds", "F8: Results Screen");
+        Gdx.app.log("DebugKeybinds", "F9: Minigame Selection Screen (debug)");
         Gdx.app.log("DebugKeybinds", "ESC: Toggle Settings overlay");
         Gdx.app.log("DebugKeybinds", "=====================");
     }

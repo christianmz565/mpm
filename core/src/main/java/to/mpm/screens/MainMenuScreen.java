@@ -77,7 +77,7 @@ public class MainMenuScreen implements Screen {
                 new StyledButton(skin)
                         .text("Ajustes")
                         .onClick(() -> {
-                            game.setScreen(new SettingsScreen(game, this));
+                            game.toggleSettings();
                         })
                         .build())
                 .left().row();
