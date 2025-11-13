@@ -12,6 +12,7 @@ import to.mpm.Main;
 import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
+import to.mpm.ui.UISkinProvider;
 
 /**
  * Pantalla de selección de minijuegos.
@@ -24,34 +25,41 @@ public class MinigameSelectionScreen implements Screen {
     private Skin skin;
     private Label statusLabel;
 
+    /**
+     * Constructor de la pantalla de selección de minijuegos.
+     * 
+     * @param game   instancia del juego principal
+     * @param isHost indica si el jugador es el anfitrión
+     */
     public MinigameSelectionScreen(Main game, boolean isHost) {
         this.game = game;
         this.isHost = isHost;
     }
 
+    /**
+     * Inicializa y configura todos los componentes de la pantalla.
+     */
     @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
-
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(stage);
 
         Table table = new Table();
         table.setFillParent(true);
         stage.addActor(table);
 
-        Label titleLabel = new Label("Select Minigame", skin);
+        Label titleLabel = new Label("Elegir microjuego", skin);
         titleLabel.setFontScale(1.5f);
         table.add(titleLabel).padBottom(30).colspan(2).row();
 
         if (isHost) {
-            statusLabel = new Label("Select a minigame to play:", skin);
+            statusLabel = new Label("Seleccione un microjuego para jugar:", skin);
             table.add(statusLabel).padBottom(20).colspan(2).row();
 
-            // Create buttons for each minigame
             for (MinigameType type : MinigameType.values()) {
                 Table gameRow = new Table();
-                
+
                 Label nameLabel = new Label(type.getDisplayName(), skin);
                 nameLabel.setFontScale(1.2f);
                 gameRow.add(nameLabel).width(200).padRight(20);
@@ -60,7 +68,7 @@ public class MinigameSelectionScreen implements Screen {
                 descLabel.setWrap(true);
                 gameRow.add(descLabel).width(300).padRight(20);
 
-                TextButton selectButton = new TextButton("Play", skin);
+                TextButton selectButton = new TextButton("Jugar", skin);
                 final MinigameType gameType = type;
                 selectButton.addListener(new ClickListener() {
                     @Override
@@ -74,7 +82,7 @@ public class MinigameSelectionScreen implements Screen {
             }
 
             table.row().padTop(20);
-            TextButton backButton = new TextButton("Back to Lobby", skin);
+            TextButton backButton = new TextButton("Volver al lobby", skin);
             backButton.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
@@ -85,11 +93,10 @@ public class MinigameSelectionScreen implements Screen {
             table.add(backButton).width(200).height(50).colspan(2).row();
 
         } else {
-            // Client just waits
-            statusLabel = new Label("Waiting for host to select minigame...", skin);
+            statusLabel = new Label("Esperando a que el anfitrión seleccione el microjuego...", skin);
             table.add(statusLabel).padBottom(30).colspan(2).row();
 
-            TextButton backButton = new TextButton("Back to Lobby", skin);
+            TextButton backButton = new TextButton("Volver al lobby", skin);
             backButton.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
@@ -100,22 +107,29 @@ public class MinigameSelectionScreen implements Screen {
             table.add(backButton).width(200).height(50).colspan(2).row();
         }
 
-        // Register handler for game start
         NetworkManager.getInstance().registerHandler(Packets.StartGame.class, this::onGameStart);
     }
 
+    /**
+     * Maneja la selección de un minijuego por parte del anfitrión.
+     * 
+     * @param type tipo de minijuego seleccionado
+     */
     private void selectMinigame(MinigameType type) {
         statusLabel.setText("Starting " + type.getDisplayName() + "...");
 
-        // Send packet to all clients
         Packets.StartGame packet = new Packets.StartGame();
         packet.minigameType = type.name();
         NetworkManager.getInstance().sendPacket(packet);
 
-        // Start game locally
         startGame(type);
     }
 
+    /**
+     * Maneja el inicio del juego cuando se recibe el paquete correspondiente.
+     * 
+     * @param packet paquete que indica el inicio del juego
+     */
     private void onGameStart(Packets.StartGame packet) {
         if (!isHost) {
             try {
@@ -127,11 +141,21 @@ public class MinigameSelectionScreen implements Screen {
         }
     }
 
+    /**
+     * Inicia el juego con el minijuego seleccionado.
+     * 
+     * @param type tipo de minijuego a iniciar
+     */
     private void startGame(MinigameType type) {
         game.setScreen(new GameScreen(game, type));
         dispose();
     }
 
+    /**
+     * Renderiza la pantalla y actualiza la lógica del frame.
+     *
+     * @param delta tiempo transcurrido desde el último frame en segundos
+     */
     @Override
     public void render(float delta) {
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
@@ -141,23 +165,43 @@ public class MinigameSelectionScreen implements Screen {
         stage.draw();
     }
 
+    /**
+     * Ajusta el tamaño de la pantalla.
+     *
+     * @param width  nuevo ancho de la ventana
+     * @param height nuevo alto de la ventana
+     */
     @Override
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
     }
 
+    /**
+     * Pausa la pantalla.
+     */
     @Override
-    public void pause() { }
+    public void pause() {
+    }
 
+    /**
+     * Reanuda la pantalla.
+     */
     @Override
-    public void resume() { }
+    public void resume() {
+    }
 
+    /**
+     * Oculta la pantalla.
+     */
     @Override
-    public void hide() { }
+    public void hide() {
+    }
 
+    /**
+     * Libera los recursos utilizados por la pantalla.
+     */
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
     }
 }

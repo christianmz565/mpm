@@ -3,64 +3,96 @@ package to.mpm.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
+import to.mpm.ui.UIStyles;
+import to.mpm.ui.UISkinProvider;
+import to.mpm.ui.components.DuckPlaceholder;
+import to.mpm.ui.components.StyledButton;
 
 /**
- * Código de prueba, solo para pruebas de red simples.
+ * Pantalla del menú principal de MicroPatosMania.
+ * Muestra título, botones de crear/unirse/ajustes y la ilustración del pato.
  */
 public class MainMenuScreen implements Screen {
-    private final Main game;
-    private Stage stage;
-    private Skin skin;
+    private final Main game; //!< instancia del juego principal
+    private Stage stage; //!< stage para renderizar componentes de UI
+    private Skin skin; //!< skin para estilizar componentes
 
+    /**
+     * Construye una nueva pantalla de menú principal.
+     *
+     * @param game instancia del juego principal
+     */
     public MainMenuScreen(Main game) {
         this.game = game;
     }
 
+    /**
+     * Inicializa y configura todos los componentes de la pantalla.
+     */
     @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(stage);
 
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        Table root = new Table();
+        root.setFillParent(true);
+        stage.addActor(root);
 
-        Table table = new Table();
-        table.setFillParent(true);
-        stage.addActor(table);
+        Table menuTable = new Table();
+        menuTable.top().left();
 
-        Label titleLabel = new Label("Micro Patos Mania", skin);
-        titleLabel.setFontScale(2f);
-        table.add(titleLabel).padBottom(50).row();
+        Label titleLabel = new Label("MicroPatosMania", skin);
+        titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
+        titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+        menuTable.add(titleLabel).left().padBottom(UIStyles.Spacing.XLARGE).row();
 
-        TextButton hostButton = new TextButton("Host Game", skin);
-        hostButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new HostLobbyScreen(game));
-                dispose();
-            }
-        });
-        table.add(hostButton).width(200).height(50).padBottom(20).row();
+        menuTable.add(
+                new StyledButton(skin)
+                        .text("Crear")
+                        .onClick(() -> {
+                            game.setScreen(new CreateRoomScreen(game));
+                            dispose();
+                        })
+                        .build())
+                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
-        TextButton joinButton = new TextButton("Join Game", skin);
-        joinButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new JoinLobbyScreen(game));
-                dispose();
-            }
-        });
-        table.add(joinButton).width(200).height(50).row();
+        menuTable.add(
+                new StyledButton(skin)
+                        .text("Unirse")
+                        .onClick(() -> {
+                            game.setScreen(new JoinLobbyScreen(game));
+                            dispose();
+                        })
+                        .build())
+                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+
+        menuTable.add(
+                new StyledButton(skin)
+                        .text("Salir")
+                        .onClick(() -> {
+                            Gdx.app.exit();
+                        })
+                        .build())
+                .left().row();
+
+        Table duckTable = new DuckPlaceholder(skin).build();
+
+        root.add(menuTable).top().left().pad(UIStyles.Spacing.LARGE).expandY();
+        root.add(duckTable).expand();
     }
 
+    /**
+     * Renderiza la pantalla y actualiza la lógica del frame.
+     *
+     * @param delta tiempo transcurrido desde el último frame en segundos
+     */
     @Override
     public void render(float delta) {
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
@@ -70,26 +102,43 @@ public class MainMenuScreen implements Screen {
         stage.draw();
     }
 
+    /**
+     * Maneja el redimensionamiento de la ventana.
+     *
+     * @param width  nuevo ancho de la ventana
+     * @param height nuevo alto de la ventana
+     */
     @Override
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
     }
 
+    /**
+     * Método llamado cuando la aplicación es pausada.
+     */
     @Override
     public void pause() {
     }
 
+    /**
+     * Método llamado cuando la aplicación es reanudada.
+     */
     @Override
     public void resume() {
     }
 
+    /**
+     * Método llamado cuando esta pantalla deja de ser la pantalla actual.
+     */
     @Override
     public void hide() {
     }
 
+    /**
+     * Libera los recursos utilizados por esta pantalla.
+     */
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
     }
 }

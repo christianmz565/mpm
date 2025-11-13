@@ -7,34 +7,34 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
-import to.mpm.network.NetworkConfig;
 import to.mpm.network.NetworkManager;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
 import to.mpm.ui.components.DuckPlaceholder;
 import to.mpm.ui.components.InputField;
 import to.mpm.ui.components.StyledButton;
+import to.mpm.utils.FirewallHelper;
 import java.io.IOException;
 
 /**
- * Pantalla para unirse a una sala de juego existente.
- * Muestra campos de entrada para IP, Puerto y Nombre del jugador.
+ * Pantalla para crear una nueva sala de juego.
+ * Muestra campos de entrada para Puerto, Rondas y Nombre de sala.
  */
-public class JoinLobbyScreen implements Screen {
+public class CreateRoomScreen implements Screen {
     private final Main game; //!< instancia del juego principal
     private Stage stage; //!< stage para renderizar componentes de UI
     private Skin skin; //!< skin para estilizar componentes
+    private TextField portField; //!< campo de entrada para el puerto
+    private TextField roundsField; //!< campo de entrada para el número de rondas
     private TextField nameField; //!< campo de entrada para el nombre del jugador
-    private TextField ipField; //!< campo de entrada para la IP del servidor
-    private TextField portField; //!< campo de entrada para el puerto del servidor
     private Label statusLabel; //!< etiqueta para mostrar mensajes de estado
 
     /**
-     * Construye una nueva pantalla de unión a sala.
+     * Construye una nueva pantalla de creación de sala.
      *
      * @param game instancia del juego principal
      */
-    public JoinLobbyScreen(Main game) {
+    public CreateRoomScreen(Main game) {
         this.game = game;
     }
 
@@ -65,29 +65,18 @@ public class JoinLobbyScreen implements Screen {
         });
         headerTable.add(backButton).padRight(UIStyles.Spacing.MEDIUM);
 
-        Label titleLabel = new Label("MicroPatosMania\nUnirse a sala", skin);
+        Label titleLabel = new Label("MicroPatosMania\nCrear sala", skin);
         titleLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
         titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         headerTable.add(titleLabel).left();
 
         formTable.add(headerTable).left().padBottom(UIStyles.Spacing.LARGE).row();
 
-        Table ipRow = new Table();
-        Label ipLabel = new Label("IP", skin);
-        ipRow.add(ipLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
-        ipField = new InputField(skin)
-                .defaultValue("localhost")
-                .messageText("...")
-                .width(UIStyles.Sizes.INPUT_WIDTH)
-                .buildField();
-        ipRow.add(ipField);
-        formTable.add(ipRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
-
         Table portRow = new Table();
         Label portLabel = new Label("Puerto", skin);
-        portRow.add(portLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
+        portRow.add(portLabel).padRight(UIStyles.Spacing.SMALL);
         portField = new InputField(skin)
-                .defaultValue(String.valueOf(NetworkConfig.DEFAULT_PORT))
+                .defaultValue("61232")
                 .width(UIStyles.Sizes.INPUT_WIDTH)
                 .filter(new TextField.TextFieldFilter.DigitsOnlyFilter())
                 .maxLength(5)
@@ -95,9 +84,21 @@ public class JoinLobbyScreen implements Screen {
         portRow.add(portField);
         formTable.add(portRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
+        Table roundsRow = new Table();
+        Label roundsLabel = new Label("Rondas", skin);
+        roundsRow.add(roundsLabel).padRight(UIStyles.Spacing.SMALL);
+        roundsField = new InputField(skin)
+                .defaultValue("6")
+                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .filter(new TextField.TextFieldFilter.DigitsOnlyFilter())
+                .maxLength(2)
+                .buildField();
+        roundsRow.add(roundsField);
+        formTable.add(roundsRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+
         Table nameRow = new Table();
         Label nameLabel = new Label("Nombre", skin);
-        nameRow.add(nameLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
+        nameRow.add(nameLabel).padRight(UIStyles.Spacing.SMALL);
         nameField = new InputField(skin)
                 .defaultValue("")
                 .messageText("...")
@@ -109,8 +110,8 @@ public class JoinLobbyScreen implements Screen {
 
         formTable.add(
                 new StyledButton(skin)
-                        .text("Unirse")
-                        .onClick(this::joinGame)
+                        .text("Crear")
+                        .onClick(this::createRoom)
                         .build())
                 .left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
@@ -125,37 +126,35 @@ public class JoinLobbyScreen implements Screen {
     }
 
     /**
-     * Maneja la conexión a una sala de juego existente.
-     * Valida los campos de entrada e intenta conectar al servidor.
+     * Maneja la creación de una nueva sala de juego.
+     * Valida los campos de entrada e inicia el servidor.
      */
-    private void joinGame() {
-        String playerName = nameField.getText();
-        String host = ipField.getText();
-        int port;
-
-        if (playerName.trim().isEmpty()) {
-            statusLabel.setText("Please enter a player name");
-            return;
-        }
-
+    private void createRoom() {
         try {
-            port = Integer.parseInt(portField.getText());
-        } catch (NumberFormatException e) {
-            statusLabel.setText("Invalid port number");
-            return;
-        }
+            int port = Integer.parseInt(portField.getText());
+            @SuppressWarnings("unused")
+            int rounds = Integer.parseInt(roundsField.getText());
+            String playerName = nameField.getText().trim();
 
-        statusLabel.setText("Connecting...");
+            if (playerName.isEmpty()) {
+                statusLabel.setText("Por favor ingresa un nombre");
+                return;
+            }
 
-        try {
-            NetworkManager.getInstance().joinGame(host, port, playerName);
-            statusLabel.setText("Connected!");
+            statusLabel.setText("Creando sala...");
 
-            game.setScreen(new JoinLobbyWaitingScreen(game, host, port));
+            FirewallHelper.requestFirewallPermission(port);
+
+            NetworkManager.getInstance().hostGame();
+
+            game.setScreen(new HostLobbyScreen(game));
             dispose();
+
+        } catch (NumberFormatException e) {
+            statusLabel.setText("Puerto y rondas deben ser números");
         } catch (IOException e) {
-            statusLabel.setText("Connection failed: " + e.getMessage());
-            Gdx.app.error("JoinLobbyScreen", "Failed to connect", e);
+            statusLabel.setText("Error al crear sala: " + e.getMessage());
+            Gdx.app.error("CreateRoomScreen", "Failed to start server", e);
         }
     }
 

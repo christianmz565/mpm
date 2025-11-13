@@ -8,39 +8,38 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.minigames.MinigameType;
-import to.mpm.minigames.selection.GameSelectionStrategy;
-import to.mpm.minigames.selection.RandomGameSelection;
-import to.mpm.network.NetworkConfig;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
 import to.mpm.ui.components.PlayerListItem;
-import to.mpm.ui.components.StyledButton;
-import java.net.InetAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Pantalla de sala mostrada después de crear/hospedar una sala de juego.
- * Muestra información de la sala, jugadores conectados y controles para iniciar
- * el juego.
+ * Pantalla de sala mostrada después de unirse a un juego como cliente.
+ * Muestra jugadores conectados y espera a que el anfitrión inicie el juego.
  */
-public class HostLobbyScreen implements Screen {
+public class JoinLobbyWaitingScreen implements Screen {
     private final Main game; //!< instancia del juego principal
+    private final String serverIp; //!< dirección IP del servidor
+    private final int serverPort; //!< puerto del servidor
     private Stage stage; //!< stage para renderizar componentes de UI
     private Skin skin; //!< skin para estilizar componentes
     private Label ipLabel; //!< etiqueta que muestra la IP del servidor
     private Label portLabel; //!< etiqueta que muestra el puerto del servidor
     private Table playersContainer; //!< contenedor de la lista de jugadores
-    private TextButton startButton; //!< botón para iniciar el juego
 
     /**
-     * Construye una nueva pantalla de sala de host.
+     * Construye una nueva pantalla de espera en sala.
      *
-     * @param game instancia del juego principal
+     * @param game       instancia del juego principal
+     * @param serverIp   dirección IP del servidor
+     * @param serverPort puerto del servidor
      */
-    public HostLobbyScreen(Main game) {
+    public JoinLobbyWaitingScreen(Main game, String serverIp, int serverPort) {
         this.game = game;
+        this.serverIp = serverIp;
+        this.serverPort = serverPort;
     }
 
     /**
@@ -77,13 +76,8 @@ public class HostLobbyScreen implements Screen {
         leftHeader.add(titleLabel).left();
 
         Table rightHeader = new Table();
-        try {
-            String hostAddress = InetAddress.getLocalHost().getHostAddress();
-            ipLabel = new Label("IP: " + hostAddress, skin);
-        } catch (Exception e) {
-            ipLabel = new Label("IP: ---", skin);
-        }
-        portLabel = new Label("Puerto: " + NetworkConfig.DEFAULT_PORT, skin);
+        ipLabel = new Label("IP: " + serverIp, skin);
+        portLabel = new Label("Puerto: " + serverPort, skin);
         rightHeader.add(ipLabel).padBottom(UIStyles.Spacing.TINY).row();
         rightHeader.add(portLabel).row();
 
@@ -99,34 +93,15 @@ public class HostLobbyScreen implements Screen {
 
         root.add(playersScroll).expand().fill().pad(UIStyles.Spacing.LARGE).row();
 
-        Table bottomRow = new Table();
-        bottomRow.add(
-                new StyledButton(skin)
-                        .text("Espectador")
-                        .onClick(this::toggleSpectator)
-                        .build())
-                .padRight(UIStyles.Spacing.MEDIUM);
-
-        startButton = new StyledButton(skin)
-                .text("Iniciar Juego")
-                .disabled(true)
-                .onClick(this::startGame)
-                .build();
-        bottomRow.add(startButton);
-
-        root.add(bottomRow).bottom().pad(UIStyles.Spacing.LARGE).row();
+        Label statusLabel = new Label("Esperando a que el anfitrión inicie el juego...", skin);
+        statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
+        root.add(statusLabel).bottom().pad(UIStyles.Spacing.LARGE).row();
 
         updatePlayersList();
 
         NetworkManager.getInstance().registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
         NetworkManager.getInstance().registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
-    }
-
-    /**
-     * Alterna el modo espectador para el jugador local.
-     */
-    private void toggleSpectator() {
-        Gdx.app.log("HostLobbyScreen", "Spectator mode toggle clicked");
+        NetworkManager.getInstance().registerHandler(Packets.StartGame.class, this::onGameStart);
     }
 
     /**
@@ -135,9 +110,8 @@ public class HostLobbyScreen implements Screen {
      * @param packet paquete con información del jugador que se unió
      */
     private void onPlayerJoined(Packets.PlayerJoined packet) {
-        Gdx.app.log("HostLobbyScreen", "Player " + packet.playerName + " connected!");
+        Gdx.app.log("JoinLobbyWaitingScreen", "Player " + packet.playerName + " joined!");
         updatePlayersList();
-        startButton.setDisabled(false);
     }
 
     /**
@@ -146,10 +120,26 @@ public class HostLobbyScreen implements Screen {
      * @param packet paquete con información del jugador que salió
      */
     private void onPlayerLeft(Packets.PlayerLeft packet) {
-        Gdx.app.log("HostLobbyScreen", "Player " + packet.playerId + " disconnected");
+        Gdx.app.log("JoinLobbyWaitingScreen", "Player " + packet.playerId + " left");
         updatePlayersList();
-        if (NetworkManager.getInstance().getPlayerCount() <= 1) {
-            startButton.setDisabled(true);
+    }
+
+    /**
+     * Maneja el evento de inicio de juego enviado por el anfitrión.
+     *
+     * @param packet paquete de inicio de juego
+     */
+    private void onGameStart(Packets.StartGame packet) {
+        if (packet.minigameType != null && !packet.minigameType.isEmpty()) {
+            try {
+                MinigameType type = MinigameType.valueOf(packet.minigameType);
+                game.setScreen(new GameScreen(game, type));
+                dispose();
+            } catch (IllegalArgumentException e) {
+                Gdx.app.error("JoinLobbyWaitingScreen", "Unknown minigame type: " + packet.minigameType);
+            }
+        } else {
+            Gdx.app.error("JoinLobbyWaitingScreen", "Received StartGame packet without minigame type!");
         }
     }
 
@@ -165,7 +155,7 @@ public class HostLobbyScreen implements Screen {
             int playerId = entry.getKey();
             String playerName = entry.getValue();
 
-            String role = playerId == 0 ? "Creador" : "Jugador";
+            String role = playerId == 0 ? "Anfitrión" : "Jugador";
 
             Table playerItem = new PlayerListItem(skin)
                     .playerName(playerName)
@@ -174,25 +164,6 @@ public class HostLobbyScreen implements Screen {
 
             playersContainer.add(playerItem).fillX().expandX().padBottom(UIStyles.Spacing.SMALL).row();
         }
-    }
-
-    /**
-     * Inicia el juego y notifica a todos los jugadores conectados.
-     */
-    private void startGame() {
-        GameSelectionStrategy selectionStrategy = new RandomGameSelection();
-        int playerCount = NetworkManager.getInstance().getPlayerCount();
-        MinigameType selectedGame = selectionStrategy.selectGame(playerCount);
-        
-        Gdx.app.log("HostLobbyScreen", "Selected game: " + selectedGame.getDisplayName() + 
-                    " using " + selectionStrategy.getStrategyName());
-        
-        Packets.StartGame packet = new Packets.StartGame();
-        packet.minigameType = selectedGame.name();
-        NetworkManager.getInstance().sendPacket(packet);
-        
-        game.setScreen(new GameScreen(game, selectedGame));
-        dispose();
     }
 
     /**
