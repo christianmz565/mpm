@@ -29,33 +29,28 @@ public class CatchDetector {
         
         for (Duck duck : ducks) {
             if (duck.isCaught()) {
-                continue;  // Skip already caught ducks
+                continue;
             }
             
             Rectangle duckBounds = duck.getBounds();
             
-            // Check against each player's basket
             for (Map.Entry<Integer, Player> entry : players.entrySet()) {
                 int playerId = entry.getKey();
                 Player player = entry.getValue();
                 Rectangle basketBounds = player.getBasketBounds();
                 
-                // Check if duck intersects with basket
                 if (duckBounds.overlaps(basketBounds)) {
-                    // Duck caught!
                     duck.setCaught(playerId);
                     ducksToRemove.add(duck);
                     
-                    // Add points (or subtract for bad ducks)
                     int points = duck.type.points;
                     pointsEarned.put(playerId, pointsEarned.getOrDefault(playerId, 0) + points);
                     
-                    break;  // Each duck can only be caught by one player
+                    break;
                 }
             }
         }
         
-        // Remove caught ducks from the list
         ducks.removeAll(ducksToRemove);
         
         return pointsEarned;

@@ -27,12 +27,12 @@ import java.util.Map;
  */
 public class CatchThemAllMinigame implements Minigame {
     private static final float[][] PLAYER_COLORS = {
-            {1f, 0.2f, 0.2f}, // 0 - Red
-            {0.2f, 0.2f, 1f}, // 1 - Blue
-            {0.2f, 1f, 0.2f}, // 2 - Green
-            {1f, 1f, 0.2f},   // 3 - Yellow
-            {1f, 0.2f, 1f},   // 4 - Magenta
-            {0.2f, 1f, 1f},   // 5 - Cyan
+            {1f, 0.2f, 0.2f},
+            {0.2f, 0.2f, 1f},
+            {0.2f, 1f, 0.2f},
+            {1f, 1f, 0.2f},
+            {1f, 0.2f, 1f},
+            {0.2f, 1f, 1f},
     };
 
     private final int localPlayerId;
@@ -51,15 +51,12 @@ public class CatchThemAllMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Initialize renderer
         GameRenderer.initialize();
 
-        // Initialize scores for all players
         scores.put(localPlayerId, 0);
 
-        // Create local player with a color based on id
         float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        float startX = 100 + (localPlayerId * 80); // Space out players
+        float startX = 100 + (localPlayerId * 80);
         localPlayer = new Player(
                 true,
                 startX,
@@ -68,7 +65,6 @@ public class CatchThemAllMinigame implements Minigame {
         );
         players.put(localPlayerId, localPlayer);
 
-        // Register minigame-specific network classes
         nm.registerAdditionalClasses(
             Duck.DuckType.class,
             to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class,
@@ -77,13 +73,11 @@ public class CatchThemAllMinigame implements Minigame {
             to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class
         );
 
-        // Initialize duck spawner (only host will use it)
         if (nm.isHost()) {
             duckSpawner = new DuckSpawner();
             Gdx.app.log("CatchThemAll", "Duck spawner initialized (host mode)");
         }
 
-        // Register network handlers
         nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition);
         nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
         nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
@@ -126,7 +120,6 @@ public class CatchThemAllMinigame implements Minigame {
     }
 
     private void onDuckSpawned(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned packet) {
-        // Clients create the duck when notified by host
         Duck.DuckType type = Duck.DuckType.valueOf(packet.duckType);
         Duck duck = new Duck(packet.duckId, packet.x, packet.y, type);
         ducks.add(duck);
@@ -134,7 +127,6 @@ public class CatchThemAllMinigame implements Minigame {
     }
 
     private void onDuckUpdate(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate packet) {
-        // Update duck position on clients
         for (Duck duck : ducks) {
             if (duck.id == packet.duckId) {
                 duck.setPosition(packet.x, packet.y);
@@ -144,13 +136,11 @@ public class CatchThemAllMinigame implements Minigame {
     }
 
     private void onDuckRemoved(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved packet) {
-        // Remove duck from clients
         ducks.removeIf(duck -> duck.id == packet.duckId);
         Gdx.app.log("CatchThemAll", "Client: Duck removed - ID: " + packet.duckId);
     }
 
     private void onScoreUpdate(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate packet) {
-        // Update score on clients
         scores.put(packet.playerId, packet.score);
         Gdx.app.log("CatchThemAll", "Client: Score update - Player " + packet.playerId + ": " + packet.score);
     }
@@ -159,38 +149,30 @@ public class CatchThemAllMinigame implements Minigame {
     public void update(float delta) {
         localPlayer.update();
         
-        // Update all ducks (falling physics)
         for (Duck duck : ducks) {
             duck.update();
         }
         
-        // Host-only logic
         if (NetworkManager.getInstance().isHost()) {
-            // Spawn new ducks
             if (duckSpawner != null) {
                 List<Duck> newDucks = duckSpawner.update(delta);
                 for (Duck duck : newDucks) {
                     ducks.add(duck);
-                    // Notify clients about new duck
                     NetworkHandler.sendDuckSpawned(duck);
                     Gdx.app.log("CatchThemAll", "Host: Duck spawned - ID: " + duck.id + ", Type: " + duck.type);
                 }
             }
             
-            // Handle player collisions
             CollisionHandler.handlePlayerCollisions(players);
             
-            // Detect duck catches and track removed ducks
             Map<Integer, Player> playersMap = new HashMap<>();
             for (IntMap.Entry<Player> entry : players) {
                 playersMap.put(entry.key, entry.value);
             }
             
-            // Store ducks before detection to see which were removed
             List<Duck> ducksBeforeCatch = new ArrayList<>(ducks);
             Map<Integer, Integer> pointsEarned = CatchDetector.detectCatches(ducks, playersMap);
             
-            // Find and notify about caught ducks
             for (Duck duck : ducksBeforeCatch) {
                 if (duck.isCaught() && !ducks.contains(duck)) {
                     NetworkHandler.sendDuckRemoved(duck);
@@ -198,24 +180,20 @@ public class CatchThemAllMinigame implements Minigame {
                 }
             }
             
-            // Update scores and notify clients
             for (Map.Entry<Integer, Integer> entry : pointsEarned.entrySet()) {
                 int playerId = entry.getKey();
                 int points = entry.getValue();
                 int newScore = scores.getOrDefault(playerId, 0) + points;
                 scores.put(playerId, newScore);
                 
-                // Send score update to all clients
                 NetworkHandler.sendScoreUpdate(playerId, newScore);
                 
                 Gdx.app.log("CatchThemAll", "Player " + playerId + " earned " + points + " points! Total: " + newScore);
             }
             
-            // Track ducks before removing grounded ones
             List<Duck> ducksBeforeGroundRemoval = new ArrayList<>(ducks);
             int removed = CatchDetector.removeGroundedDucks(ducks);
             
-            // Notify about grounded ducks
             if (removed > 0) {
                 for (Duck duck : ducksBeforeGroundRemoval) {
                     if (!ducks.contains(duck)) {
@@ -225,7 +203,6 @@ public class CatchThemAllMinigame implements Minigame {
                 Gdx.app.log("CatchThemAll", "Removed " + removed + " grounded ducks");
             }
             
-            // Send periodic duck position updates (every frame for smooth movement)
             NetworkHandler.sendDuckUpdates(ducks);
         }
         
@@ -254,7 +231,6 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public int getWinnerId() {
-        // Return the player with the highest score
         int winnerId = -1;
         int maxScore = Integer.MIN_VALUE;
         
@@ -280,6 +256,5 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
-        // Not needed for this simple game
     }
 }
