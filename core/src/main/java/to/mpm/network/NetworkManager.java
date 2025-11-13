@@ -63,6 +63,29 @@ public class NetworkManager {
         kryo.register(Packets.Pong.class);
         kryo.register(Object[].class);
     }
+    
+    /**
+     * Register additional classes for Kryo serialization.
+     * This method should be called by minigames to register their specific packet types.
+     * Must be called BEFORE starting the server or connecting as a client.
+     * 
+     * @param classes array of classes to register
+     */
+    public void registerAdditionalClasses(Class<?>... classes) {
+        Kryo kryo = null;
+        if (server != null) {
+            kryo = server.getKryo();
+        } else if (client != null) {
+            kryo = client.getKryo();
+        }
+        
+        if (kryo != null) {
+            for (Class<?> clazz : classes) {
+                kryo.register(clazz);
+                Gdx.app.log("NetworkManager", "Registered class: " + clazz.getName());
+            }
+        }
+    }
 
     /**
      * Inicia el servidor hospedando una partida en el puerto configurado.
