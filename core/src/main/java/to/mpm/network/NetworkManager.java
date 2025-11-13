@@ -71,6 +71,11 @@ public class NetworkManager {
      * @throws IOException si el servidor falla al iniciarse
      */
     public void hostGame() throws IOException {
+        if (server != null) {
+            Gdx.app.log("NetworkManager", "El servidor ya está en ejecución");
+            return;
+        }
+
         isHost = true;
         myId = nextPlayerId.getAndIncrement();
         connectedPlayers.put(myId, "Host");
@@ -112,10 +117,18 @@ public class NetworkManager {
             }
         });
 
-        server.bind(NetworkConfig.DEFAULT_PORT, NetworkConfig.DEFAULT_PORT);
-        server.start();
-
-        Gdx.app.log("NetworkManager", "Servidor iniciado en el puerto " + NetworkConfig.DEFAULT_PORT);
+        try {
+            server.bind(NetworkConfig.DEFAULT_PORT, NetworkConfig.DEFAULT_PORT);
+            server.start();
+            Gdx.app.log("NetworkManager", "Servidor iniciado en el puerto " + NetworkConfig.DEFAULT_PORT);
+        } catch (IOException e) {
+            server = null;
+            isHost = false;
+            connectedPlayers.remove(myId);
+            nextPlayerId.decrementAndGet();
+            throw new IOException("No se pudo iniciar el servidor en el puerto " + NetworkConfig.DEFAULT_PORT + 
+                ". El puerto puede estar ya en uso. " + e.getMessage(), e);
+        }
     }
 
     /**

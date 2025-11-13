@@ -22,6 +22,15 @@
             inherit system;
             config.allowUnfree = true;
           };
+          runtimeLibs = with pkgs; lib.makeLibraryPath [
+            glfw
+            libGL
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXext
+            xorg.libXrandr
+            xorg.libXxf86vm
+          ];
         in
         pkgs.mkShell {
           packages = (with pkgs; [
@@ -40,7 +49,9 @@
             GRADLE_OPTS = "-Dorg.gradle.java.home=${pkgs.jdk21}/lib/openjdk";
           };
           buildInputs = [ pkgs.bashInteractive ];
-          shellHook = '''';
+          shellHook = ''
+            export LD_LIBRARY_PATH="${runtimeLibs}:$LD_LIBRARY_PATH"
+          '';
         };
     };
 }
