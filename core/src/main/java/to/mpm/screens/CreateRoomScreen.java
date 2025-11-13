@@ -9,6 +9,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.network.NetworkManager;
 import to.mpm.ui.UIStyles;
+import to.mpm.ui.UISkinProvider;
 import to.mpm.ui.components.DuckPlaceholder;
 import to.mpm.ui.components.InputField;
 import to.mpm.ui.components.StyledButton;
@@ -43,9 +44,8 @@ public class CreateRoomScreen implements Screen {
     @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
-
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(stage);
 
         Table root = new Table();
         root.setFillParent(true);
@@ -211,6 +211,5 @@ public class CreateRoomScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
     }
 }

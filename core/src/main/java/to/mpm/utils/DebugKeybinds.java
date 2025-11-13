@@ -40,131 +40,32 @@ public class DebugKeybinds {
     }
 
     public void update() {
-        if (Gdx.input.isKeyPressed(Input.Keys.F1)) {
-            if (!f1Pressed) {
-                f1Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Main Menu");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new MainMenuScreen(game));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f1Pressed = false;
-        }
+        f1Pressed = handleKey(f1Pressed, Input.Keys.F1, "Switching to Main Menu",
+                () -> switchScreen(new MainMenuScreen(game)));
 
-        if (Gdx.input.isKeyPressed(Input.Keys.F2)) {
-            if (!f2Pressed) {
-                f2Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Create Room Screen");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new CreateRoomScreen(game));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f2Pressed = false;
-        }
+        f2Pressed = handleKey(f2Pressed, Input.Keys.F2, "Switching to Create Room Screen",
+                () -> switchScreen(new CreateRoomScreen(game)));
 
-        if (Gdx.input.isKeyPressed(Input.Keys.F3)) {
-            if (!f3Pressed) {
-                f3Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Join Lobby Screen");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new JoinLobbyScreen(game));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f3Pressed = false;
-        }
+        f3Pressed = handleKey(f3Pressed, Input.Keys.F3, "Switching to Join Lobby Screen",
+                () -> switchScreen(new JoinLobbyScreen(game)));
 
-        if (Gdx.input.isKeyPressed(Input.Keys.F4)) {
-            if (!f4Pressed) {
-                f4Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Host Lobby Screen");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new HostLobbyScreen(game));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f4Pressed = false;
-        }
+        f4Pressed = handleKey(f4Pressed, Input.Keys.F4, "Switching to Host Lobby Screen",
+                () -> switchScreen(new HostLobbyScreen(game)));
 
-        if (Gdx.input.isKeyPressed(Input.Keys.F5)) {
-            if (!f5Pressed) {
-                f5Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Game Screen (Ball Movement)");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f5Pressed = false;
-        }
+        f5Pressed = handleKey(f5Pressed, Input.Keys.F5, "Switching to Game Screen (Ball Movement)",
+                () -> switchScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT)));
 
-        if (Gdx.input.isKeyPressed(Input.Keys.F6)) {
-            if (!f6Pressed) {
-                f6Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Spectator Screen");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new SpectatorScreen(game));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f6Pressed = false;
-        }
+        f6Pressed = handleKey(f6Pressed, Input.Keys.F6, "Switching to Spectator Screen",
+                () -> switchScreen(new SpectatorScreen(game)));
 
-        if (Gdx.input.isKeyPressed(Input.Keys.F7)) {
-            if (!f7Pressed) {
-                f7Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Scoreboard Screen");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new ScoreboardScreen(game));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f7Pressed = false;
-        }
+        f7Pressed = handleKey(f7Pressed, Input.Keys.F7, "Switching to Scoreboard Screen",
+                () -> switchScreen(new ScoreboardScreen(game)));
 
-        if (Gdx.input.isKeyPressed(Input.Keys.F8)) {
-            if (!f8Pressed) {
-                f8Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Results Screen");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new ResultsScreen(game));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f8Pressed = false;
-        }
+        f8Pressed = handleKey(f8Pressed, Input.Keys.F8, "Switching to Results Screen",
+                () -> switchScreen(new ResultsScreen(game)));
 
-        if (Gdx.input.isKeyPressed(Input.Keys.F9)) {
-            if (!f9Pressed) {
-                f9Pressed = true;
-                Gdx.app.log("DebugKeybinds", "Switching to Minigame Selection Screen (debug)");
-                Screen currentScreen = game.getScreen();
-                game.setScreen(new MinigameSelectionScreen(game, true));
-                if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
-                    currentScreen.dispose();
-                }
-            }
-        } else {
-            f9Pressed = false;
-        }
+        f9Pressed = handleKey(f9Pressed, Input.Keys.F9, "Switching to Minigame Selection Screen (debug)",
+                () -> switchScreen(new MinigameSelectionScreen(game, true)));
 
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
             if (!escPressed) {
@@ -174,6 +75,25 @@ public class DebugKeybinds {
             }
         } else {
             escPressed = false;
+        }
+    }
+
+    private boolean handleKey(boolean wasPressed, int keyCode, String logMessage, Runnable action) {
+        if (Gdx.input.isKeyPressed(keyCode)) {
+            if (!wasPressed) {
+                Gdx.app.log("DebugKeybinds", logMessage);
+                action.run();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private void switchScreen(Screen nextScreen) {
+        Screen currentScreen = game.getScreen();
+        game.setScreen(nextScreen);
+        if (currentScreen != null) {
+            currentScreen.dispose();
         }
     }
 

@@ -12,6 +12,7 @@ import to.mpm.Main;
 import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
+import to.mpm.ui.UISkinProvider;
 
 /**
  * Pantalla de selección de minijuegos.
@@ -41,20 +42,19 @@ public class MinigameSelectionScreen implements Screen {
     @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
-
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(stage);
 
         Table table = new Table();
         table.setFillParent(true);
         stage.addActor(table);
 
-        Label titleLabel = new Label("Select Minigame", skin);
+        Label titleLabel = new Label("Elegir microjuego", skin);
         titleLabel.setFontScale(1.5f);
         table.add(titleLabel).padBottom(30).colspan(2).row();
 
         if (isHost) {
-            statusLabel = new Label("Select a minigame to play:", skin);
+            statusLabel = new Label("Seleccione un microjuego para jugar:", skin);
             table.add(statusLabel).padBottom(20).colspan(2).row();
 
             for (MinigameType type : MinigameType.values()) {
@@ -68,7 +68,7 @@ public class MinigameSelectionScreen implements Screen {
                 descLabel.setWrap(true);
                 gameRow.add(descLabel).width(300).padRight(20);
 
-                TextButton selectButton = new TextButton("Play", skin);
+                TextButton selectButton = new TextButton("Jugar", skin);
                 final MinigameType gameType = type;
                 selectButton.addListener(new ClickListener() {
                     @Override
@@ -203,6 +203,5 @@ public class MinigameSelectionScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
     }
 }

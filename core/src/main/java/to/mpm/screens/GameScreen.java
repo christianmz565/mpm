@@ -16,6 +16,7 @@ import to.mpm.minigames.MinigameFactory;
 import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
 import to.mpm.ui.UIStyles;
+import to.mpm.ui.UISkinProvider;
 
 /**
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
@@ -49,7 +50,8 @@ public class GameScreen implements Screen {
         shapeRenderer = new ShapeRenderer();
 
         uiStage = new Stage(new ScreenViewport());
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+    skin = UISkinProvider.obtain();
+    game.getSettingsOverlayManager().attachStage(uiStage);
 
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
@@ -162,9 +164,6 @@ public class GameScreen implements Screen {
         }
         if (uiStage != null) {
             uiStage.dispose();
-        }
-        if (skin != null) {
-            skin.dispose();
         }
     }
 }

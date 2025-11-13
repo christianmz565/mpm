@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.ui.UIStyles;
+import to.mpm.ui.UISkinProvider;
 import to.mpm.ui.components.DuckPlaceholder;
 import to.mpm.ui.components.StyledButton;
 
@@ -37,9 +38,8 @@ public class MainMenuScreen implements Screen {
     @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
-
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(stage);
 
         Table root = new Table();
         root.setFillParent(true);
@@ -75,9 +75,9 @@ public class MainMenuScreen implements Screen {
 
         menuTable.add(
                 new StyledButton(skin)
-                        .text("Ajustes")
+                        .text("Salir")
                         .onClick(() -> {
-                            game.toggleSettings();
+                            Gdx.app.exit();
                         })
                         .build())
                 .left().row();
@@ -140,6 +140,5 @@ public class MainMenuScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
     }
 }

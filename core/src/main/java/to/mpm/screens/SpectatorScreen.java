@@ -8,6 +8,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.ui.UIStyles;
+import to.mpm.ui.UISkinProvider;
+import to.mpm.ui.components.PlaceholderPanel;
 import to.mpm.ui.components.StyledButton;
 
 /**
@@ -47,9 +49,8 @@ public class SpectatorScreen implements Screen {
     @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
-
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(stage);
 
         Table root = new Table();
         root.setFillParent(true);
@@ -138,14 +139,11 @@ public class SpectatorScreen implements Screen {
      * jugadores.
      */
     private void renderAllPlayersView() {
-        Table playersGrid = new Table();
+    Table playersGrid = new PlaceholderPanel(skin)
+        .text("Vista de todos los jugadores\n(Grid de 2x2 o 3x2 dependiendo del número)")
+        .build();
 
-        Label placeholder = new Label("Vista de todos los jugadores\n(Grid de 2x2 o 3x2 dependiendo del número)", skin);
-        placeholder.setWrap(true);
-        placeholder.setAlignment(com.badlogic.gdx.utils.Align.center);
-        playersGrid.add(placeholder).center().pad(UIStyles.Spacing.XLARGE);
-
-        contentContainer.add(playersGrid).expand().fill();
+    contentContainer.add(playersGrid).expand().fill();
     }
 
     /**
@@ -153,15 +151,12 @@ public class SpectatorScreen implements Screen {
      * Esto proporciona una vista enfocada en un jugador o grupo pequeño.
      */
     private void renderSingleGroupView() {
-        Table groupView = new Table();
+    Table groupView = new PlaceholderPanel(skin)
+        .text("Vista del grupo " + (currentGroupIndex + 1)
+            + "\n(Vista enfocada en jugador/grupo específico)")
+        .build();
 
-        Label placeholder = new Label(
-                "Vista del grupo " + (currentGroupIndex + 1) + "\n(Vista enfocada en jugador/grupo específico)", skin);
-        placeholder.setWrap(true);
-        placeholder.setAlignment(com.badlogic.gdx.utils.Align.center);
-        groupView.add(placeholder).center().pad(UIStyles.Spacing.XLARGE);
-
-        contentContainer.add(groupView).expand().fill();
+    contentContainer.add(groupView).expand().fill();
     }
 
     /**
@@ -264,6 +259,5 @@ public class SpectatorScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
     }
 }

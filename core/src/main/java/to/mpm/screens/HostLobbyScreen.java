@@ -14,6 +14,7 @@ import to.mpm.network.NetworkConfig;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
 import to.mpm.ui.UIStyles;
+import to.mpm.ui.UISkinProvider;
 import to.mpm.ui.components.PlayerListItem;
 import to.mpm.ui.components.StyledButton;
 import java.net.InetAddress;
@@ -48,9 +49,8 @@ public class HostLobbyScreen implements Screen {
     @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
-
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(stage);
 
         Table root = new Table();
         root.setFillParent(true);
@@ -248,6 +248,5 @@ public class HostLobbyScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
     }
 }

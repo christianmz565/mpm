@@ -60,7 +60,12 @@ public class DuckPlaceholder {
         placeholderLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         placeholderLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
 
-        container.add(placeholderLabel).center().expand().pad(UIStyles.Spacing.MEDIUM);
+    float contentWidth = size - (UIStyles.Spacing.MEDIUM * 2f);
+    container.add(placeholderLabel)
+        .width(contentWidth)
+        .center()
+        .expand()
+        .pad(UIStyles.Spacing.MEDIUM);
 
         return container;
     }

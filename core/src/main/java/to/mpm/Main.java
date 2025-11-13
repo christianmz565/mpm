@@ -1,11 +1,10 @@
 package to.mpm;
 
 import com.badlogic.gdx.Game;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import to.mpm.screens.MainMenuScreen;
-import to.mpm.screens.SettingsScreen;
+import to.mpm.ui.SettingsOverlayManager;
+import to.mpm.ui.UISkinProvider;
 import to.mpm.utils.DebugKeybinds;
 
 /**
@@ -14,14 +13,13 @@ import to.mpm.utils.DebugKeybinds;
 public class Main extends Game {
     public SpriteBatch batch;
     public DebugKeybinds debugKeybinds;
-    private SettingsScreen settingsOverlay;
-    private InputMultiplexer inputMultiplexer;
+    private SettingsOverlayManager settingsOverlayManager;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
         debugKeybinds = new DebugKeybinds(this);
-        inputMultiplexer = new InputMultiplexer();
+        settingsOverlayManager = new SettingsOverlayManager();
         
         setScreen(new MainMenuScreen(this));
         
@@ -32,30 +30,7 @@ public class Main extends Game {
      * Alterna la pantalla de ajustes.
      */
     public void toggleSettings() {
-        if (settingsOverlay != null) {
-            settingsOverlay.dispose();
-            settingsOverlay = null;
-            if (getScreen() != null) {
-                updateInputProcessor();
-            }
-        } else {
-            settingsOverlay = new SettingsScreen(this, getScreen());
-            settingsOverlay.show();
-            updateInputProcessor();
-        }
-    }
-
-    /**
-     * Actualiza el InputProcessor para manejar la superposición de ajustes.
-     */
-    private void updateInputProcessor() {
-        if (settingsOverlay != null && settingsOverlay.getStage() != null) {
-            inputMultiplexer.clear();
-            inputMultiplexer.addProcessor(settingsOverlay.getStage());
-            Gdx.input.setInputProcessor(inputMultiplexer);
-        } else {
-            inputMultiplexer.clear();
-        }
+        settingsOverlayManager.toggle();
     }
 
     /**
@@ -64,16 +39,16 @@ public class Main extends Game {
     @Override
     public void setScreen(com.badlogic.gdx.Screen screen) {
         super.setScreen(screen);
-        if (settingsOverlay != null) {
-            updateInputProcessor();
-        }
+        settingsOverlayManager.hide();
     }
 
     /**
-     * Revisa si los ajustes están activos actualmente.
+     * Obtiene el administrador de la superposición de ajustes.
+     *
+     * @return instancia del administrador de overlay
      */
-    public boolean isSettingsActive() {
-        return settingsOverlay != null;
+    public SettingsOverlayManager getSettingsOverlayManager() {
+        return settingsOverlayManager;
     }
 
     /**
@@ -85,9 +60,7 @@ public class Main extends Game {
         
         super.render();
         
-        if (settingsOverlay != null) {
-            settingsOverlay.renderOverlay(com.badlogic.gdx.Gdx.graphics.getDeltaTime());
-        }
+        settingsOverlayManager.renderOverlay(com.badlogic.gdx.Gdx.graphics.getDeltaTime());
     }
 
     /**
@@ -96,9 +69,7 @@ public class Main extends Game {
     @Override
     public void resize(int width, int height) {
         super.resize(width, height);
-        if (settingsOverlay != null) {
-            settingsOverlay.resize(width, height);
-        }
+        settingsOverlayManager.resize(width, height);
     }
 
     /**
@@ -107,9 +78,6 @@ public class Main extends Game {
     @Override
     public void pause() {
         super.pause();
-        if (settingsOverlay != null) {
-            settingsOverlay.pause();
-        }
     }
 
     /**
@@ -118,9 +86,6 @@ public class Main extends Game {
     @Override
     public void resume() {
         super.resume();
-        if (settingsOverlay != null) {
-            settingsOverlay.resume();
-        }
     }
 
     /**
@@ -129,9 +94,8 @@ public class Main extends Game {
     @Override
     public void dispose() {
         batch.dispose();
-        if (settingsOverlay != null) {
-            settingsOverlay.dispose();
-        }
+        settingsOverlayManager.dispose();
+        UISkinProvider.dispose();
         super.dispose();
     }
 }

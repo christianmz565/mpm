@@ -11,6 +11,7 @@ import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
 import to.mpm.ui.UIStyles;
+import to.mpm.ui.UISkinProvider;
 import to.mpm.ui.components.PlayerListItem;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -47,9 +48,8 @@ public class JoinLobbyWaitingScreen implements Screen {
     @Override
     public void show() {
         stage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(stage);
-
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(stage);
 
         Table root = new Table();
         root.setFillParent(true);
@@ -219,6 +219,5 @@ public class JoinLobbyWaitingScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
     }
 }
