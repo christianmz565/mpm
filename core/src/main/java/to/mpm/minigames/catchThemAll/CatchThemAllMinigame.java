@@ -1,35 +1,47 @@
 package to.mpm.minigames.catchThemAll;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.IntMap;
 import to.mpm.minigames.Minigame;
+import to.mpm.minigames.catchThemAll.entities.Duck;
+import to.mpm.minigames.catchThemAll.entities.DuckSpawner;
+import to.mpm.minigames.catchThemAll.entities.Player;
+import to.mpm.minigames.catchThemAll.input.InputHandler;
+import to.mpm.minigames.catchThemAll.network.NetworkHandler;
+import to.mpm.minigames.catchThemAll.physics.CatchDetector;
+import to.mpm.minigames.catchThemAll.physics.CollisionHandler;
+import to.mpm.minigames.catchThemAll.rendering.GameRenderer;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
-import to.mpm.network.sync.SyncedObject;
-import to.mpm.network.sync.Synchronized;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * Main minigame class for Catch Them All.
+ * Coordinates between input, physics, networking, and rendering modules.
+ */
 public class CatchThemAllMinigame implements Minigame {
-    private static final float PLAYER_RADIUS = 20f;
-    private static final float MOVE_SPEED = 200f;
     private static final float[][] PLAYER_COLORS = {
-            {1f, 0f, 0f}, // 0 - Red
-            {0f, 0f, 1f}, // 1 - Blue
-            {0f, 1f, 0f}, // 2 - Green
-            {1f, 1f, 0f}, // 3 - Yellow
-            {1f, 0f, 1f}, // 4 - Magenta
-            {0f, 1f, 1f}, // 5 - Cyan
+            {1f, 0.2f, 0.2f},
+            {0.2f, 0.2f, 1f},
+            {0.2f, 1f, 0.2f},
+            {1f, 1f, 0.2f},
+            {1f, 0.2f, 1f},
+            {0.2f, 1f, 1f},
     };
 
     private final int localPlayerId;
     private Player localPlayer;
     private final IntMap<Player> players = new IntMap<>();
+    private final List<Duck> ducks = new ArrayList<>();
+    private DuckSpawner duckSpawner;
     private boolean finished = false;
+    private final Map<Integer, Integer> scores = new HashMap<>();
 
     public CatchThemAllMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
@@ -39,33 +51,59 @@ public class CatchThemAllMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Create local player with a color based on id
+        GameRenderer.initialize();
+
+        scores.put(localPlayerId, 0);
+
         float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        localPlayer = new Player(true,
-                localPlayerId == 0 ? 100 : 540,
-                240,
-                color[0], color[1], color[2]);
+        float startX = 100 + (localPlayerId * 80);
+        localPlayer = new Player(
+                true,
+                startX,
+                Player.GROUND_Y,
+                color[0], color[1], color[2]
+        );
         players.put(localPlayerId, localPlayer);
 
-        // Register network handlers
+        nm.registerAdditionalClasses(
+            Duck.DuckType.class,
+            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class,
+            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class,
+            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class,
+            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class
+        );
+
+        if (nm.isHost()) {
+            duckSpawner = new DuckSpawner();
+            Gdx.app.log("CatchThemAll", "Duck spawner initialized (host mode)");
+        }
+
         nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition);
         nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
         nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
+        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class, this::onDuckSpawned);
+        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class, this::onDuckUpdate);
+        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class, this::onDuckRemoved);
+        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class, this::onScoreUpdate);
+        
+        Gdx.app.log("CatchThemAll", "Game initialized for player " + localPlayerId);
     }
 
     private void onPlayerJoined(Packets.PlayerJoined packet) {
         if (packet.playerId == localPlayerId) return;
         if (players.containsKey(packet.playerId)) return;
         
+        scores.put(packet.playerId, 0);
+        
         float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
-        Player remote = new Player(false, 320, 240, color[0], color[1], color[2]);
+        float startX = 100 + (packet.playerId * 80);
+        Player remote = new Player(false, startX, Player.GROUND_Y, color[0], color[1], color[2]);
         players.put(packet.playerId, remote);
     }
 
     private void onPlayerLeft(Packets.PlayerLeft packet) {
         if (packet.playerId == localPlayerId) return;
-        Player p = players.remove(packet.playerId);
-        if (p != null) p.dispose();
+        players.remove(packet.playerId);
     }
 
     private void onPlayerPosition(Packets.PlayerPosition packet) {
@@ -81,57 +119,104 @@ public class CatchThemAllMinigame implements Minigame {
         }
     }
 
+    private void onDuckSpawned(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned packet) {
+        Duck.DuckType type = Duck.DuckType.valueOf(packet.duckType);
+        Duck duck = new Duck(packet.duckId, packet.x, packet.y, type);
+        ducks.add(duck);
+        Gdx.app.log("CatchThemAll", "Client: Duck spawned - ID: " + packet.duckId + ", Type: " + packet.duckType);
+    }
+
+    private void onDuckUpdate(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate packet) {
+        for (Duck duck : ducks) {
+            if (duck.id == packet.duckId) {
+                duck.setPosition(packet.x, packet.y);
+                break;
+            }
+        }
+    }
+
+    private void onDuckRemoved(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved packet) {
+        ducks.removeIf(duck -> duck.id == packet.duckId);
+        Gdx.app.log("CatchThemAll", "Client: Duck removed - ID: " + packet.duckId);
+    }
+
+    private void onScoreUpdate(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate packet) {
+        scores.put(packet.playerId, packet.score);
+        Gdx.app.log("CatchThemAll", "Client: Score update - Player " + packet.playerId + ": " + packet.score);
+    }
+
     @Override
     public void update(float delta) {
         localPlayer.update();
-        sendPlayerPosition();
+        
+        for (Duck duck : ducks) {
+            duck.update();
+        }
+        
+        if (NetworkManager.getInstance().isHost()) {
+            if (duckSpawner != null) {
+                List<Duck> newDucks = duckSpawner.update(delta);
+                for (Duck duck : newDucks) {
+                    ducks.add(duck);
+                    NetworkHandler.sendDuckSpawned(duck);
+                    Gdx.app.log("CatchThemAll", "Host: Duck spawned - ID: " + duck.id + ", Type: " + duck.type);
+                }
+            }
+            
+            CollisionHandler.handlePlayerCollisions(players);
+            
+            Map<Integer, Player> playersMap = new HashMap<>();
+            for (IntMap.Entry<Player> entry : players) {
+                playersMap.put(entry.key, entry.value);
+            }
+            
+            List<Duck> ducksBeforeCatch = new ArrayList<>(ducks);
+            Map<Integer, Integer> pointsEarned = CatchDetector.detectCatches(ducks, playersMap);
+            
+            for (Duck duck : ducksBeforeCatch) {
+                if (duck.isCaught() && !ducks.contains(duck)) {
+                    NetworkHandler.sendDuckRemoved(duck);
+                    Gdx.app.log("CatchThemAll", "Host: Duck caught - ID: " + duck.id);
+                }
+            }
+            
+            for (Map.Entry<Integer, Integer> entry : pointsEarned.entrySet()) {
+                int playerId = entry.getKey();
+                int points = entry.getValue();
+                int newScore = scores.getOrDefault(playerId, 0) + points;
+                scores.put(playerId, newScore);
+                
+                NetworkHandler.sendScoreUpdate(playerId, newScore);
+                
+                Gdx.app.log("CatchThemAll", "Player " + playerId + " earned " + points + " points! Total: " + newScore);
+            }
+            
+            List<Duck> ducksBeforeGroundRemoval = new ArrayList<>(ducks);
+            int removed = CatchDetector.removeGroundedDucks(ducks);
+            
+            if (removed > 0) {
+                for (Duck duck : ducksBeforeGroundRemoval) {
+                    if (!ducks.contains(duck)) {
+                        NetworkHandler.sendDuckRemoved(duck);
+                    }
+                }
+                Gdx.app.log("CatchThemAll", "Removed " + removed + " grounded ducks");
+            }
+            
+            NetworkHandler.sendDuckUpdates(ducks);
+        }
+        
+        NetworkHandler.sendPlayerPosition(localPlayerId, localPlayer);
     }
 
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        // Draw all players
-        for (IntMap.Entry<Player> entry : players) {
-            Player p = entry.value;
-            shapeRenderer.setColor(p.r, p.g, p.b, 1f);
-            shapeRenderer.circle(p.x, p.y, PLAYER_RADIUS);
-        }
-
-        shapeRenderer.end();
+        GameRenderer.render(batch, shapeRenderer, players, ducks, scores, PLAYER_COLORS, localPlayerId);
     }
 
     @Override
     public void handleInput(float delta) {
-        float dx = 0, dy = 0;
-
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            dy += MOVE_SPEED * delta;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            dy -= MOVE_SPEED * delta;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            dx -= MOVE_SPEED * delta;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            dx += MOVE_SPEED * delta;
-        }
-
-        localPlayer.x += dx;
-        localPlayer.y += dy;
-
-        // Keep inside bounds
-        localPlayer.x = Math.max(PLAYER_RADIUS, Math.min(640 - PLAYER_RADIUS, localPlayer.x));
-        localPlayer.y = Math.max(PLAYER_RADIUS, Math.min(480 - PLAYER_RADIUS, localPlayer.y));
-    }
-
-    private void sendPlayerPosition() {
-        Packets.PlayerPosition packet = new Packets.PlayerPosition();
-        packet.playerId = localPlayerId;
-        packet.x = localPlayer.x;
-        packet.y = localPlayer.y;
-        NetworkManager.getInstance().sendPacket(packet);
+        InputHandler.handleInput(localPlayer, delta);
     }
 
     @Override
@@ -141,45 +226,35 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public Map<Integer, Integer> getScores() {
-        // This minigame doesn't have scores
-        return new HashMap<>();
+        return scores;
     }
 
     @Override
     public int getWinnerId() {
-        return -1; // No winner in this game
+        int winnerId = -1;
+        int maxScore = Integer.MIN_VALUE;
+        
+        for (Map.Entry<Integer, Integer> entry : scores.entrySet()) {
+            if (entry.getValue() > maxScore) {
+                maxScore = entry.getValue();
+                winnerId = entry.getKey();
+            }
+        }
+        
+        return winnerId;
     }
 
     @Override
     public void dispose() {
-        for (IntMap.Entry<Player> entry : players) {
-            entry.value.dispose();
-        }
         players.clear();
+        ducks.clear();
+        if (duckSpawner != null) {
+            duckSpawner.reset();
+        }
+        GameRenderer.dispose();
     }
 
     @Override
     public void resize(int width, int height) {
-        // Not needed for this simple game
-    }
-
-    private static class Player extends SyncedObject {
-        @Synchronized public float x;
-        @Synchronized public float y;
-        public float r, g, b;
-
-        public Player(boolean isLocallyOwned, float x, float y, float r, float g, float b) {
-            super(isLocallyOwned);
-            this.x = x;
-            this.y = y;
-            this.r = r;
-            this.g = g;
-            this.b = b;
-        }
-
-        public void setPosition(float x, float y) {
-            this.x = x;
-            this.y = y;
-        }
     }
 }
