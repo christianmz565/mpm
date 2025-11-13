@@ -40,7 +40,6 @@ public class SettingsScreen {
      */
     public void show() {
         stage = new Stage(new ScreenViewport());
-        // Don't set input processor here - Main will handle it via InputMultiplexer
         shapeRenderer = new ShapeRenderer();
 
         skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
@@ -83,7 +82,7 @@ public class SettingsScreen {
      * Regresa a la pantalla anterior y libera recursos.
      */
     private void goBack() {
-        game.toggleSettings(); // Use the new toggle method instead of setScreen
+        game.toggleSettings();
     }
 
     /**
@@ -121,7 +120,6 @@ public class SettingsScreen {
      * @param delta tiempo transcurrido desde el último frame en segundos
      */
     public void renderOverlay(float delta) {
-        // Draw semi-transparent overlay
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);

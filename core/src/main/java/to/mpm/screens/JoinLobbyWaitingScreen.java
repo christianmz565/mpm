@@ -130,7 +130,6 @@ public class JoinLobbyWaitingScreen implements Screen {
      * @param packet paquete de inicio de juego
      */
     private void onGameStart(Packets.StartGame packet) {
-        // Client receives the minigame type from the host
         if (packet.minigameType != null && !packet.minigameType.isEmpty()) {
             try {
                 MinigameType type = MinigameType.valueOf(packet.minigameType);

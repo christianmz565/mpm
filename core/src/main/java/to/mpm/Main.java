@@ -29,75 +29,70 @@ public class Main extends Game {
     }
 
     /**
-     * Toggles the settings overlay on/off.
+     * Alterna la pantalla de ajustes.
      */
     public void toggleSettings() {
         if (settingsOverlay != null) {
-            // Close settings
             settingsOverlay.dispose();
             settingsOverlay = null;
-            // Restore screen's input processor
             if (getScreen() != null) {
                 updateInputProcessor();
             }
         } else {
-            // Open settings
             settingsOverlay = new SettingsScreen(this, getScreen());
             settingsOverlay.show();
-            // Update input multiplexer to include settings stage
             updateInputProcessor();
         }
     }
 
     /**
-     * Updates the input processor to handle both settings and current screen.
+     * Actualiza el InputProcessor para manejar la superposición de ajustes.
      */
     private void updateInputProcessor() {
         if (settingsOverlay != null && settingsOverlay.getStage() != null) {
-            // Settings is open - use multiplexer with settings on top
             inputMultiplexer.clear();
             inputMultiplexer.addProcessor(settingsOverlay.getStage());
-            // Don't add screen processor - settings should block input to underlying screen
             Gdx.input.setInputProcessor(inputMultiplexer);
         } else {
-            // Settings is closed - let the screen handle its own input
-            // Screen will set its own input processor in show()
             inputMultiplexer.clear();
         }
     }
 
     /**
-     * Called when screen changes to update input handling.
+     * Llamado cuando la pantalla cambia para actualizar el manejo de entrada.
      */
     @Override
     public void setScreen(com.badlogic.gdx.Screen screen) {
         super.setScreen(screen);
-        // Only update if settings is active, otherwise let screen manage input
         if (settingsOverlay != null) {
             updateInputProcessor();
         }
     }
 
     /**
-     * Checks if settings overlay is currently active.
+     * Revisa si los ajustes están activos actualmente.
      */
     public boolean isSettingsActive() {
         return settingsOverlay != null;
     }
 
+    /**
+     * Renderiza el juego y la superposición de ajustes si está activa.
+     */
     @Override
     public void render() {
         debugKeybinds.update();
         
-        // Render current screen
         super.render();
         
-        // Render settings overlay on top if active
         if (settingsOverlay != null) {
             settingsOverlay.renderOverlay(com.badlogic.gdx.Gdx.graphics.getDeltaTime());
         }
     }
 
+    /**
+     * Redimensiona la pantalla y la superposición de ajustes si está activa.
+     */
     @Override
     public void resize(int width, int height) {
         super.resize(width, height);
@@ -106,6 +101,9 @@ public class Main extends Game {
         }
     }
 
+    /**
+     * Pausa el juego y la superposición de ajustes si está activa.
+     */
     @Override
     public void pause() {
         super.pause();
@@ -114,6 +112,9 @@ public class Main extends Game {
         }
     }
 
+    /**
+     * Reanuda el juego y la superposición de ajustes si está activa.
+     */
     @Override
     public void resume() {
         super.resume();
@@ -122,6 +123,9 @@ public class Main extends Game {
         }
     }
 
+    /**
+     * Libera los recursos utilizados por el juego y la superposición de ajustes si está activa.
+     */
     @Override
     public void dispose() {
         batch.dispose();

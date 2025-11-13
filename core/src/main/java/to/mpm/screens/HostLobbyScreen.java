@@ -180,7 +180,6 @@ public class HostLobbyScreen implements Screen {
      * Inicia el juego y notifica a todos los jugadores conectados.
      */
     private void startGame() {
-        // Use random selection strategy to pick a game
         GameSelectionStrategy selectionStrategy = new RandomGameSelection();
         int playerCount = NetworkManager.getInstance().getPlayerCount();
         MinigameType selectedGame = selectionStrategy.selectGame(playerCount);
@@ -188,12 +187,10 @@ public class HostLobbyScreen implements Screen {
         Gdx.app.log("HostLobbyScreen", "Selected game: " + selectedGame.getDisplayName() + 
                     " using " + selectionStrategy.getStrategyName());
         
-        // Send the selected minigame to all clients
         Packets.StartGame packet = new Packets.StartGame();
         packet.minigameType = selectedGame.name();
         NetworkManager.getInstance().sendPacket(packet);
         
-        // Start the game locally
         game.setScreen(new GameScreen(game, selectedGame));
         dispose();
     }

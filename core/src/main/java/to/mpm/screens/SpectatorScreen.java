@@ -12,9 +12,7 @@ import to.mpm.ui.components.StyledButton;
 
 /**
  * Pantalla de espectador para observar el juego sin participar.
- * Soporta dos modos de visualización:
- * - Ver todos los jugadores a la vez
- * - Ver un grupo específico con flechas de navegación
+ * Soporta dos modos ver todos los jugadores a la vez o ver un grupo específico con flechas de navegación
  */
 public class SpectatorScreen implements Screen {
     private final Main game; //!< instancia del juego principal

@@ -101,7 +101,6 @@ public class DebugKeybinds {
                 f5Pressed = true;
                 Gdx.app.log("DebugKeybinds", "Switching to Game Screen (Ball Movement)");
                 Screen currentScreen = game.getScreen();
-                // Default to BALL_MOVEMENT for debug
                 game.setScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT));
                 if (currentScreen != null && !(currentScreen instanceof SettingsScreen)) {
                     currentScreen.dispose();

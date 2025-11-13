@@ -21,17 +21,20 @@ import to.mpm.ui.UIStyles;
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
  */
 public class GameScreen implements Screen {
-    private final Main game;
-    private final MinigameType minigameType;
-    private Minigame currentMinigame;
-    private SpriteBatch batch;
-    private ShapeRenderer shapeRenderer;
-    
-    // UI overlay
-    private Stage uiStage;
-    private Skin skin;
-    private Label scoreLabel;
-
+    private final Main game; //!< instancia del juego principal
+    private final MinigameType minigameType; //!< tipo de minijuego a ejecutar
+    private Minigame currentMinigame; //!< instancia del minijuego actual
+    private SpriteBatch batch; //!< lote de sprites para renderizado
+    private ShapeRenderer shapeRenderer; //!< renderizador de formas
+    private Stage uiStage; //!< stage para la superposición de UI
+    private Skin skin; //!< skin para estilizar componentes de UI
+    private Label scoreLabel; //!< etiqueta que muestra la puntuación del jugador
+    /**
+     * Construye una nueva pantalla de juego.
+     *
+     * @param game         instancia del juego principal
+     * @param minigameType tipo de minijuego a ejecutar
+     */
     public GameScreen(Main game, MinigameType minigameType) {
         this.game = game;
         this.minigameType = minigameType;
@@ -45,7 +48,6 @@ public class GameScreen implements Screen {
         batch = game.batch;
         shapeRenderer = new ShapeRenderer();
 
-        // Initialize UI overlay
         uiStage = new Stage(new ScreenViewport());
         skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
 
@@ -72,7 +74,6 @@ public class GameScreen implements Screen {
         scoreContainer.add(scoreContent);
         uiRoot.add(scoreContainer).pad(UIStyles.Spacing.MEDIUM);
 
-        // Initialize minigame
         int localPlayerId = NetworkManager.getInstance().getMyId();
         currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
         currentMinigame.initialize();
@@ -87,18 +88,14 @@ public class GameScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        // Handle input
         currentMinigame.handleInput(delta);
 
-        // Update game logic
         currentMinigame.update(delta);
 
-        // Update score display
         int localPlayerId = NetworkManager.getInstance().getMyId();
         int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
         scoreLabel.setText(currentScore + " pts");
 
-        // Check if game is finished
         if (currentMinigame.isFinished()) {
             // TODO: Go to results screen
             game.setScreen(new MainMenuScreen(game));
@@ -106,14 +103,11 @@ public class GameScreen implements Screen {
             return;
         }
 
-        // Render
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Render minigame
         currentMinigame.render(batch, shapeRenderer);
         
-        // Render UI overlay on top
         uiStage.act(delta);
         uiStage.draw();
     }

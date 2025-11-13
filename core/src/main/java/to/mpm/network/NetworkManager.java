@@ -65,11 +65,10 @@ public class NetworkManager {
     }
     
     /**
-     * Register additional classes for Kryo serialization.
-     * This method should be called by minigames to register their specific packet types.
-     * Must be called BEFORE starting the server or connecting as a client.
+     * Registra clases adicionales para la serialización de Kryo.
+     * Estas clases deben ser consistentes entre el servidor y todos los clientes.
      * 
-     * @param classes array of classes to register
+     * @param classes clases adicionales a registrar
      */
     public void registerAdditionalClasses(Class<?>... classes) {
         Kryo kryo = null;
