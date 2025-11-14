@@ -86,7 +86,7 @@ public class MinigameSelectionScreen implements Screen {
             backButton.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    game.setScreen(new HostLobbyScreen(game));
+                    game.setScreen(new LobbyScreen(game, true));
                     dispose();
                 }
             });

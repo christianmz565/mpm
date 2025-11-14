@@ -50,7 +50,7 @@ public class DebugKeybinds {
                 () -> switchScreen(new JoinLobbyScreen(game)));
 
         f4Pressed = handleKey(f4Pressed, Input.Keys.F4, "Switching to Host Lobby Screen",
-                () -> switchScreen(new HostLobbyScreen(game)));
+                () -> switchScreen(new LobbyScreen(game, true)));
 
         f5Pressed = handleKey(f5Pressed, Input.Keys.F5, "Switching to Game Screen (Ball Movement)",
                 () -> switchScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT)));

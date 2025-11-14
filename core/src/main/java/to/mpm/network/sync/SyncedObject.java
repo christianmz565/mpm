@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SyncedObject {
     private static final Map<Integer, SyncedObject> syncedObjects = new ConcurrentHashMap<>(); //!< Registro de todos los objetos sincronizados por id
     private static int nextObjectId = 0; //!< Contador global para asignar ids únicos a objetos
+    private static long globalHandlerId = -1; //!< Handler ID for the global SyncUpdate handler
+    
     private final int objectId; //!< Id único para este objeto sincronizado
     private final Map<String, Object> lastKnownValues; //!< Últimos valores conocidos de los campos sincronizados
     private boolean isLocallyOwned; //!< true si esta instancia debe enviar actualizaciones
@@ -33,7 +35,12 @@ public class SyncedObject {
 
         syncedObjects.put(objectId, this);
 
-        NetworkManager.getInstance().registerHandler(Packets.SyncUpdate.class, this::handleSyncUpdate);
+        if (globalHandlerId == -1) {
+            globalHandlerId = NetworkManager.getInstance().registerHandler(
+                Packets.SyncUpdate.class, 
+                SyncedObject::handleGlobalSyncUpdate
+            );
+        }
 
         for (Field field : getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(Synchronized.class)) {
@@ -54,6 +61,24 @@ public class SyncedObject {
     public static void clearAll() {
         syncedObjects.clear();
         nextObjectId = 0;
+        
+        if (globalHandlerId != -1) {
+            NetworkManager.getInstance().unregisterHandler(globalHandlerId);
+            globalHandlerId = -1;
+        }
+    }
+
+    /**
+     * Global static handler for all SyncUpdate packets.
+     * Dispatches to the correct SyncedObject instance.
+     *
+     * @param packet the sync update packet
+     */
+    private static void handleGlobalSyncUpdate(Packets.SyncUpdate packet) {
+        SyncedObject obj = syncedObjects.get(packet.objectId);
+        if (obj != null && !obj.isLocallyOwned) {
+            obj.applySyncUpdate(packet.fieldName, packet.value);
+        }
     }
 
     /**
@@ -96,18 +121,6 @@ public class SyncedObject {
         packet.value = copyValue(value);
 
         NetworkManager.getInstance().sendPacket(packet);
-    }
-
-    /**
-     * Manejador interno invocado cuando se recibe un {@link Packets.SyncUpdate}.
-     *
-     * @param packet paquete de actualización de sincronización recibido
-     */
-    private void handleSyncUpdate(Packets.SyncUpdate packet) {
-        SyncedObject obj = syncedObjects.get(packet.objectId);
-        if (obj != null && !obj.isLocallyOwned) {
-            obj.applySyncUpdate(packet.fieldName, packet.value);
-        }
     }
 
     /**

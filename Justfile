@@ -1,8 +1,13 @@
 build:
   ./gradlew lwjgl3:jar
 
-run:
-  ./gradlew lwjgl3:run
+[unix]
+run count="1":
+  ./scripts/run-many.sh {{count}}
+
+[windows]
+run count="1":
+  ./scripts/run-many.ps1 {{count}}
 
 clean:
   ./gradlew clean

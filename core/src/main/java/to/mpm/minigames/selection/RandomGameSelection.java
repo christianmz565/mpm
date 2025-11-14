@@ -18,7 +18,6 @@ public class RandomGameSelection implements GameSelectionStrategy {
     public MinigameType selectGame(int playerCount) {
         MinigameType[] allGames = MinigameType.values();
         
-        // Filter games that support the player count
         MinigameType[] validGames = new MinigameType[allGames.length];
         int validCount = 0;
         
@@ -29,11 +28,9 @@ public class RandomGameSelection implements GameSelectionStrategy {
         }
         
         if (validCount == 0) {
-            // Fallback: return first game if no games support this player count
             return allGames[0];
         }
         
-        // Select random game from valid games
         int randomIndex = random.nextInt(validCount);
         return validGames[randomIndex];
     }

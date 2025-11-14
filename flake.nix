@@ -44,13 +44,11 @@
           ]) ++ (with pkgsStable; [
             texlive.combined.scheme-full
           ]);
-          env = {
-            JAVA_HOME = "${pkgs.jdk21}/lib/openjdk";
-            GRADLE_OPTS = "-Dorg.gradle.java.home=${pkgs.jdk21}/lib/openjdk";
-          };
-          buildInputs = [ pkgs.bashInteractive ];
+          buildInputs = with pkgs; [
+            bashInteractive
+          ];
           shellHook = ''
-            export LD_LIBRARY_PATH="${runtimeLibs}:$LD_LIBRARY_PATH"
+            export LD_LIBRARY_PATH=${runtimeLibs}:$LD_LIBRARY_PATH
           '';
         };
     };

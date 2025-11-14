@@ -37,7 +37,6 @@ public class VotingGameSelection implements GameSelectionStrategy {
 
     @Override
     public MinigameType selectGame(int playerCount) {
-        // If no votes, return first valid game
         if (votes.isEmpty()) {
             MinigameType[] allGames = MinigameType.values();
             for (MinigameType game : allGames) {
@@ -48,7 +47,6 @@ public class VotingGameSelection implements GameSelectionStrategy {
             return allGames[0];
         }
 
-        // Find game with most votes that supports player count
         MinigameType winner = null;
         int maxVotes = 0;
         
@@ -64,7 +62,6 @@ public class VotingGameSelection implements GameSelectionStrategy {
             }
         }
         
-        // If no valid winner found, fall back to first game
         if (winner == null) {
             return MinigameType.values()[0];
         }

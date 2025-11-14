@@ -117,7 +117,8 @@ public class CreateRoomScreen implements Screen {
 
         statusLabel = new Label("", skin);
         statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-        formTable.add(statusLabel).left().row();
+        statusLabel.setWrap(true);
+        formTable.add(statusLabel).width(UIStyles.Sizes.INPUT_WIDTH).left().row();
 
         Table duckTable = new DuckPlaceholder(skin).build();
 
@@ -137,17 +138,15 @@ public class CreateRoomScreen implements Screen {
             String playerName = nameField.getText().trim();
 
             if (playerName.isEmpty()) {
-                statusLabel.setText("Por favor ingresa un nombre");
-                return;
+                playerName = "Host";
             }
 
             statusLabel.setText("Creando sala...");
 
+            NetworkManager.getInstance().hostGame(playerName, port);
             FirewallHelper.requestFirewallPermission(port);
 
-            NetworkManager.getInstance().hostGame();
-
-            game.setScreen(new HostLobbyScreen(game));
+            game.setScreen(new LobbyScreen(game, true));
             dispose();
 
         } catch (NumberFormatException e) {
