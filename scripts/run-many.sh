@@ -2,7 +2,7 @@
 set -e
 
 COUNT="${1:-1}"
-CORE_DIR="core"
+CORE_DIR="core/src"
 CHECKSUM_FILE=".core_checksum"
 JAR_PATH="lwjgl3/build/libs/MicroPatosMania-1.0.0.jar"
 
@@ -17,5 +17,5 @@ else
 fi
 
 for _ in $(seq 1 "$COUNT"); do
-  java -jar "$JAR_PATH" &
+  java -jar "$JAR_PATH" > "lastrun-$_.log" 2>&1 &
 done

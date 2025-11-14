@@ -1,0 +1,191 @@
+[DebugKeybinds] === Debug Keybinds ===
+[DebugKeybinds] F1: Main Menu
+[DebugKeybinds] F2: Create Room Screen
+[DebugKeybinds] F3: Join Lobby Screen
+[DebugKeybinds] F4: Host Lobby Screen (starts server)
+[DebugKeybinds] F5: Game Screen (Ball Movement)
+[DebugKeybinds] F6: Spectator Screen
+[DebugKeybinds] F7: Scoreboard Screen
+[DebugKeybinds] F8: Results Screen
+[DebugKeybinds] F9: Minigame Selection Screen (debug)
+[DebugKeybinds] ESC: Toggle Settings overlay
+[DebugKeybinds] =====================
+00:00  INFO: [kryonet] Connecting: localhost/127.0.0.1:61232/61232
+00:00  INFO: [kryonet] Connection 1 connected: localhost/127.0.0.1
+[NetworkClient] Connected to localhost:61232
+[NetworkClient] Assigned player ID: 1 (wa2)
+[GlobalPacketHandlers] Global handlers registered
+[NetworkManager] Joined game at localhost:61232
+[GlobalPacketHandlers] Player joined: wa (ID: 0)
+[JoinLobbyWaitingScreen] Player wa joined!
+[GlobalPacketHandlers] Player joined: wa3 (ID: 2)
+[JoinLobbyWaitingScreen] Player wa3 joined!
+[NetworkClient] Registered class: to.mpm.minigames.catchThemAll.entities.Duck$DuckType
+[NetworkClient] Registered class: to.mpm.minigames.catchThemAll.network.CatchThemAllPackets$DuckSpawned
+[NetworkClient] Registered class: to.mpm.minigames.catchThemAll.network.CatchThemAllPackets$DuckUpdate
+[NetworkClient] Registered class: to.mpm.minigames.catchThemAll.network.CatchThemAllPackets$DuckRemoved
+[NetworkClient] Registered class: to.mpm.minigames.catchThemAll.network.CatchThemAllPackets$ScoreUpdate
+[CatchThemAll] Game initialized for player 1
+[GameScreen] Started minigame: Catch Them All
+[CatchThemAll] Client: Duck spawned - ID: 0, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 1, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 2, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 0
+[CatchThemAll] Client: Duck spawned - ID: 3, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 1
+[CatchThemAll] Client: Duck spawned - ID: 4, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 2
+[CatchThemAll] Client: Duck spawned - ID: 5, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 3
+[CatchThemAll] Client: Score update - Player 0: -20000
+[CatchThemAll] Client: Duck removed - ID: 4
+[CatchThemAll] Client: Duck spawned - ID: 6, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 7, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 5
+[CatchThemAll] Client: Duck spawned - ID: 8, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 6
+[CatchThemAll] Client: Duck spawned - ID: 9, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 7
+[CatchThemAll] Client: Duck removed - ID: 8
+[CatchThemAll] Client: Score update - Player 2: 10000
+[CatchThemAll] Client: Duck spawned - ID: 10, Type: GOLDEN
+[CatchThemAll] Client: Duck spawned - ID: 11, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 9
+[CatchThemAll] Client: Score update - Player 0: -10000
+[CatchThemAll] Client: Duck spawned - ID: 12, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 10
+[CatchThemAll] Client: Duck spawned - ID: 13, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 11
+[CatchThemAll] Client: Duck spawned - ID: 14, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 12
+[CatchThemAll] Client: Score update - Player 0: 0
+[CatchThemAll] Client: Duck spawned - ID: 15, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 13
+[CatchThemAll] Client: Duck removed - ID: 14
+[CatchThemAll] Client: Score update - Player 2: 20000
+[CatchThemAll] Client: Duck spawned - ID: 16, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 17, Type: GOLDEN
+[CatchThemAll] Client: Duck removed - ID: 15
+[CatchThemAll] Client: Score update - Player 2: 30000
+[CatchThemAll] Client: Duck spawned - ID: 18, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 19, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 16
+[CatchThemAll] Client: Duck removed - ID: 17
+[CatchThemAll] Client: Score update - Player 2: 80000
+[CatchThemAll] Client: Duck spawned - ID: 20, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 18
+[CatchThemAll] Client: Duck spawned - ID: 21, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 19
+[CatchThemAll] Client: Duck spawned - ID: 22, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 20
+[CatchThemAll] Client: Duck spawned - ID: 23, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 21
+[CatchThemAll] Client: Duck spawned - ID: 24, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 22
+[CatchThemAll] Client: Score update - Player 1: 10000
+[CatchThemAll] Client: Duck spawned - ID: 25, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 23
+[CatchThemAll] Client: Duck spawned - ID: 26, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 27, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 24
+[CatchThemAll] Client: Duck removed - ID: 25
+[CatchThemAll] Client: Score update - Player 0: 10000
+[CatchThemAll] Client: Duck removed - ID: 26
+[CatchThemAll] Client: Score update - Player 0: 20000
+[CatchThemAll] Client: Duck spawned - ID: 28, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 29, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 27
+[CatchThemAll] Client: Duck spawned - ID: 30, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 28
+[CatchThemAll] Client: Duck removed - ID: 29
+[CatchThemAll] Client: Score update - Player 0: 30000
+[CatchThemAll] Client: Duck spawned - ID: 31, Type: BAD
+[CatchThemAll] Client: Duck spawned - ID: 32, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 30
+[CatchThemAll] Client: Duck spawned - ID: 33, Type: GOLDEN
+[CatchThemAll] Client: Duck removed - ID: 31
+[CatchThemAll] Client: Duck removed - ID: 32
+[CatchThemAll] Client: Duck spawned - ID: 34, Type: GOLDEN
+[CatchThemAll] Client: Duck removed - ID: 33
+[CatchThemAll] Client: Duck spawned - ID: 35, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 36, Type: GOLDEN
+[CatchThemAll] Client: Duck removed - ID: 34
+[CatchThemAll] Client: Duck spawned - ID: 37, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 35
+[CatchThemAll] Client: Score update - Player 1: 20000
+[CatchThemAll] Client: Duck spawned - ID: 38, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 36
+[CatchThemAll] Client: Score update - Player 1: 70000
+[CatchThemAll] Client: Duck spawned - ID: 39, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 37
+[CatchThemAll] Client: Duck spawned - ID: 40, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 38
+[CatchThemAll] Client: Duck spawned - ID: 41, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 39
+[CatchThemAll] Client: Score update - Player 2: 90000
+[CatchThemAll] Client: Duck removed - ID: 40
+[CatchThemAll] Client: Score update - Player 2: 100000
+[CatchThemAll] Client: Duck spawned - ID: 42, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 43, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 41
+[CatchThemAll] Client: Duck spawned - ID: 44, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 42
+[CatchThemAll] Client: Score update - Player 2: 110000
+[CatchThemAll] Client: Duck spawned - ID: 45, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 43
+[CatchThemAll] Client: Duck spawned - ID: 46, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 44
+[CatchThemAll] Client: Score update - Player 0: 40000
+[CatchThemAll] Client: Duck spawned - ID: 47, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 45
+[CatchThemAll] Client: Duck spawned - ID: 48, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 46
+[CatchThemAll] Client: Duck removed - ID: 47
+[CatchThemAll] Client: Score update - Player 1: 50000
+[CatchThemAll] Client: Duck spawned - ID: 49, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 48
+[CatchThemAll] Client: Score update - Player 1: 30000
+[CatchThemAll] Client: Duck spawned - ID: 50, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 51, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 49
+[CatchThemAll] Client: Duck spawned - ID: 52, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 50
+[CatchThemAll] Client: Duck removed - ID: 51
+[CatchThemAll] Client: Duck spawned - ID: 53, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 52
+[CatchThemAll] Client: Score update - Player 2: 120000
+[CatchThemAll] Client: Duck spawned - ID: 54, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 55, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 53
+[CatchThemAll] Client: Duck spawned - ID: 56, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 54
+[CatchThemAll] Client: Score update - Player 0: 50000
+[CatchThemAll] Client: Duck spawned - ID: 57, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 55
+[CatchThemAll] Client: Duck spawned - ID: 58, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 56
+[CatchThemAll] Client: Duck spawned - ID: 59, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 57
+[CatchThemAll] Client: Score update - Player 0: 60000
+[CatchThemAll] Client: Duck spawned - ID: 60, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 58
+[CatchThemAll] Client: Duck spawned - ID: 61, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 59
+[CatchThemAll] Client: Duck spawned - ID: 62, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 60
+[CatchThemAll] Client: Duck spawned - ID: 63, Type: NEUTRAL
+[CatchThemAll] Client: Duck spawned - ID: 64, Type: BAD
+[CatchThemAll] Client: Duck removed - ID: 61
+[CatchThemAll] Client: Duck removed - ID: 62
+[CatchThemAll] Client: Duck spawned - ID: 65, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 63
+[CatchThemAll] Client: Score update - Player 0: 70000
+[CatchThemAll] Client: Duck removed - ID: 64
+[CatchThemAll] Client: Score update - Player 2: 100000
+[CatchThemAll] Client: Duck spawned - ID: 66, Type: GOLDEN
+[CatchThemAll] Client: Duck spawned - ID: 67, Type: NEUTRAL
+[CatchThemAll] Client: Duck removed - ID: 65
+[CatchThemAll] Client: Score update - Player 2: 110000
+[GlobalPacketHandlers] Player left: wa3 (ID: 2)
+[JoinLobbyWaitingScreen] Player 2 left
+[CatchThemAll] Client: Duck spawned - ID: 68, Type: NEUTRAL

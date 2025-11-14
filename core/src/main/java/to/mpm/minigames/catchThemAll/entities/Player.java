@@ -54,20 +54,18 @@ public class Player extends SyncedObject {
     public void update() {
         super.update();
         
-        // Apply gravity
-        velocityY += GRAVITY * Gdx.graphics.getDeltaTime();
-        
-        // Apply vertical velocity
-        y += velocityY * Gdx.graphics.getDeltaTime();
-        
-        // Ground collision
-        if (y <= GROUND_Y) {
-            y = GROUND_Y;
-            velocityY = 0;
-            isGrounded = true;
+        if (isLocallyOwned()) {
+            velocityY += GRAVITY * Gdx.graphics.getDeltaTime();
+            
+            y += velocityY * Gdx.graphics.getDeltaTime();
+            
+            if (y <= GROUND_Y) {
+                y = GROUND_Y;
+                velocityY = 0;
+                isGrounded = true;
+            }
         }
         
-        // Update bounds
         updateBounds();
     }
 

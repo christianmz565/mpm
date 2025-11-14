@@ -2,7 +2,7 @@ param(
   [int]$Count = 1
 )
 
-$CoreDir = "core"
+$CoreDir = "core/src"
 $ChecksumFile = ".core_checksum"
 $JarPath = "lwjgl3/build/libs/MicroPatosMania-1.0.0.jar"
 

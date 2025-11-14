@@ -42,6 +42,8 @@ public class CatchThemAllMinigame implements Minigame {
     private DuckSpawner duckSpawner;
     private boolean finished = false;
     private final Map<Integer, Integer> scores = new HashMap<>();
+    
+    private final List<Long> handlerIds = new ArrayList<>();
 
     public CatchThemAllMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
@@ -78,13 +80,13 @@ public class CatchThemAllMinigame implements Minigame {
             Gdx.app.log("CatchThemAll", "Duck spawner initialized (host mode)");
         }
 
-        nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition);
-        nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
-        nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
-        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class, this::onDuckSpawned);
-        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class, this::onDuckUpdate);
-        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class, this::onDuckRemoved);
-        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class, this::onScoreUpdate);
+        handlerIds.add(nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition));
+        handlerIds.add(nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined));
+        handlerIds.add(nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft));
+        handlerIds.add(nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class, this::onDuckSpawned));
+        handlerIds.add(nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class, this::onDuckUpdate));
+        handlerIds.add(nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class, this::onDuckRemoved));
+        handlerIds.add(nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class, this::onScoreUpdate));
         
         Gdx.app.log("CatchThemAll", "Game initialized for player " + localPlayerId);
     }
@@ -107,15 +109,16 @@ public class CatchThemAllMinigame implements Minigame {
     }
 
     private void onPlayerPosition(Packets.PlayerPosition packet) {
-        if (packet.playerId == localPlayerId) return;
+        NetworkManager nm = NetworkManager.getInstance();
+        if (nm.isHost() && packet.playerId == localPlayerId) return;
 
-        Player remote = players.get(packet.playerId);
-        if (remote == null) {
+        Player player = players.get(packet.playerId);
+        if (player == null) {
             float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
-            remote = new Player(false, packet.x, packet.y, color[0], color[1], color[2]);
-            players.put(packet.playerId, remote);
+            player = new Player(false, packet.x, packet.y, color[0], color[1], color[2]);
+            players.put(packet.playerId, player);
         } else {
-            remote.setPosition(packet.x, packet.y);
+            player.setPosition(packet.x, packet.y);
         }
     }
 
@@ -147,7 +150,9 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void update(float delta) {
-        localPlayer.update();
+        for (IntMap.Entry<Player> entry : players) {
+            entry.value.update();
+        }
         
         for (Duck duck : ducks) {
             duck.update();
@@ -204,9 +209,11 @@ public class CatchThemAllMinigame implements Minigame {
             }
             
             NetworkHandler.sendDuckUpdates(ducks);
+            
+            NetworkHandler.sendAllPlayerPositions(players);
+        } else {
+            NetworkHandler.sendPlayerPosition(localPlayerId, localPlayer);
         }
-        
-        NetworkHandler.sendPlayerPosition(localPlayerId, localPlayer);
     }
 
     @Override
@@ -246,12 +253,20 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void dispose() {
+        NetworkManager nm = NetworkManager.getInstance();
+        for (long handlerId : handlerIds) {
+            nm.unregisterHandler(handlerId);
+        }
+        handlerIds.clear();
+        
         players.clear();
         ducks.clear();
         if (duckSpawner != null) {
             duckSpawner.reset();
         }
         GameRenderer.dispose();
+        
+        Gdx.app.log("CatchThemAll", "Game disposed, handlers cleaned up");
     }
 
     @Override

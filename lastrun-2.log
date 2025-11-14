@@ -1,0 +1,202 @@
+[DebugKeybinds] === Debug Keybinds ===
+[DebugKeybinds] F1: Main Menu
+[DebugKeybinds] F2: Create Room Screen
+[DebugKeybinds] F3: Join Lobby Screen
+[DebugKeybinds] F4: Host Lobby Screen (starts server)
+[DebugKeybinds] F5: Game Screen (Ball Movement)
+[DebugKeybinds] F6: Spectator Screen
+[DebugKeybinds] F7: Scoreboard Screen
+[DebugKeybinds] F8: Results Screen
+[DebugKeybinds] F9: Minigame Selection Screen (debug)
+[DebugKeybinds] ESC: Toggle Settings overlay
+[DebugKeybinds] =====================
+00:00  INFO: [kryonet] Server opened.
+[NetworkServer] Server started on port 61232
+[NetworkClient] Initialized as local host client with ID: 0
+[GlobalPacketHandlers] Global handlers registered
+[NetworkManager] Hosting game as player ID: 0
+00:05  INFO: [kryonet] Connection 1 connected: /127.0.0.1
+[NetworkServer] Client connected: /127.0.0.1:38328
+[NetworkServer] Player joined: wa2 (ID: 1)
+[GlobalPacketHandlers] Player joined: wa2 (ID: 1)
+[HostLobbyScreen] Player wa2 connected!
+00:08  INFO: [kryonet] Connection 2 connected: /127.0.0.1
+[NetworkServer] Client connected: /127.0.0.1:38336
+[NetworkServer] Player joined: wa3 (ID: 2)
+[GlobalPacketHandlers] Player joined: wa3 (ID: 2)
+[HostLobbyScreen] Player wa3 connected!
+[HostLobbyScreen] Selected game: Catch Them All using Random Selection
+[NetworkServer] Registered class: to.mpm.minigames.catchThemAll.entities.Duck$DuckType
+[NetworkServer] Registered class: to.mpm.minigames.catchThemAll.network.CatchThemAllPackets$DuckSpawned
+[NetworkServer] Registered class: to.mpm.minigames.catchThemAll.network.CatchThemAllPackets$DuckUpdate
+[NetworkServer] Registered class: to.mpm.minigames.catchThemAll.network.CatchThemAllPackets$DuckRemoved
+[NetworkServer] Registered class: to.mpm.minigames.catchThemAll.network.CatchThemAllPackets$ScoreUpdate
+[CatchThemAll] Duck spawner initialized (host mode)
+[CatchThemAll] Game initialized for player 0
+[GameScreen] Started minigame: Catch Them All
+[CatchThemAll] Host: Duck spawned - ID: 0, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 1, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 2, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 3, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 4, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 5, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 3
+[CatchThemAll] Player 0 earned -20000 points! Total: -20000
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 6, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 7, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 8, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 9, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck caught - ID: 8
+[CatchThemAll] Player 2 earned 10000 points! Total: 10000
+[CatchThemAll] Host: Duck spawned - ID: 10, Type: GOLDEN
+[CatchThemAll] Host: Duck spawned - ID: 11, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 9
+[CatchThemAll] Player 0 earned 10000 points! Total: -10000
+[CatchThemAll] Host: Duck spawned - ID: 12, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 13, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 14, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 12
+[CatchThemAll] Player 0 earned 10000 points! Total: 0
+[CatchThemAll] Host: Duck spawned - ID: 15, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck caught - ID: 14
+[CatchThemAll] Player 2 earned 10000 points! Total: 20000
+[CatchThemAll] Host: Duck spawned - ID: 16, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 17, Type: GOLDEN
+[CatchThemAll] Host: Duck caught - ID: 15
+[CatchThemAll] Player 2 earned 10000 points! Total: 30000
+[CatchThemAll] Host: Duck spawned - ID: 18, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 19, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck caught - ID: 17
+[CatchThemAll] Player 2 earned 50000 points! Total: 80000
+[CatchThemAll] Host: Duck spawned - ID: 20, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 21, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 22, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 23, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 24, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 22
+[CatchThemAll] Player 1 earned 10000 points! Total: 10000
+[CatchThemAll] Host: Duck spawned - ID: 25, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 26, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 27, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck caught - ID: 25
+[CatchThemAll] Player 0 earned 10000 points! Total: 10000
+[CatchThemAll] Host: Duck caught - ID: 26
+[CatchThemAll] Player 0 earned 10000 points! Total: 20000
+[CatchThemAll] Host: Duck spawned - ID: 28, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 29, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 30, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck caught - ID: 29
+[CatchThemAll] Player 0 earned 10000 points! Total: 30000
+[CatchThemAll] Host: Duck spawned - ID: 31, Type: BAD
+[CatchThemAll] Host: Duck spawned - ID: 32, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 33, Type: GOLDEN
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 34, Type: GOLDEN
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 35, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 36, Type: GOLDEN
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 37, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 35
+[CatchThemAll] Player 1 earned 10000 points! Total: 20000
+[CatchThemAll] Host: Duck spawned - ID: 38, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 36
+[CatchThemAll] Player 1 earned 50000 points! Total: 70000
+[CatchThemAll] Host: Duck spawned - ID: 39, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 40, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 41, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 39
+[CatchThemAll] Player 2 earned 10000 points! Total: 90000
+[CatchThemAll] Host: Duck caught - ID: 40
+[CatchThemAll] Player 2 earned 10000 points! Total: 100000
+[CatchThemAll] Host: Duck spawned - ID: 42, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 43, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 44, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 42
+[CatchThemAll] Player 2 earned 10000 points! Total: 110000
+[CatchThemAll] Host: Duck spawned - ID: 45, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 46, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 44
+[CatchThemAll] Player 0 earned 10000 points! Total: 40000
+[CatchThemAll] Host: Duck spawned - ID: 47, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 48, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck caught - ID: 47
+[CatchThemAll] Player 1 earned -20000 points! Total: 50000
+[CatchThemAll] Host: Duck spawned - ID: 49, Type: BAD
+[CatchThemAll] Host: Duck caught - ID: 48
+[CatchThemAll] Player 1 earned -20000 points! Total: 30000
+[CatchThemAll] Host: Duck spawned - ID: 50, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 51, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 52, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 53, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 52
+[CatchThemAll] Player 2 earned 10000 points! Total: 120000
+[CatchThemAll] Host: Duck spawned - ID: 54, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 55, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 56, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 54
+[CatchThemAll] Player 0 earned 10000 points! Total: 50000
+[CatchThemAll] Host: Duck spawned - ID: 57, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 58, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 59, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 57
+[CatchThemAll] Player 0 earned 10000 points! Total: 60000
+[CatchThemAll] Host: Duck spawned - ID: 60, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 61, Type: NEUTRAL
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 62, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 63, Type: NEUTRAL
+[CatchThemAll] Host: Duck spawned - ID: 64, Type: BAD
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Removed 1 grounded ducks
+[CatchThemAll] Host: Duck spawned - ID: 65, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 63
+[CatchThemAll] Player 0 earned 10000 points! Total: 70000
+[CatchThemAll] Host: Duck caught - ID: 64
+[CatchThemAll] Player 2 earned -20000 points! Total: 100000
+[CatchThemAll] Host: Duck spawned - ID: 66, Type: GOLDEN
+[CatchThemAll] Host: Duck spawned - ID: 67, Type: NEUTRAL
+[CatchThemAll] Host: Duck caught - ID: 65
+[CatchThemAll] Player 2 earned 10000 points! Total: 110000
+[NetworkServer] Player disconnected: wa3 (ID: 2)
+01:46  INFO: [kryonet] Connection 2 disconnected.
+[GlobalPacketHandlers] Player left: wa3 (ID: 2)
+[HostLobbyScreen] Player 2 disconnected
+[CatchThemAll] Host: Duck spawned - ID: 68, Type: NEUTRAL
+[NetworkServer] Player disconnected: wa2 (ID: 1)
+01:47  INFO: [kryonet] Connection 1 disconnected.
