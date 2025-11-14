@@ -2,6 +2,7 @@ package to.mpm;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import to.mpm.network.NetworkManager;
 import to.mpm.screens.MainMenuScreen;
 import to.mpm.ui.SettingsOverlayManager;
 import to.mpm.ui.UISkinProvider;
@@ -93,6 +94,8 @@ public class Main extends Game {
      */
     @Override
     public void dispose() {
+        NetworkManager.getInstance().disconnect();
+        
         batch.dispose();
         settingsOverlayManager.dispose();
         UISkinProvider.dispose();

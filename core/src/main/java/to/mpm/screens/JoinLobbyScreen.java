@@ -151,7 +151,7 @@ public class JoinLobbyScreen implements Screen {
             NetworkManager.getInstance().joinGame(host, port, playerName);
             statusLabel.setText("Connected!");
 
-            game.setScreen(new JoinLobbyWaitingScreen(game, host, port));
+            game.setScreen(new LobbyScreen(game, false, host, port));
             dispose();
         } catch (IOException e) {
             statusLabel.setText("Connection failed: " + e.getMessage());

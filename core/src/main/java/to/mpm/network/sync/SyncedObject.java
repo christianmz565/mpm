@@ -62,7 +62,6 @@ public class SyncedObject {
         syncedObjects.clear();
         nextObjectId = 0;
         
-        // Unregister the global handler
         if (globalHandlerId != -1) {
             NetworkManager.getInstance().unregisterHandler(globalHandlerId);
             globalHandlerId = -1;

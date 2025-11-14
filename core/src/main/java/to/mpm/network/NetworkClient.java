@@ -55,7 +55,6 @@ public class NetworkClient {
                 if (object instanceof Packets.PlayerJoinResponse) {
                     handlePlayerJoinResponse((Packets.PlayerJoinResponse) object);
                 } else {
-                    // Dispatch packet to all registered handlers on the GDX thread
                     Gdx.app.postRunnable(() -> handlerRegistry.invokeHandlers(object));
                 }
             }
@@ -69,7 +68,6 @@ public class NetworkClient {
         client.start();
         client.connect(NetworkConfig.TIMEOUT_MS, host, port, port);
 
-        // Send join request
         Packets.PlayerJoinRequest joinRequest = new Packets.PlayerJoinRequest();
         joinRequest.playerName = myPlayerName;
         client.sendTCP(joinRequest);
@@ -96,6 +94,7 @@ public class NetworkClient {
     public void disconnect() {
         if (client != null) {
             client.stop();
+            client.close();
             client = null;
         }
         myPlayerId = -1;

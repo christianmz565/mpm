@@ -146,7 +146,7 @@ public class CreateRoomScreen implements Screen {
             NetworkManager.getInstance().hostGame(playerName, port);
             FirewallHelper.requestFirewallPermission(port);
 
-            game.setScreen(new HostLobbyScreen(game));
+            game.setScreen(new LobbyScreen(game, true));
             dispose();
 
         } catch (NumberFormatException e) {

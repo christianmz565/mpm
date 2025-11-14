@@ -120,6 +120,7 @@ public class NetworkServer {
     public void stop() {
         if (server != null) {
             server.stop();
+            server.close();
             server = null;
         }
         connectedPlayers.clear();
