@@ -7,13 +7,15 @@ public enum MinigameType {
     BALL_MOVEMENT(
             "Ball Movement",
             "Move your ball around! Simple movement test.",
-            2, 6
-    ),
+            2, 6),
     CATCH_THEM_ALL(
             "Catch Them All",
             "Catch falling ducks with your basket! Avoid bad ducks!",
-            2, 6
-    );
+            2, 6),
+    EGG_THIEF(
+            "Egg Thief",
+            "Steal eggs and take them to your nest!",
+            2, 6);
 
     private final String displayName;
     private final String description;
