@@ -22,6 +22,15 @@
             inherit system;
             config.allowUnfree = true;
           };
+          runtimeLibs = with pkgs; lib.makeLibraryPath [
+            glfw
+            libGL
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXext
+            xorg.libXrandr
+            xorg.libXxf86vm
+          ];
         in
         pkgs.mkShell {
           packages = (with pkgs; [
@@ -35,12 +44,12 @@
           ]) ++ (with pkgsStable; [
             texlive.combined.scheme-full
           ]);
-          env = {
-            JAVA_HOME = "${pkgs.jdk21}/lib/openjdk";
-            GRADLE_OPTS = "-Dorg.gradle.java.home=${pkgs.jdk21}/lib/openjdk";
-          };
-          buildInputs = [ pkgs.bashInteractive ];
-          shellHook = '''';
+          buildInputs = with pkgs; [
+            bashInteractive
+          ];
+          shellHook = ''
+            export LD_LIBRARY_PATH=${runtimeLibs}:$LD_LIBRARY_PATH
+          '';
         };
     };
 }

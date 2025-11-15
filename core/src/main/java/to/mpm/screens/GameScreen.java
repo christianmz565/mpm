@@ -1,193 +1,169 @@
 package to.mpm.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.IntMap;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
+import to.mpm.minigames.Minigame;
+import to.mpm.minigames.MinigameFactory;
+import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
-import to.mpm.network.Packets;
-import to.mpm.network.sync.SyncedObject;
-import to.mpm.network.sync.Synchronized;
-
+import to.mpm.ui.UIStyles;
+import to.mpm.ui.UISkinProvider;
 
 /**
- * Código de prueba, solo para pruebas de red simples.
+ * Pantalla principal de juego que ejecuta el minijuego seleccionado.
  */
 public class GameScreen implements Screen {
-    private static final float PLAYER_RADIUS = 20f;
-    private static final float MOVE_SPEED = 200f;
-    private static final float[][] PLAYER_COLORS = {
-            {1f, 0f, 0f}, // 0 - Red
-            {0f, 0f, 1f}, // 1 - Blue
-            {0f, 1f, 0f}, // 2 - Green
-            {1f, 1f, 0f}, // 3 - Yellow
-            {1f, 0f, 1f}, // 4 - Magenta
-            {0f, 1f, 1f}, // 5 - Cyan
-    };
-
-    private final Main game;
-    private ShapeRenderer shapeRenderer;
-
-    // Local player id and object
-    private int localPlayerId;
-    private Player localPlayer;
-
-    // All players (including local) keyed by id, for rendering other remote players
-    private final IntMap<Player> players = new IntMap<>();
-
-    public GameScreen(Main game) {
+    private final Main game; //!< instancia del juego principal
+    private final MinigameType minigameType; //!< tipo de minijuego a ejecutar
+    private Minigame currentMinigame; //!< instancia del minijuego actual
+    private SpriteBatch batch; //!< lote de sprites para renderizado
+    private ShapeRenderer shapeRenderer; //!< renderizador de formas
+    private Stage uiStage; //!< stage para la superposición de UI
+    private Skin skin; //!< skin para estilizar componentes de UI
+    private Label scoreLabel; //!< etiqueta que muestra la puntuación del jugador
+    /**
+     * Construye una nueva pantalla de juego.
+     *
+     * @param game         instancia del juego principal
+     * @param minigameType tipo de minijuego a ejecutar
+     */
+    public GameScreen(Main game, MinigameType minigameType) {
         this.game = game;
+        this.minigameType = minigameType;
     }
 
+    /**
+     * Inicializa la pantalla de juego, configurando UI y manejadores de red.
+     */
     @Override
     public void show() {
+        batch = game.batch;
         shapeRenderer = new ShapeRenderer();
 
-        NetworkManager nm = NetworkManager.getInstance();
-        localPlayerId = nm.getMyId();
+        uiStage = new Stage(new ScreenViewport());
+    skin = UISkinProvider.obtain();
+    game.getSettingsOverlayManager().attachStage(uiStage);
 
-        // Create local player with a color based on id
-        float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        localPlayer = new Player(true, // locally owned
-                localPlayerId == 0 ? 100 : 540, // initial x placement (simple heuristic)
-                240, // initial y
-                color[0], color[1], color[2]);
-        players.put(localPlayerId, localPlayer);
+        Table uiRoot = new Table();
+        uiRoot.setFillParent(true);
+        uiRoot.top().right();
+        uiStage.addActor(uiRoot);
 
-        // Register network handlers
-        nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition);
-        nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
-        nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
+        Table scoreContainer = new Table(skin);
+        scoreContainer.pad(UIStyles.Spacing.MEDIUM);
+
+        Table scoreContent = new Table();
+        scoreLabel = new Label("0 pts", skin);
+        scoreLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+        scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+        scoreContent.add(scoreLabel).row();
+
+        Label incrementLabel = new Label("+0\n+0\n+0\n+0", skin);
+        incrementLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
+        incrementLabel.setColor(UIStyles.Colors.SECONDARY);
+        incrementLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
+        scoreContent.add(incrementLabel).padTop(UIStyles.Spacing.TINY).right();
+
+        scoreContainer.add(scoreContent);
+        uiRoot.add(scoreContainer).pad(UIStyles.Spacing.MEDIUM);
+
+        int localPlayerId = NetworkManager.getInstance().getMyId();
+        currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
+        currentMinigame.initialize();
+
+        Gdx.app.log("GameScreen", "Started minigame: " + minigameType.getDisplayName());
     }
 
-    private void onPlayerJoined(Packets.PlayerJoined packet) {
-        // Ignore ourselves
-        if (packet.playerId == localPlayerId) return;
-        if (players.containsKey(packet.playerId)) return; // already exists
-        float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
-        // Spawn at center until we receive a real position
-        Player remote = new Player(false, 320, 240, color[0], color[1], color[2]);
-        players.put(packet.playerId, remote);
-    }
-
-    private void onPlayerLeft(Packets.PlayerLeft packet) {
-        if (packet.playerId == localPlayerId) return; // shouldn't happen here normally
-        Player p = players.remove(packet.playerId);
-        if (p != null) p.dispose();
-    }
-
-    private void onPlayerPosition(Packets.PlayerPosition packet) {
-        // Ignore packets from ourselves
-        if (packet.playerId == localPlayerId) return;
-
-        // Get or create remote player representation
-        Player remote = players.get(packet.playerId);
-        if (remote == null) {
-            float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
-            // Spawn new remote player at received position
-            remote = new Player(false, packet.x, packet.y, color[0], color[1], color[2]);
-            players.put(packet.playerId, remote);
-        } else {
-            remote.setPosition(packet.x, packet.y);
-        }
-    }
-
+    /**
+     * Renderiza la pantalla y actualiza la lógica del frame.
+     *
+     * @param delta tiempo transcurrido desde el último frame en segundos
+     */
     @Override
     public void render(float delta) {
-        handleInput(delta);
+        currentMinigame.handleInput(delta);
 
-        localPlayer.update();
-        sendPlayerPosition();
+        currentMinigame.update(delta);
+
+        int localPlayerId = NetworkManager.getInstance().getMyId();
+        int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
+        scoreLabel.setText(currentScore + " pts");
+
+        if (currentMinigame.isFinished()) {
+            // TODO: Go to results screen
+            game.setScreen(new MainMenuScreen(game));
+            dispose();
+            return;
+        }
 
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        // Draw all players
-        for (IntMap.Entry<Player> entry : players) {
-            Player p = entry.value;
-            shapeRenderer.setColor(p.r, p.g, p.b, 1f);
-            shapeRenderer.circle(p.x, p.y, PLAYER_RADIUS);
-        }
-
-        shapeRenderer.end();
+        currentMinigame.render(batch, shapeRenderer);
+        
+        uiStage.act(delta);
+        uiStage.draw();
     }
 
-    private void handleInput(float delta) {
-        float dx = 0, dy = 0;
-
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            dy += MOVE_SPEED * delta;
+    /**
+     * Maneja el redimensionamiento de la ventana.
+     *
+     * @param width  nuevo ancho de la ventana
+     * @param height nuevo alto de la ventana
+     */
+    @Override
+    public void resize(int width, int height) {
+        if (uiStage != null) {
+            uiStage.getViewport().update(width, height, true);
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            dy -= MOVE_SPEED * delta;
+        if (currentMinigame != null) {
+            currentMinigame.resize(width, height);
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            dx -= MOVE_SPEED * delta;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            dx += MOVE_SPEED * delta;
-        }
-
-        localPlayer.x += dx;
-        localPlayer.y += dy;
-
-        // Keep inside a nominal 640x480 area (could be updated to use viewport later)
-        localPlayer.x = Math.max(PLAYER_RADIUS, Math.min(640 - PLAYER_RADIUS, localPlayer.x));
-        localPlayer.y = Math.max(PLAYER_RADIUS, Math.min(480 - PLAYER_RADIUS, localPlayer.y));
     }
 
-    private void sendPlayerPosition() {
-        Packets.PlayerPosition packet = new Packets.PlayerPosition();
-        packet.playerId = localPlayerId;
-        packet.x = localPlayer.x;
-        packet.y = localPlayer.y;
-        NetworkManager.getInstance().sendPacket(packet);
+    /**
+     * Método llamado cuando la aplicación es pausada.
+     */
+    @Override
+    public void pause() {
     }
 
+    /**
+     * Método llamado cuando la aplicación es reanudada.
+     */
     @Override
-    public void resize(int width, int height) { }
+    public void resume() {
+    }
 
+    /**
+     * Método llamado cuando esta pantalla deja de ser la pantalla actual.
+     */
     @Override
-    public void pause() { }
+    public void hide() {
+    }
 
-    @Override
-    public void resume() { }
-
-    @Override
-    public void hide() { }
-
+    /**
+     * Libera los recursos utilizados por esta pantalla.
+     */
     @Override
     public void dispose() {
-        shapeRenderer.dispose();
-        // Dispose players
-        for (IntMap.Entry<Player> entry : players) {
-            entry.value.dispose();
+        if (currentMinigame != null) {
+            currentMinigame.dispose();
         }
-        players.clear();
-    }
-
-    private static class Player extends SyncedObject {
-        @Synchronized public float x;
-        @Synchronized public float y;
-        public float r, g, b; // Colors
-
-        public Player(boolean isLocallyOwned, float x, float y, float r, float g, float b) {
-            super(isLocallyOwned);
-            this.x = x;
-            this.y = y;
-            this.r = r;
-            this.g = g;
-            this.b = b;
+        if (shapeRenderer != null) {
+            shapeRenderer.dispose();
         }
-
-        public void setPosition(float x, float y) {
-            this.x = x;
-            this.y = y;
+        if (uiStage != null) {
+            uiStage.dispose();
         }
     }
 }
