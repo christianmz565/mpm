@@ -14,7 +14,12 @@ import to.mpm.minigames.catchThemAll.physics.CatchDetector;
 import to.mpm.minigames.catchThemAll.physics.CollisionHandler;
 import to.mpm.minigames.catchThemAll.rendering.GameRenderer;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
 import to.mpm.network.Packets;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
+import to.mpm.network.handlers.ServerPacketContext;
+import to.mpm.network.handlers.ServerPacketHandler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +48,8 @@ public class CatchThemAllMinigame implements Minigame {
     private boolean finished = false;
     private final Map<Integer, Integer> scores = new HashMap<>();
     
-    private final List<Long> handlerIds = new ArrayList<>();
+    private CatchThemAllClientHandler clientHandler;
+    private CatchThemAllServerRelay serverRelay;
 
     public CatchThemAllMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
@@ -80,13 +86,13 @@ public class CatchThemAllMinigame implements Minigame {
             Gdx.app.log("CatchThemAll", "Duck spawner initialized (host mode)");
         }
 
-        handlerIds.add(nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition));
-        handlerIds.add(nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined));
-        handlerIds.add(nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft));
-        handlerIds.add(nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class, this::onDuckSpawned));
-        handlerIds.add(nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class, this::onDuckUpdate));
-        handlerIds.add(nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class, this::onDuckRemoved));
-        handlerIds.add(nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class, this::onScoreUpdate));
+        clientHandler = new CatchThemAllClientHandler();
+        nm.registerClientHandler(clientHandler);
+
+        if (nm.isHost()) {
+            serverRelay = new CatchThemAllServerRelay();
+            nm.registerServerHandler(serverRelay);
+        }
         
         Gdx.app.log("CatchThemAll", "Game initialized for player " + localPlayerId);
     }
@@ -254,10 +260,14 @@ public class CatchThemAllMinigame implements Minigame {
     @Override
     public void dispose() {
         NetworkManager nm = NetworkManager.getInstance();
-        for (long handlerId : handlerIds) {
-            nm.unregisterHandler(handlerId);
+        if (clientHandler != null) {
+            nm.unregisterClientHandler(clientHandler);
+            clientHandler = null;
         }
-        handlerIds.clear();
+        if (serverRelay != null) {
+            nm.unregisterServerHandler(serverRelay);
+            serverRelay = null;
+        }
         
         players.clear();
         ducks.clear();
@@ -271,5 +281,57 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
+    }
+
+    private final class CatchThemAllClientHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(
+                    Packets.PlayerPosition.class,
+                    Packets.PlayerJoined.class,
+                    Packets.PlayerLeft.class,
+                    to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class,
+                    to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class,
+                    to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class,
+                    to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class
+            );
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.PlayerPosition position) {
+                onPlayerPosition(position);
+            } else if (packet instanceof Packets.PlayerJoined joined) {
+                onPlayerJoined(joined);
+            } else if (packet instanceof Packets.PlayerLeft left) {
+                onPlayerLeft(left);
+            } else if (packet instanceof to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned spawned) {
+                onDuckSpawned(spawned);
+            } else if (packet instanceof to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate update) {
+                onDuckUpdate(update);
+            } else if (packet instanceof to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved removed) {
+                onDuckRemoved(removed);
+            } else if (packet instanceof to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate scoreUpdate) {
+                onScoreUpdate(scoreUpdate);
+            }
+        }
+    }
+
+    private static final class CatchThemAllServerRelay implements ServerPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(
+                    Packets.PlayerPosition.class,
+                    to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class,
+                    to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class,
+                    to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class,
+                    to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class
+            );
+        }
+
+        @Override
+        public void handle(ServerPacketContext context, NetworkPacket packet) {
+            context.broadcastExceptSender(packet);
+        }
     }
 }

@@ -5,11 +5,16 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
+import to.mpm.network.handlers.ServerPacketContext;
+import to.mpm.network.handlers.ServerPacketHandler;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 
 /**
  * Lógica del lado del servidor de red.
@@ -17,65 +22,44 @@ import java.util.function.BiConsumer;
  * y el registro de manejadores de paquetes.
  */
 public class NetworkServer {
-    private Server server; //!< instancia del servidor KryoNet
-    private final ConcurrentHashMap<Integer, String> connectedPlayers; //!< mapa de jugadores conectados (ID -> nombre)
-    private final ConcurrentHashMap<Integer, Integer> connectionToPlayerId; //!< mapa de conexión a ID de jugador
-    private final AtomicInteger nextPlayerId; //!< contador para asignar nuevos IDs de jugador
-    private int hostPlayerId; //!< ID del jugador host
-    private BiConsumer<Object, Connection> packetReceivedCallback; //!< callback para notificar recepción de paquetes
-    
+    private Server server; // !< instancia del servidor KryoNet
+    private final Map<Class<? extends NetworkPacket>, CopyOnWriteArrayList<ServerPacketHandler>> handlers; // !<
+                                                                                                           // manejadores
+                                                                                                           // por tipo
+    private final ConcurrentHashMap<Integer, String> connectedPlayers; // !< mapa de jugadores conectados (ID -> nombre)
+    private final ConcurrentHashMap<Integer, Integer> connectionToPlayerId; // !< mapa de conexión a ID de jugador
+    private final AtomicInteger nextPlayerId; // !< contador para asignar nuevos IDs de jugador
+
     /**
      * Construye una nueva instancia del servidor de red.
      */
     public NetworkServer() {
+        handlers = new ConcurrentHashMap<>();
         connectedPlayers = new ConcurrentHashMap<>();
         connectionToPlayerId = new ConcurrentHashMap<>();
         nextPlayerId = new AtomicInteger(0);
     }
 
     /**
-     * Configura un callback para notificar la recepción de paquetes.
-     * 
-     * @param callback el callback a configurar
-     */
-    public void setPacketReceivedCallback(BiConsumer<Object, Connection> callback) {
-        this.packetReceivedCallback = callback;
-    }
-
-    /**
      * Inicia el servidor en el puerto especificado.
-     * 
+     *
      * @param port el puerto en el que escuchar
-     * @param hostPlayerName el nombre del jugador host
      * @throws IOException si el servidor no puede iniciarse
      */
-    public void start(int port, String hostPlayerName) throws IOException {
+    public void start(int port) throws IOException {
         if (server != null) {
             Gdx.app.log("NetworkServer", "Server is already running");
             return;
         }
 
-        hostPlayerId = nextPlayerId.getAndIncrement();
-        connectedPlayers.put(hostPlayerId, hostPlayerName);
-
         server = new Server(NetworkConfig.UDP_BUFFER_SIZE, NetworkConfig.UDP_BUFFER_SIZE);
-        registerClasses(server.getKryo());
+        KryoClassRegistrar.registerCoreClasses(server.getKryo());
 
         server.addListener(new Listener() {
             @Override
             public void received(Connection connection, Object object) {
-                if (object instanceof Packets.PlayerJoinRequest) {
-                    handlePlayerJoinRequest(connection, (Packets.PlayerJoinRequest) object);
-                } else {
-                    if (object instanceof Packets.PlayerPosition || object instanceof Packets.SyncUpdate) {
-                        server.sendToAllExceptUDP(connection.getID(), object);
-                    } else {
-                        server.sendToAllExceptTCP(connection.getID(), object);
-                    }
-                    
-                    if (packetReceivedCallback != null) {
-                        packetReceivedCallback.accept(object, connection);
-                    }
+                if (object instanceof NetworkPacket packet) {
+                    dispatchPacket(packet, connection);
                 }
             }
 
@@ -86,19 +70,7 @@ public class NetworkServer {
 
             @Override
             public void disconnected(Connection connection) {
-                Integer playerId = connectionToPlayerId.remove(connection.getID());
-                if (playerId != null) {
-                    String playerName = connectedPlayers.remove(playerId);
-                    Gdx.app.log("NetworkServer", "Player disconnected: " + playerName + " (ID: " + playerId + ")");
-
-                    Packets.PlayerLeft leftPacket = new Packets.PlayerLeft();
-                    leftPacket.playerId = playerId;
-                    server.sendToAllUDP(leftPacket);
-
-                    if (packetReceivedCallback != null) {
-                        packetReceivedCallback.accept(leftPacket, connection);
-                    }
-                }
+                handleDisconnection(connection);
             }
         });
 
@@ -108,8 +80,9 @@ public class NetworkServer {
             Gdx.app.log("NetworkServer", "Server started on port " + port);
         } catch (IOException e) {
             server = null;
-            connectedPlayers.remove(hostPlayerId);
-            nextPlayerId.decrementAndGet();
+            connectedPlayers.clear();
+            connectionToPlayerId.clear();
+            nextPlayerId.set(0);
             throw new IOException("Failed to start server on port " + port, e);
         }
     }
@@ -123,6 +96,7 @@ public class NetworkServer {
             server.close();
             server = null;
         }
+        handlers.clear();
         connectedPlayers.clear();
         connectionToPlayerId.clear();
         nextPlayerId.set(0);
@@ -130,24 +104,77 @@ public class NetworkServer {
     }
 
     /**
-     * Envía un paquete a todos los clientes conectados.
-     *
-     * @param packet el paquete a enviar
+     * Registra un manejador basado en clases de paquete.
+     * 
+     * @param handler el manejador a registrar
      */
-    public void sendToAllTCP(Object packet) {
-        if (server != null) {
+    public void registerHandler(ServerPacketHandler handler) {
+        Collection<Class<? extends NetworkPacket>> packetClasses = handler.receivablePackets();
+        if (packetClasses == null || packetClasses.isEmpty()) {
+            throw new IllegalArgumentException("Handler must declare receivable packets");
+        }
+        for (Class<? extends NetworkPacket> packetClass : packetClasses) {
+            handlers.computeIfAbsent(packetClass, key -> new CopyOnWriteArrayList<>())
+                    .add(handler);
+        }
+    }
+
+    /**
+     * Desregistra un manejador previamente agregado.
+     * 
+     * @param handler el manejador a desregistrar
+     */
+    public void unregisterHandler(ServerPacketHandler handler) {
+        for (List<ServerPacketHandler> handlerList : handlers.values()) {
+            handlerList.remove(handler);
+        }
+    }
+
+    /**
+     * Envía un paquete a todos los clientes conectados usando su transporte
+     * preferido.
+     * 
+     * @param packet paquete de red a enviar
+     */
+    public void broadcast(NetworkPacket packet) {
+        if (server == null)
+            return;
+        if (packet.getTransportMode() == Transports.UDP) {
+            server.sendToAllUDP(packet);
+        } else {
             server.sendToAllTCP(packet);
         }
     }
 
     /**
-     * Envía un paquete a todos los clientes conectados vía UDP.
-     *
-     * @param packet el paquete a enviar
+     * Envía a todos excepto al remitente.
+     * 
+     * @param origin conexión del remitente
+     * @param packet paquete de red a enviar
      */
-    public void sendToAllUDP(Object packet) {
-        if (server != null) {
-            server.sendToAllUDP(packet);
+    public void broadcastExcept(Connection origin, NetworkPacket packet) {
+        if (server == null || origin == null)
+            return;
+        if (packet.getTransportMode() == Transports.UDP) {
+            server.sendToAllExceptUDP(origin.getID(), packet);
+        } else {
+            server.sendToAllExceptTCP(origin.getID(), packet);
+        }
+    }
+
+    /**
+     * Envía a una conexión específica respetando el modo de transporte.
+     * 
+     * @param target conexión objetivo
+     * @param packet paquete de red a enviar
+     */
+    public void send(Connection target, NetworkPacket packet) {
+        if (target == null)
+            return;
+        if (packet.getTransportMode() == Transports.UDP) {
+            target.sendUDP(packet);
+        } else {
+            target.sendTCP(packet);
         }
     }
 
@@ -164,15 +191,6 @@ public class NetworkServer {
                 Gdx.app.log("NetworkServer", "Registered class: " + clazz.getName());
             }
         }
-    }
-
-    /**
-     * Obtiene el ID del jugador host.
-     *
-     * @return el ID del jugador host
-     */
-    public int getHostPlayerId() {
-        return hostPlayerId;
     }
 
     /**
@@ -194,7 +212,7 @@ public class NetworkServer {
     }
 
     /**
-     * Obtiene el número de clientes conectados (excluyendo al host).
+     * Obtiene el número de clientes conectados.
      *
      * @return número de clientes conectados
      */
@@ -203,61 +221,75 @@ public class NetworkServer {
     }
 
     /**
-     * Registra las clases de paquetes principales con Kryo.
-     *
-     * @param kryo la instancia de Kryo
+     * Genera un nuevo ID único de jugador.
+     * 
+     * @return nuevo ID de jugador
      */
-    private void registerClasses(Kryo kryo) {
-        kryo.register(Packets.PlayerJoinRequest.class);
-        kryo.register(Packets.PlayerJoinResponse.class);
-        kryo.register(Packets.PlayerJoined.class);
-        kryo.register(Packets.PlayerLeft.class);
-        kryo.register(Packets.StartGame.class);
-        kryo.register(Packets.SyncUpdate.class);
-        kryo.register(Packets.PlayerPosition.class);
-        kryo.register(Packets.RPC.class);
-        kryo.register(Packets.Ping.class);
-        kryo.register(Packets.Pong.class);
-        kryo.register(Object[].class);
+    public int allocatePlayerId() {
+        return nextPlayerId.getAndIncrement();
     }
 
     /**
-     * Maneja una solicitud de unión de jugador.
-     * Asigna un ID de jugador único y notifica a todos los clientes.
-     *
-     * @param connection la conexión del jugador que se une
-     * @param request la solicitud de unión
+     * Asocia una conexión con un jugador concreto.
+     * 
+     * @param connection conexión a asociar
+     * @param playerId   ID del jugador
+     * @param playerName nombre del jugador
      */
-    private void handlePlayerJoinRequest(Connection connection, Packets.PlayerJoinRequest request) {
-        int newPlayerId = nextPlayerId.getAndIncrement();
-        String playerName = request.playerName;
-
-        connectedPlayers.put(newPlayerId, playerName);
-        connectionToPlayerId.put(connection.getID(), newPlayerId);
-
-        Gdx.app.log("NetworkServer", "Player joined: " + playerName + " (ID: " + newPlayerId + ")");
-
-        Packets.PlayerJoinResponse response = new Packets.PlayerJoinResponse();
-        response.playerId = newPlayerId;
-        response.playerName = playerName;
-        connection.sendTCP(response);
-
-        Packets.PlayerJoined joinedPacket = new Packets.PlayerJoined();
-        joinedPacket.playerId = newPlayerId;
-        joinedPacket.playerName = playerName;
-        server.sendToAllExceptTCP(connection.getID(), joinedPacket);
-        
-        if (packetReceivedCallback != null) {
-            packetReceivedCallback.accept(joinedPacket, connection);
+    public void bindConnectionToPlayer(Connection connection, int playerId, String playerName) {
+        connectionToPlayerId.put(connection.getID(), playerId);
+        if (playerName != null) {
+            connectedPlayers.put(playerId, playerName);
         }
+    }
 
-        for (var entry : connectedPlayers.entrySet()) {
-            if (entry.getKey() != newPlayerId) {
-                Packets.PlayerJoined existingPlayer = new Packets.PlayerJoined();
-                existingPlayer.playerId = entry.getKey();
-                existingPlayer.playerName = entry.getValue();
-                connection.sendTCP(existingPlayer);
+    /**
+     * Desasocia una conexión.
+     * 
+     * @param connection conexión a desasociar
+     * @return ID del jugador eliminado, o null si no existía
+     */
+    public Integer unbindConnection(Connection connection) {
+        return connectionToPlayerId.remove(connection.getID());
+    }
+
+    /**
+     * Reenvía un paquete a los manejadores registrados.
+     *
+     * @param packet     el paquete de red a reenvíar
+     * @param connection la conexión que envió el paquete
+     */
+    private void dispatchPacket(NetworkPacket packet, Connection connection) {
+        List<ServerPacketHandler> handlerList = handlers.get(packet.getClass());
+        if (handlerList == null || handlerList.isEmpty()) {
+            return;
+        }
+        ServerPacketContext context = new ServerPacketContext(this, connection);
+        for (ServerPacketHandler handler : handlerList) {
+            try {
+                handler.handle(context, packet);
+            } catch (Exception ex) {
+                Gdx.app.error("NetworkServer", "Handler error for packet " + packet.getClass().getSimpleName(), ex);
             }
         }
+    }
+
+    /**
+     * Maneja la desconexión de un cliente.
+     * 
+     * @param connection la conexión que se ha desconectado
+     */
+    private void handleDisconnection(Connection connection) {
+        Integer playerId = unbindConnection(connection);
+        if (playerId == null) {
+            return;
+        }
+        String playerName = connectedPlayers.remove(playerId);
+        Gdx.app.log("NetworkServer", "Player disconnected: " + playerName + " (ID: " + playerId + ")");
+
+        ServerEvents.ClientDisconnected event = new ServerEvents.ClientDisconnected();
+        event.playerId = playerId;
+        event.playerName = playerName;
+        dispatchPacket(event, connection);
     }
 }

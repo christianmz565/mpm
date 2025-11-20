@@ -15,6 +15,10 @@ import to.mpm.minigames.Minigame;
 import to.mpm.minigames.MinigameFactory;
 import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
+import to.mpm.network.Packets;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
 
@@ -22,14 +26,17 @@ import to.mpm.ui.UISkinProvider;
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
  */
 public class GameScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private final MinigameType minigameType; //!< tipo de minijuego a ejecutar
-    private Minigame currentMinigame; //!< instancia del minijuego actual
-    private SpriteBatch batch; //!< lote de sprites para renderizado
-    private ShapeRenderer shapeRenderer; //!< renderizador de formas
-    private Stage uiStage; //!< stage para la superposición de UI
-    private Skin skin; //!< skin para estilizar componentes de UI
-    private Label scoreLabel; //!< etiqueta que muestra la puntuación del jugador
+    private final Main game; // !< instancia del juego principal
+    private final MinigameType minigameType; // !< tipo de minijuego a ejecutar
+    private Minigame currentMinigame; // !< instancia del minijuego actual
+    private SpriteBatch batch; // !< lote de sprites para renderizado
+    private ShapeRenderer shapeRenderer; // !< renderizador de formas
+    private Stage uiStage; // !< stage para la superposición de UI
+    private Skin skin; // !< skin para estilizar componentes de UI
+    private Label scoreLabel; // !< etiqueta que muestra la puntuación del jugador
+
+    private StartGamePacketHandler startGameHandler;
+
     /**
      * Construye una nueva pantalla de juego.
      *
@@ -50,8 +57,8 @@ public class GameScreen implements Screen {
         shapeRenderer = new ShapeRenderer();
 
         uiStage = new Stage(new ScreenViewport());
-    skin = UISkinProvider.obtain();
-    game.getSettingsOverlayManager().attachStage(uiStage);
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(uiStage);
 
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
@@ -79,6 +86,9 @@ public class GameScreen implements Screen {
         int localPlayerId = NetworkManager.getInstance().getMyId();
         currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
         currentMinigame.initialize();
+
+        startGameHandler = new StartGamePacketHandler();
+        NetworkManager.getInstance().registerClientHandler(startGameHandler);
 
         Gdx.app.log("GameScreen", "Started minigame: " + minigameType.getDisplayName());
     }
@@ -109,7 +119,7 @@ public class GameScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         currentMinigame.render(batch, shapeRenderer);
-        
+
         uiStage.act(delta);
         uiStage.draw();
     }
@@ -162,8 +172,30 @@ public class GameScreen implements Screen {
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
         }
+        if (startGameHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(startGameHandler);
+            startGameHandler = null;
+        }
         if (uiStage != null) {
             uiStage.dispose();
         }
     }
+
+    /**
+     * Manejador de paquetes para iniciar el juego.
+     */
+    private final class StartGamePacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(Packets.StartGame.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.StartGame startGame) {
+                game.setScreen(new GameScreen(game, MinigameType.valueOf(startGame.minigameType)));
+            }
+        }
+    }
+
 }
