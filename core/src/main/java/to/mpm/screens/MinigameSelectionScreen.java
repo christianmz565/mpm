@@ -106,8 +106,6 @@ public class MinigameSelectionScreen implements Screen {
             });
             table.add(backButton).width(200).height(50).colspan(2).row();
         }
-
-        NetworkManager.getInstance().registerHandler(Packets.StartGame.class, this::onGameStart);
     }
 
     /**
@@ -120,25 +118,9 @@ public class MinigameSelectionScreen implements Screen {
 
         Packets.StartGame packet = new Packets.StartGame();
         packet.minigameType = type.name();
-        NetworkManager.getInstance().sendPacket(packet);
+        NetworkManager.getInstance().broadcastFromHost(packet);
 
         startGame(type);
-    }
-
-    /**
-     * Maneja el inicio del juego cuando se recibe el paquete correspondiente.
-     * 
-     * @param packet paquete que indica el inicio del juego
-     */
-    private void onGameStart(Packets.StartGame packet) {
-        if (!isHost) {
-            try {
-                MinigameType type = MinigameType.valueOf(packet.minigameType);
-                startGame(type);
-            } catch (IllegalArgumentException e) {
-                Gdx.app.error("MinigameSelection", "Unknown minigame type: " + packet.minigameType);
-            }
-        }
     }
 
     /**
@@ -204,4 +186,5 @@ public class MinigameSelectionScreen implements Screen {
     public void dispose() {
         stage.dispose();
     }
+
 }

@@ -7,7 +7,12 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.IntMap;
 import to.mpm.minigames.Minigame;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
 import to.mpm.network.Packets;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
+import to.mpm.network.handlers.ServerPacketContext;
+import to.mpm.network.handlers.ServerPacketHandler;
 import to.mpm.network.sync.SyncedObject;
 import to.mpm.network.sync.Synchronized;
 
@@ -34,6 +39,8 @@ public class BallMovementMinigame implements Minigame {
     private Player localPlayer;
     private final IntMap<Player> players = new IntMap<>();
     private boolean finished = false;
+    private BallMovementClientHandler clientHandler;
+    private BallMovementServerRelay serverRelay;
 
     public BallMovementMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
@@ -51,10 +58,13 @@ public class BallMovementMinigame implements Minigame {
                 color[0], color[1], color[2]);
         players.put(localPlayerId, localPlayer);
 
-        // Register network handlers
-        nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition);
-        nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
-        nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
+        clientHandler = new BallMovementClientHandler();
+        nm.registerClientHandler(clientHandler);
+
+        if (nm.isHost()) {
+            serverRelay = new BallMovementServerRelay();
+            nm.registerServerHandler(serverRelay);
+        }
     }
 
     private void onPlayerJoined(Packets.PlayerJoined packet) {
@@ -156,6 +166,15 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void dispose() {
+        NetworkManager nm = NetworkManager.getInstance();
+        if (clientHandler != null) {
+            nm.unregisterClientHandler(clientHandler);
+            clientHandler = null;
+        }
+        if (serverRelay != null) {
+            nm.unregisterServerHandler(serverRelay);
+            serverRelay = null;
+        }
         for (IntMap.Entry<Player> entry : players) {
             entry.value.dispose();
         }
@@ -184,6 +203,42 @@ public class BallMovementMinigame implements Minigame {
         public void setPosition(float x, float y) {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    private final class BallMovementClientHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(
+                    Packets.PlayerPosition.class,
+                    Packets.PlayerJoined.class,
+                    Packets.PlayerLeft.class
+            );
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.PlayerPosition position) {
+                onPlayerPosition(position);
+            } else if (packet instanceof Packets.PlayerJoined joined) {
+                onPlayerJoined(joined);
+            } else if (packet instanceof Packets.PlayerLeft left) {
+                onPlayerLeft(left);
+            }
+        }
+    }
+
+    private static final class BallMovementServerRelay implements ServerPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(Packets.PlayerPosition.class);
+        }
+
+        @Override
+        public void handle(ServerPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.PlayerPosition position) {
+                context.broadcastExceptSender(position);
+            }
         }
     }
 }

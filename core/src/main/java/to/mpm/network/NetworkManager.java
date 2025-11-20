@@ -1,10 +1,11 @@
 package to.mpm.network;
 
 import com.badlogic.gdx.Gdx;
+import to.mpm.network.handlers.ClientPacketHandler;
+import to.mpm.network.handlers.ServerPacketHandler;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 /**
  * Coordinador principal de la red.
@@ -12,12 +13,11 @@ import java.util.function.Consumer;
  * y proporciona una interfaz unificada para enviar paquetes
  */
 public class NetworkManager {
-    private static NetworkManager instance; //!< instancia singleton
-    
-    private NetworkServer server; //!< instancia del servidor de red
-    private NetworkClient client; //!< instancia del cliente de red
-    private GlobalPacketHandlers globalHandlers; //!< manejadores globales de paquetes
-    private boolean isHost; //!< indica si este es el host
+    private static NetworkManager instance; // !< instancia singleton
+
+    private NetworkServer server; // !< instancia del servidor de red
+    private NetworkClient client; // !< instancia del cliente de red
+    private boolean isHost; // !< indica si este es el host
 
     private NetworkManager() {
     }
@@ -39,7 +39,7 @@ public class NetworkManager {
      * Crea tanto un NetworkServer como un NetworkClient (para el host).
      *
      * @param hostPlayerName el nombre del jugador host
-     * @param port el puerto en el que escuchar
+     * @param port           el puerto en el que escuchar
      * @throws IOException si el servidor no puede iniciarse
      */
     public void hostGame(String hostPlayerName, int port) throws IOException {
@@ -51,28 +51,19 @@ public class NetworkManager {
         isHost = true;
 
         server = new NetworkServer();
-        server.start(port, hostPlayerName);
-
-        server.setPacketReceivedCallback((packet, connection) -> {
-            if (client != null) {
-                client.processPacket(packet);
-            }
-        });
+        server.start(port);
 
         client = new NetworkClient();
-        client.connectAsLocalHost(server.getHostPlayerId(), hostPlayerName);
+        client.connect("127.0.0.1", port, hostPlayerName);
 
-        globalHandlers = new GlobalPacketHandlers(client);
-        globalHandlers.registerHandlers();
-
-        Gdx.app.log("NetworkManager", "Hosting game as player ID: " + server.getHostPlayerId());
+        Gdx.app.log("NetworkManager", "Hosting game on port " + port);
     }
 
     /**
      * Se une a un juego como cliente.
      *
-     * @param host la dirección del servidor
-     * @param port el puerto del servidor
+     * @param host       la dirección del servidor
+     * @param port       el puerto del servidor
      * @param playerName el nombre del jugador local
      * @throws IOException si la conexión falla
      */
@@ -87,9 +78,6 @@ public class NetworkManager {
         client = new NetworkClient();
         client.connect(host, port, playerName);
 
-        globalHandlers = new GlobalPacketHandlers(client);
-        globalHandlers.registerHandlers();
-
         Gdx.app.log("NetworkManager", "Joined game at " + host + ":" + port);
     }
 
@@ -100,53 +88,77 @@ public class NetworkManager {
      * 
      * @param packet el paquete a enviar
      */
-    public void sendPacket(Object packet) {
-        if (isHost && server != null) {
-            server.sendToAllUDP(packet);
-        } else if (client != null && client.isConnected()) {
-            client.sendUDP(packet);
+    public void sendPacket(NetworkPacket packet) {
+        if (client != null && client.isConnected()) {
+            client.send(packet);
         }
     }
 
     /**
-     * Registra un manejador de paquetes para una clase de paquete específica.
-     * 
-     * @param <T> la clase de paquete
-     * @param packetClass la clase del paquete
-     * @param handler el manejador de paquetes
-     * @return el ID del manejador registrado
+     * Asegura que el cliente haya recibido un ID solicitando nuevamente el join si
+     * es necesario.
      */
-    public <T> long registerHandler(Class<T> packetClass, Consumer<T> handler) {
+    public void ensureJoinHandshake() {
         if (client != null) {
-            return client.registerHandler(packetClass, handler);
+            client.resendJoinRequestIfNeeded();
         }
-        return -1;
     }
 
     /**
-     * Desregistra un manejador de paquetes por su ID.
+     * Permite que el host envíe un paquete directamente desde el servidor.
      * 
-     * @param handlerId el ID del manejador
-     * @return true si se desregistró con éxito
+     * @param packet el paquete a enviar
      */
-    public boolean unregisterHandler(long handlerId) {
-        if (client != null) {
-            return client.unregisterHandler(handlerId);
+    public void broadcastFromHost(NetworkPacket packet) {
+        if (isHost && server != null && server.isRunning()) {
+            server.broadcast(packet);
+        } else {
+            sendPacket(packet);
         }
-        return false;
     }
 
     /**
-     * Desregistra todos los manejadores para una clase de paquete específica.
+     * Registra un handler del lado del cliente.
      * 
-     * @param packetClass la clase del paquete
-     * @return el número de manejadores desregistrados
+     * @param handler el handler a registrar
      */
-    public int unregisterAllHandlers(Class<?> packetClass) {
+    public void registerClientHandler(ClientPacketHandler handler) {
         if (client != null) {
-            return client.unregisterAllHandlers(packetClass);
+            client.registerHandler(handler);
         }
-        return 0;
+    }
+
+    /**
+     * Desregistra un handler del lado del cliente.
+     * 
+     * @param handler el handler a desregistrar
+     */
+    public void unregisterClientHandler(ClientPacketHandler handler) {
+        if (client != null) {
+            client.unregisterHandler(handler);
+        }
+    }
+
+    /**
+     * Registra un handler del lado del servidor (solo si somos host).
+     * 
+     * @param handler el handler a registrar
+     */
+    public void registerServerHandler(ServerPacketHandler handler) {
+        if (server != null) {
+            server.registerHandler(handler);
+        }
+    }
+
+    /**
+     * Desregistra un handler del lado del servidor.
+     * 
+     * @param handler el handler a desregistrar
+     */
+    public void unregisterServerHandler(ServerPacketHandler handler) {
+        if (server != null) {
+            server.unregisterHandler(handler);
+        }
     }
 
     /**
@@ -167,21 +179,16 @@ public class NetworkManager {
      * Desconecta de la red y limpia los recursos.
      */
     public void disconnect() {
-        if (globalHandlers != null) {
-            globalHandlers.unregisterHandlers();
-            globalHandlers = null;
-        }
-        
         if (server != null) {
             server.stop();
             server = null;
         }
-        
+
         if (client != null) {
             client.disconnect();
             client = null;
         }
-        
+
         isHost = false;
         Gdx.app.log("NetworkManager", "Disconnected");
     }
@@ -210,11 +217,7 @@ public class NetworkManager {
      * @return true si está conectado
      */
     public boolean isConnected() {
-        if (isHost) {
-            return server != null && server.isRunning();
-        } else {
-            return client != null && client.isConnected();
-        }
+        return client != null && client.isConnected();
     }
 
     /**

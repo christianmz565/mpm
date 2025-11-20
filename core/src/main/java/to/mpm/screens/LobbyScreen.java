@@ -12,34 +12,46 @@ import to.mpm.minigames.selection.GameSelectionStrategy;
 import to.mpm.minigames.selection.RandomGameSelection;
 import to.mpm.network.NetworkConfig;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
 import to.mpm.network.Packets;
+import to.mpm.network.ServerEvents;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
+import to.mpm.network.handlers.ServerPacketContext;
+import to.mpm.network.handlers.ServerPacketHandler;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
 import to.mpm.ui.components.PlayerListItem;
 import to.mpm.ui.components.StyledButton;
 import java.net.InetAddress;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
 /**
- * Pantalla de sala unificada que se muestra tanto para el host como para los clientes.
- * Muestra información de la sala, jugadores conectados y controles apropiados según el rol.
+ * Pantalla de sala unificada que se muestra tanto para el host como para los
+ * clientes.
+ * Muestra información de la sala, jugadores conectados y controles apropiados
+ * según el rol.
  */
 public class LobbyScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private final boolean isHost; //!< indica si este jugador es el host
-    private final String serverIp; //!< dirección IP del servidor (para clientes)
-    private final int serverPort; //!< puerto del servidor (para clientes)
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
-    private Label ipLabel; //!< etiqueta que muestra la IP del servidor
-    private Label portLabel; //!< etiqueta que muestra el puerto del servidor
-    private Table playersContainer; //!< contenedor de la lista de jugadores
-    private TextButton startButton; //!< botón para iniciar el juego (solo host)
+    private final Main game; // !< instancia del juego principal
+    private final boolean isHost; // !< indica si este jugador es el host
+    private final String serverIp; // !< dirección IP del servidor (para clientes)
+    private final int serverPort; // !< puerto del servidor (para clientes)
+    private Stage stage; // !< stage para renderizar componentes de UI
+    private Skin skin; // !< skin para estilizar componentes
+    private Label ipLabel; // !< etiqueta que muestra la IP del servidor
+    private Label portLabel; // !< etiqueta que muestra el puerto del servidor
+    private Table playersContainer; // !< contenedor de la lista de jugadores
+    private TextButton startButton; // !< botón para iniciar el juego (solo host)
+    private LobbyClientHandler lobbyClientHandler;
+    private LobbyServerHandler lobbyServerHandler;
+    private StartGameClientHandler startGameClientHandler;
 
     /**
      * Construye una nueva pantalla de sala para el host.
      *
-     * @param game instancia del juego principal
+     * @param game   instancia del juego principal
      * @param isHost true si este jugador es el host, false si es cliente
      */
     public LobbyScreen(Main game, boolean isHost) {
@@ -147,12 +159,19 @@ public class LobbyScreen implements Screen {
 
         updatePlayersList();
 
-        NetworkManager.getInstance().registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
-        NetworkManager.getInstance().registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
-        
-        if (!isHost) {
-            NetworkManager.getInstance().registerHandler(Packets.StartGame.class, this::onGameStart);
+        NetworkManager networkManager = NetworkManager.getInstance();
+        lobbyClientHandler = new LobbyClientHandler();
+        networkManager.registerClientHandler(lobbyClientHandler);
+
+        if (isHost) {
+            lobbyServerHandler = new LobbyServerHandler();
+            networkManager.registerServerHandler(lobbyServerHandler);
+        } else {
+            startGameClientHandler = new StartGameClientHandler();
+            networkManager.registerClientHandler(startGameClientHandler);
         }
+
+        networkManager.ensureJoinHandshake();
     }
 
     /**
@@ -171,7 +190,7 @@ public class LobbyScreen implements Screen {
     private void onPlayerJoined(Packets.PlayerJoined packet) {
         Gdx.app.log("LobbyScreen", "Player " + packet.playerName + " connected!");
         updatePlayersList();
-        
+
         if (isHost && startButton != null) {
             startButton.setDisabled(false);
         }
@@ -185,7 +204,7 @@ public class LobbyScreen implements Screen {
     private void onPlayerLeft(Packets.PlayerLeft packet) {
         Gdx.app.log("LobbyScreen", "Player " + packet.playerId + " disconnected");
         updatePlayersList();
-        
+
         if (isHost && startButton != null) {
             if (NetworkManager.getInstance().getPlayerCount() <= 1) {
                 startButton.setDisabled(true);
@@ -249,14 +268,14 @@ public class LobbyScreen implements Screen {
         GameSelectionStrategy selectionStrategy = new RandomGameSelection();
         int playerCount = NetworkManager.getInstance().getPlayerCount();
         MinigameType selectedGame = selectionStrategy.selectGame(playerCount);
-        
-        Gdx.app.log("LobbyScreen", "Selected game: " + selectedGame.getDisplayName() + 
-                    " using " + selectionStrategy.getStrategyName());
-        
+
+        Gdx.app.log("LobbyScreen", "Selected game: " + selectedGame.getDisplayName() +
+                " using " + selectionStrategy.getStrategyName());
+
         Packets.StartGame packet = new Packets.StartGame();
         packet.minigameType = selectedGame.name();
-        NetworkManager.getInstance().sendPacket(packet);
-        
+        NetworkManager.getInstance().broadcastFromHost(packet);
+
         game.setScreen(new GameScreen(game, selectedGame));
         dispose();
     }
@@ -313,6 +332,127 @@ public class LobbyScreen implements Screen {
      */
     @Override
     public void dispose() {
+        NetworkManager nm = NetworkManager.getInstance();
+        if (lobbyClientHandler != null) {
+            nm.unregisterClientHandler(lobbyClientHandler);
+            lobbyClientHandler = null;
+        }
+        if (startGameClientHandler != null) {
+            nm.unregisterClientHandler(startGameClientHandler);
+            startGameClientHandler = null;
+        }
+        if (lobbyServerHandler != null) {
+            nm.unregisterServerHandler(lobbyServerHandler);
+            lobbyServerHandler = null;
+        }
         stage.dispose();
+    }
+
+    /**
+     * Manejador de paquetes de la sala para clientes.
+     */
+    private final class LobbyClientHandler implements ClientPacketHandler {
+        @Override
+        public List<Class<? extends NetworkPacket>> receivablePackets() {
+            return List.of(Packets.PlayerJoined.class, Packets.PlayerLeft.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.PlayerJoined joined) {
+                onPlayerJoined(joined);
+            } else if (packet instanceof Packets.PlayerLeft left) {
+                onPlayerLeft(left);
+            }
+        }
+    }
+
+    /**
+     * Manejador de paquetes para iniciar el juego (clientes).
+     */
+    private final class StartGameClientHandler implements ClientPacketHandler {
+        @Override
+        public List<Class<? extends NetworkPacket>> receivablePackets() {
+            return List.of(Packets.StartGame.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.StartGame startGame) {
+                onGameStart(startGame);
+            }
+        }
+    }
+
+    /**
+     * Manejador de paquetes de la sala para el servidor.
+     */
+    private static final class LobbyServerHandler implements ServerPacketHandler {
+
+        @Override
+        public List<Class<? extends NetworkPacket>> receivablePackets() {
+            return List.of(Packets.PlayerJoinRequest.class, ServerEvents.ClientDisconnected.class);
+        }
+
+        @Override
+        public void handle(ServerPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.PlayerJoinRequest joinRequest) {
+                handleJoin(context, joinRequest);
+            } else if (packet instanceof ServerEvents.ClientDisconnected disconnected) {
+                handleDisconnect(context, disconnected);
+            }
+        }
+
+        /**
+         * Maneja una solicitud de unión de un jugador.
+         *
+         * @param context contexto del paquete del servidor
+         * @param request paquete de solicitud de unión
+         */
+        private void handleJoin(ServerPacketContext context, Packets.PlayerJoinRequest request) {
+            int newPlayerId = context.getServer().allocatePlayerId();
+            context.getServer().bindConnectionToPlayer(context.getConnection(), newPlayerId, request.playerName);
+
+            Packets.PlayerJoined selfPacket = new Packets.PlayerJoined();
+            selfPacket.playerId = newPlayerId;
+            selfPacket.playerName = request.playerName;
+            selfPacket.correlationId = request.correlationId;
+            context.reply(selfPacket);
+
+            Packets.PlayerJoined broadcastPacket = new Packets.PlayerJoined();
+            broadcastPacket.playerId = newPlayerId;
+            broadcastPacket.playerName = request.playerName;
+            broadcastPacket.existingPlayer = false;
+            context.broadcastExceptSender(broadcastPacket);
+
+            context.getServer().getConnectedPlayers().forEach((playerId, playerName) -> {
+                if (playerId == newPlayerId) {
+                    return;
+                }
+                Packets.PlayerJoined existing = new Packets.PlayerJoined();
+                existing.playerId = playerId;
+                existing.playerName = playerName;
+                existing.existingPlayer = true;
+                context.reply(existing);
+            });
+
+            Gdx.app.log("LobbyServer", "Player joined: " + request.playerName + " (ID: " + newPlayerId + ")");
+        }
+
+        /**
+         * Maneja la desconexión de un jugador.
+         *
+         * @param context contexto del paquete del servidor
+         * @param event   evento de desconexión del cliente
+         */
+        private void handleDisconnect(ServerPacketContext context, ServerEvents.ClientDisconnected event) {
+            if (event.playerId < 0) {
+                return;
+            }
+            Packets.PlayerLeft left = new Packets.PlayerLeft();
+            left.playerId = event.playerId;
+            context.broadcast(left);
+            Gdx.app.log("LobbyServer", "Player disconnected: " + event.playerName + " (ID: " + event.playerId + ")");
+        }
     }
 }
