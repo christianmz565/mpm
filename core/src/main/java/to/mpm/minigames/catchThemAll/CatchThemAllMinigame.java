@@ -115,16 +115,31 @@ public class CatchThemAllMinigame implements Minigame {
     }
 
     private void onPlayerPosition(Packets.PlayerPosition packet) {
-        NetworkManager nm = NetworkManager.getInstance();
-        if (nm.isHost() && packet.playerId == localPlayerId) return;
-
         Player player = players.get(packet.playerId);
         if (player == null) {
+            // Create remote player if doesn't exist
             float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
             player = new Player(false, packet.x, packet.y, color[0], color[1], color[2]);
             players.put(packet.playerId, player);
+            Gdx.app.log("CatchThemAll", "Created remote player: " + packet.playerId);
         } else {
-            player.setPosition(packet.x, packet.y);
+            // Update player physics state (from server authority)
+            // IMPORTANTE: Esto incluye nuestro propio jugador para correcciones de colisión
+            
+            // Si el servidor detuvo al jugador (lastVelocityX = 0 cuando estaba moviéndose)
+            if (packet.playerId == localPlayerId && 
+                Math.abs(player.lastVelocityX) > 5f && 
+                Math.abs(packet.lastVelocityX) < 1f) {
+                // Activar timer de bloqueo para evitar vibración
+                player.blockedTimer = 0.1f; // 100ms de cooldown
+            }
+            
+            player.x = packet.x;
+            player.y = packet.y;
+            player.velocityY = packet.velocityY;
+            player.lastVelocityX = packet.lastVelocityX;
+            player.isGrounded = packet.isGrounded;
+            player.updateBounds();
         }
     }
 
@@ -156,15 +171,18 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void update(float delta) {
-        for (IntMap.Entry<Player> entry : players) {
-            entry.value.update();
-        }
-        
+        // Update duck physics
         for (Duck duck : ducks) {
             duck.update();
         }
         
         if (NetworkManager.getInstance().isHost()) {
+            // HOST: Update ALL players including own player
+            for (IntMap.Entry<Player> entry : players) {
+                entry.value.update();
+            }
+            
+            // Spawn new ducks
             if (duckSpawner != null) {
                 List<Duck> newDucks = duckSpawner.update(delta);
                 for (Duck duck : newDucks) {
@@ -174,6 +192,7 @@ public class CatchThemAllMinigame implements Minigame {
                 }
             }
             
+            // Handle collisions between ALL players
             CollisionHandler.handlePlayerCollisions(players);
             
             Map<Integer, Player> playersMap = new HashMap<>();
@@ -216,8 +235,13 @@ public class CatchThemAllMinigame implements Minigame {
             
             NetworkHandler.sendDuckUpdates(ducks);
             
+            // Send ALL player positions (including collision corrections)
             NetworkHandler.sendAllPlayerPositions(players);
         } else {
+            // CLIENT: Apply local physics BEFORE sending
+            localPlayer.update();
+            
+            // Send only our position to host
             NetworkHandler.sendPlayerPosition(localPlayerId, localPlayer);
         }
     }

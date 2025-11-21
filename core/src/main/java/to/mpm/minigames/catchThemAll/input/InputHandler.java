@@ -19,17 +19,24 @@ public class InputHandler {
      * @param delta time since last frame
      */
     public static void handleInput(Player localPlayer, float delta) {
-        // Horizontal movement
-        float dx = 0;
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            dx -= MOVE_SPEED * delta;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            dx += MOVE_SPEED * delta;
-        }
+        // Horizontal movement input
+        float inputVelocity = 0;
+        
+        // Only apply input if not blocked by collision
+        if (localPlayer.blockedTimer <= 0) {
+            if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+                inputVelocity -= MOVE_SPEED * delta;
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+                inputVelocity += MOVE_SPEED * delta;
+            }
 
+            // Apply movement (will be validated by server)
+            localPlayer.x += inputVelocity;
+        }
+        
         // Track velocity for collision detection
-        localPlayer.lastVelocityX = dx;
+        localPlayer.lastVelocityX = inputVelocity;
 
         // Jump (both players can always jump)
         if ((Gdx.input.isKeyJustPressed(Input.Keys.W) || 
@@ -39,9 +46,6 @@ public class InputHandler {
             localPlayer.velocityY = JUMP_FORCE;
             localPlayer.isGrounded = false;
         }
-
-        // Apply horizontal movement
-        localPlayer.x += dx;
 
         // Keep inside horizontal bounds
         localPlayer.x = Math.max(0, Math.min(SCREEN_WIDTH - Player.PLAYER_WIDTH, localPlayer.x));

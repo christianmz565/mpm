@@ -26,6 +26,7 @@ public class Player extends SyncedObject {
     
     public float r, g, b; // Player color
     public float lastVelocityX; // Track horizontal velocity for collision physics
+    public float blockedTimer = 0f; // Timer to prevent vibration when blocked by collision
     
     private final Rectangle bounds;
     private final Rectangle basketBounds;
@@ -55,14 +56,25 @@ public class Player extends SyncedObject {
         super.update();
         
         if (isLocallyOwned()) {
+            // Decrease blocked timer
+            if (blockedTimer > 0) {
+                blockedTimer -= Gdx.graphics.getDeltaTime();
+            }
+            
+            // Apply gravity
             velocityY += GRAVITY * Gdx.graphics.getDeltaTime();
             
+            // Apply velocity
             y += velocityY * Gdx.graphics.getDeltaTime();
             
+            // Ground collision
             if (y <= GROUND_Y) {
                 y = GROUND_Y;
                 velocityY = 0;
                 isGrounded = true;
+            } else {
+                // If not on ground, mark as not grounded (will be corrected by server if on player)
+                isGrounded = false;
             }
         }
         

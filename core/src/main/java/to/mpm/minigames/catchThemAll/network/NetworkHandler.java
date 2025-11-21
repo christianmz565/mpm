@@ -25,6 +25,9 @@ public class NetworkHandler {
         packet.playerId = playerId;
         packet.x = player.x;
         packet.y = player.y;
+        packet.velocityY = player.velocityY;
+        packet.lastVelocityX = player.lastVelocityX;
+        packet.isGrounded = player.isGrounded;
         NetworkManager.getInstance().sendPacket(packet);
     }
     
