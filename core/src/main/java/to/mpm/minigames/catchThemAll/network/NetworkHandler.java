@@ -9,17 +9,11 @@ import to.mpm.network.Packets;
 import java.util.List;
 
 /**
- * Handles network communication for the Catch Them All minigame.
- * Uses CatchThemAllPackets for minigame-specific network messages.
+ * Network communication utilities for Catch Them All minigame.
+ * Static methods for sending game state packets.
  */
 public class NetworkHandler {
     
-    /**
-     * Send the position of a single player.
-     * 
-     * @param playerId ID of the player
-     * @param player player instance
-     */
     public static void sendPlayerPosition(int playerId, Player player) {
         Packets.PlayerPosition packet = new Packets.PlayerPosition();
         packet.playerId = playerId;
@@ -31,23 +25,12 @@ public class NetworkHandler {
         NetworkManager.getInstance().sendPacket(packet);
     }
     
-    /**
-     * Send all player positions (used by host after collision resolution).
-     * 
-     * @param players map of all players
-     */
     public static void sendAllPlayerPositions(IntMap<Player> players) {
         for (IntMap.Entry<Player> entry : players) {
             sendPlayerPosition(entry.key, entry.value);
         }
     }
     
-    /**
-     * Send a notification that a new duck has spawned.
-     * Only the host should call this.
-     * 
-     * @param duck the duck that spawned
-     */
     public static void sendDuckSpawned(Duck duck) {
         CatchThemAllPackets.DuckSpawned packet = new CatchThemAllPackets.DuckSpawned();
         packet.duckId = duck.id;
@@ -57,12 +40,6 @@ public class NetworkHandler {
         NetworkManager.getInstance().sendPacket(packet);
     }
     
-    /**
-     * Send duck position updates.
-     * Only the host should call this periodically.
-     * 
-     * @param ducks list of all active ducks
-     */
     public static void sendDuckUpdates(List<Duck> ducks) {
         for (Duck duck : ducks) {
             if (!duck.isCaught()) {
@@ -75,12 +52,6 @@ public class NetworkHandler {
         }
     }
     
-    /**
-     * Send notification that a duck was removed (caught or grounded).
-     * Only the host should call this.
-     * 
-     * @param duck the duck that was removed
-     */
     public static void sendDuckRemoved(Duck duck) {
         CatchThemAllPackets.DuckRemoved packet = new CatchThemAllPackets.DuckRemoved();
         packet.duckId = duck.id;
@@ -88,13 +59,6 @@ public class NetworkHandler {
         NetworkManager.getInstance().sendPacket(packet);
     }
     
-    /**
-     * Send score update for a player.
-     * Only the host should call this.
-     * 
-     * @param playerId ID of the player
-     * @param score new score
-     */
     public static void sendScoreUpdate(int playerId, int score) {
         CatchThemAllPackets.ScoreUpdate packet = new CatchThemAllPackets.ScoreUpdate();
         packet.playerId = playerId;

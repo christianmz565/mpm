@@ -2,13 +2,12 @@ package to.mpm.minigames.catchThemAll.entities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Rectangle;
-import to.mpm.network.sync.SyncedObject;
-import to.mpm.network.sync.Synchronized;
 
 /**
  * Player entity with physics (gravity, jump, ground detection, basket).
+ * Position and physics state are synchronized via PlayerPosition packets.
  */
-public class Player extends SyncedObject {
+public class Player {
     // Player dimensions
     public static final float PLAYER_WIDTH = 30f;
     public static final float PLAYER_HEIGHT = 40f;
@@ -19,20 +18,26 @@ public class Player extends SyncedObject {
     public static final float GRAVITY = -800f;
     public static final float GROUND_Y = 60f;
     
-    @Synchronized public float x;
-    @Synchronized public float y;
-    @Synchronized public float velocityY;
-    @Synchronized public boolean isGrounded;
+    // Physics state (synchronized via network)
+    public float x;
+    public float y;
+    public float velocityY;
+    public boolean isGrounded;
+    public float lastVelocityX;
+    public float blockedTimer = 0f; // Prevents input vibration on collision
     
-    public float r, g, b; // Player color
-    public float lastVelocityX; // Track horizontal velocity for collision physics
-    public float blockedTimer = 0f; // Timer to prevent vibration when blocked by collision
+    // Rendering
+    public final float r, g, b; // Player color
     
+    // Collision detection
     private final Rectangle bounds;
     private final Rectangle basketBounds;
+    
+    // Network ownership
+    private final boolean isLocallyOwned;
 
     public Player(boolean isLocallyOwned, float x, float y, float r, float g, float b) {
-        super(isLocallyOwned);
+        this.isLocallyOwned = isLocallyOwned;
         this.x = x;
         this.y = y;
         this.velocityY = 0;
@@ -51,11 +56,8 @@ public class Player extends SyncedObject {
         );
     }
 
-    @Override
     public void update() {
-        super.update();
-        
-        if (isLocallyOwned()) {
+        if (isLocallyOwned) {
             // Decrease blocked timer
             if (blockedTimer > 0) {
                 blockedTimer -= Gdx.graphics.getDeltaTime();
@@ -63,8 +65,6 @@ public class Player extends SyncedObject {
             
             // Apply gravity
             velocityY += GRAVITY * Gdx.graphics.getDeltaTime();
-            
-            // Apply velocity
             y += velocityY * Gdx.graphics.getDeltaTime();
             
             // Ground collision
@@ -73,18 +73,15 @@ public class Player extends SyncedObject {
                 velocityY = 0;
                 isGrounded = true;
             } else {
-                // If not on ground, mark as not grounded (will be corrected by server if on player)
                 isGrounded = false;
             }
         }
         
         updateBounds();
     }
-
-    public void setPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
-        updateBounds();
+    
+    public boolean isLocallyOwned() {
+        return isLocallyOwned;
     }
     
     public void updateBounds() {
