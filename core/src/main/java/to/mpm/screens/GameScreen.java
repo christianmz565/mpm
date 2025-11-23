@@ -109,8 +109,8 @@ public class GameScreen implements Screen {
         scoreLabel.setText(currentScore + " pts");
 
         if (currentMinigame.isFinished()) {
-            // TODO: Go to results screen
-            game.setScreen(new MainMenuScreen(game));
+            // Ir a la pantalla de resultados con los scores del minijuego
+            game.setScreen(new ResultsScreen(game, ResultsScreen.ViewMode.VIEW_TOP3, currentMinigame.getScores()));
             dispose();
             return;
         }

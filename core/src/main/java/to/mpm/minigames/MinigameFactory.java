@@ -2,6 +2,7 @@ package to.mpm.minigames;
 
 import to.mpm.minigames.ballmovement.BallMovementMinigame;
 import to.mpm.minigames.catchThemAll.CatchThemAllMinigame;
+import to.mpm.minigames.duckshooter.DuckShooterMinigame;
 
 /**
  * Factory para crear instancias de minijuegos.
@@ -20,6 +21,8 @@ public class MinigameFactory {
                 return new BallMovementMinigame(localPlayerId);
             case CATCH_THEM_ALL:
                 return new CatchThemAllMinigame(localPlayerId);
+            case DUCK_SHOOTER:
+                return new DuckShooterMinigame(localPlayerId);
             default:
                 throw new IllegalArgumentException("Unknown minigame type: " + type);
         }

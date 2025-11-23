@@ -5,6 +5,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import to.mpm.minigames.duckshooter.network.DuckShooterPackets;
 
 import java.util.UUID;
 
@@ -37,6 +38,13 @@ public final class KryoClassRegistrar {
         kryo.register(Packets.Ping.class);
         kryo.register(Packets.Pong.class);
         kryo.register(Object[].class);
+        
+        // Duck Shooter packets
+        kryo.register(DuckShooterPackets.DuckState.class);
+        kryo.register(DuckShooterPackets.ShootQuack.class);
+        kryo.register(DuckShooterPackets.QuackHit.class);
+        kryo.register(DuckShooterPackets.DuckEliminated.class);
+        kryo.register(DuckShooterPackets.GameEnd.class);
     }
 
     /**

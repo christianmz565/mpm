@@ -60,16 +60,38 @@ public class ResultsScreen implements Screen {
      * @param viewMode modo de vista inicial
      */
     public ResultsScreen(Main game, ViewMode viewMode) {
+        this(game, viewMode, null);
+    }
+    
+    /**
+     * Constructor de la pantalla de resultados con modo de vista específico y resultados.
+     *
+     * @param game     referencia a la instancia principal del juego
+     * @param viewMode modo de vista inicial
+     * @param scores   mapa de playerId -> score del minijuego
+     */
+    public ResultsScreen(Main game, ViewMode viewMode, java.util.Map<Integer, Integer> scores) {
         this.game = game;
         this.currentView = viewMode;
         this.results = new ArrayList<>();
 
-        results.add(new PlayerResult("Nombre", 123000, 1));
-        results.add(new PlayerResult("Nombre", 123000, 2));
-        results.add(new PlayerResult("Nombre", 123000, 3));
-        results.add(new PlayerResult("Nombre", 123000, 4));
-        results.add(new PlayerResult("Nombre", 123000, 5));
-        results.add(new PlayerResult("Nombre", 123000, 6));
+        if (scores != null && !scores.isEmpty()) {
+            // Usar resultados reales del minijuego
+            to.mpm.network.NetworkManager nm = to.mpm.network.NetworkManager.getInstance();
+            for (java.util.Map.Entry<Integer, Integer> entry : scores.entrySet()) {
+                String playerName = nm.getConnectedPlayers().get(entry.getKey());
+                if (playerName == null) playerName = "Player " + entry.getKey();
+                results.add(new PlayerResult(playerName, entry.getValue(), 0));
+            }
+        } else {
+            // Datos de prueba
+            results.add(new PlayerResult("Nombre", 123000, 1));
+            results.add(new PlayerResult("Nombre", 123000, 2));
+            results.add(new PlayerResult("Nombre", 123000, 3));
+            results.add(new PlayerResult("Nombre", 123000, 4));
+            results.add(new PlayerResult("Nombre", 123000, 5));
+            results.add(new PlayerResult("Nombre", 123000, 6));
+        }
 
         results.sort(Comparator.comparingInt((PlayerResult r) -> r.score).reversed());
 
@@ -92,7 +114,37 @@ public class ResultsScreen implements Screen {
         stage.addActor(root);
 
         contentContainer = new Table();
-        root.add(contentContainer).expand().fill();
+        root.add(contentContainer).expand().fill().row();
+        
+        // Agregar botones de navegación
+        Table buttonsTable = new Table();
+        buttonsTable.pad(UIStyles.Spacing.LARGE);
+        
+        TextButton backToMenuButton = new TextButton("Menú Principal", skin);
+        backToMenuButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+            @Override
+            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
+                game.setScreen(new MainMenuScreen(game));
+                dispose();
+            }
+        });
+        buttonsTable.add(backToMenuButton).width(200).height(50).padRight(UIStyles.Spacing.MEDIUM);
+        
+        // Solo mostrar botón de continuar si hay conexión activa
+        if (to.mpm.network.NetworkManager.getInstance().isConnected()) {
+            TextButton continueButton = new TextButton("Continuar", skin);
+            continueButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+                @Override
+                public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
+                    boolean isHost = to.mpm.network.NetworkManager.getInstance().isHost();
+                    game.setScreen(new LobbyScreen(game, isHost));
+                    dispose();
+                }
+            });
+            buttonsTable.add(continueButton).width(200).height(50);
+        }
+        
+        root.add(buttonsTable).bottom();
 
         renderCurrentView();
     }
