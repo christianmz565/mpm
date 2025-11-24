@@ -22,6 +22,10 @@ public class RandomGameSelection implements GameSelectionStrategy {
         int validCount = 0;
         
         for (MinigameType game : allGames) {
+            // Exclude THE_FINALE from random selection (only selected explicitly)
+            if (game == MinigameType.THE_FINALE) {
+                continue;
+            }
             if (playerCount >= game.getMinPlayers() && playerCount <= game.getMaxPlayers()) {
                 validGames[validCount++] = game;
             }

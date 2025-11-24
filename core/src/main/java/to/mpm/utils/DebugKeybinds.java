@@ -59,10 +59,22 @@ public class DebugKeybinds {
                 () -> switchScreen(new SpectatorScreen(game)));
 
         f7Pressed = handleKey(f7Pressed, Input.Keys.F7, "Switching to Scoreboard Screen",
-                () -> switchScreen(new ScoreboardScreen(game)));
+                () -> {
+                    java.util.Map<Integer, Integer> dummyScores = new java.util.HashMap<>();
+                    dummyScores.put(0, 1000);
+                    dummyScores.put(1, 800);
+                    dummyScores.put(2, 600);
+                    switchScreen(new ScoreboardScreen(game, dummyScores, 1, 3, 0));
+                });
 
         f8Pressed = handleKey(f8Pressed, Input.Keys.F8, "Switching to Results Screen",
-                () -> switchScreen(new ResultsScreen(game)));
+                () -> {
+                    java.util.Map<Integer, Integer> dummyScores = new java.util.HashMap<>();
+                    dummyScores.put(0, 1500);
+                    dummyScores.put(1, 1200);
+                    dummyScores.put(2, 900);
+                    switchScreen(new ResultsScreen(game, dummyScores));
+                });
 
         f9Pressed = handleKey(f9Pressed, Input.Keys.F9, "Switching to Minigame Selection Screen (debug)",
                 () -> switchScreen(new MinigameSelectionScreen(game, true)));

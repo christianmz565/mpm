@@ -149,6 +149,18 @@ public class JoinLobbyScreen implements Screen {
 
         try {
             NetworkManager.getInstance().joinGame(host, port, playerName);
+            
+            // Register packet classes for serialization
+            NetworkManager.getInstance().registerAdditionalClasses(
+                to.mpm.minigames.manager.ManagerPackets.RoomConfig.class,
+                to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class,
+                to.mpm.minigames.manager.ManagerPackets.StartNextRound.class,
+                to.mpm.minigames.manager.ManagerPackets.ShowResults.class,
+                to.mpm.minigames.manager.ManagerPackets.ReturnToLobby.class,
+                java.util.HashMap.class,
+                java.util.ArrayList.class
+            );
+            
             statusLabel.setText("Connected!");
 
             game.setScreen(new LobbyScreen(game, false, host, port));

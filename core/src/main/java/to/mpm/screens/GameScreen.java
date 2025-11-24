@@ -34,6 +34,10 @@ public class GameScreen implements Screen {
     private Stage uiStage; // !< stage para la superposición de UI
     private Skin skin; // !< skin para estilizar componentes de UI
     private Label scoreLabel; // !< etiqueta que muestra la puntuación del jugador
+    private Label timerLabel; // !< etiqueta que muestra el temporizador
+    private Label roundLabel; // !< etiqueta que muestra la ronda actual
+    private float gameTimer = 60f; // !< temporizador del juego en segundos
+    private boolean gameEnded = false; // !< indica si el juego ha terminado
 
     private StartGamePacketHandler startGameHandler;
 
@@ -62,9 +66,33 @@ public class GameScreen implements Screen {
 
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
-        uiRoot.top().right();
+        uiRoot.top();
         uiStage.addActor(uiRoot);
 
+        // Timer and round info at top center
+        Table topCenterContainer = new Table();
+        topCenterContainer.pad(UIStyles.Spacing.MEDIUM);
+
+        to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+        if (flowManager.isInitialized()) {
+            roundLabel = new Label("Round " + flowManager.getCurrentRound() + "/" + flowManager.getTotalRounds(), skin);
+            roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+            roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+            topCenterContainer.add(roundLabel).padBottom(UIStyles.Spacing.TINY).row();
+        }
+
+        // Check if this is the finale (no timer)
+        boolean isFinale = minigameType == MinigameType.THE_FINALE;
+        if (!isFinale) {
+            timerLabel = new Label("Time: 60", skin);
+            timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+            timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
+            topCenterContainer.add(timerLabel).row();
+        }
+
+        uiRoot.add(topCenterContainer).expandX().row();
+
+        // Score display at top right
         Table scoreContainer = new Table(skin);
         scoreContainer.pad(UIStyles.Spacing.MEDIUM);
 
@@ -81,7 +109,11 @@ public class GameScreen implements Screen {
         scoreContent.add(incrementLabel).padTop(UIStyles.Spacing.TINY).right();
 
         scoreContainer.add(scoreContent);
-        uiRoot.add(scoreContainer).pad(UIStyles.Spacing.MEDIUM);
+        
+        Table rightContainer = new Table();
+        rightContainer.top().right();
+        rightContainer.add(scoreContainer).pad(UIStyles.Spacing.MEDIUM);
+        uiRoot.add(rightContainer).expand().top().right();
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
@@ -100,18 +132,39 @@ public class GameScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        currentMinigame.handleInput(delta);
+        if (gameEnded) {
+            // Prevent any updates after game has ended
+            Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            uiStage.act(delta);
+            uiStage.draw();
+            return;
+        }
 
+        currentMinigame.handleInput(delta);
         currentMinigame.update(delta);
 
+        // Update timer (unless it's the finale)
+        boolean isFinale = minigameType == MinigameType.THE_FINALE;
+        if (!isFinale) {
+            gameTimer -= delta;
+            if (timerLabel != null) {
+                int seconds = Math.max(0, (int) Math.ceil(gameTimer));
+                timerLabel.setText("Time: " + seconds);
+            }
+        }
+
+        // Update score display
         int localPlayerId = NetworkManager.getInstance().getMyId();
         int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
         scoreLabel.setText(currentScore + " pts");
 
-        if (currentMinigame.isFinished()) {
-            // TODO: Go to results screen
-            game.setScreen(new MainMenuScreen(game));
-            dispose();
+        // Check if game should end (timer expired OR minigame finished)
+        boolean timeUp = !isFinale && gameTimer <= 0;
+        boolean minigameFinished = currentMinigame.isFinished();
+        
+        if (timeUp || minigameFinished) {
+            endGame();
             return;
         }
 
@@ -122,6 +175,54 @@ public class GameScreen implements Screen {
 
         uiStage.act(delta);
         uiStage.draw();
+    }
+
+    /**
+     * Ends the current game and transitions to the appropriate screen.
+     * If host, updates GameFlowManager and broadcasts scoreboard.
+     * All clients transition to ScoreboardScreen or ResultsScreen.
+     */
+    private void endGame() {
+        if (gameEnded) {
+            return; // Prevent multiple calls
+        }
+        gameEnded = true;
+
+        java.util.Map<Integer, Integer> roundScores = currentMinigame.getScores();
+        to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+        
+        if (NetworkManager.getInstance().isHost()) {
+            // Host: update game flow and broadcast results
+            flowManager.endRound(roundScores);
+            
+            if (flowManager.isGameComplete()) {
+                // All rounds complete, go to results screen
+                to.mpm.minigames.manager.ManagerPackets.ShowResults resultsPacket = 
+                    new to.mpm.minigames.manager.ManagerPackets.ShowResults(flowManager.getTotalScores());
+                NetworkManager.getInstance().broadcastFromHost(resultsPacket);
+                
+                game.setScreen(new ResultsScreen(game, flowManager.getTotalScores()));
+            } else {
+                // More rounds to play, show scoreboard
+                to.mpm.minigames.manager.ManagerPackets.ShowScoreboard scoreboardPacket = 
+                    new to.mpm.minigames.manager.ManagerPackets.ShowScoreboard(
+                        flowManager.getCurrentRound(),
+                        flowManager.getTotalRounds(),
+                        flowManager.getTotalScores()
+                    );
+                NetworkManager.getInstance().broadcastFromHost(scoreboardPacket);
+                
+                int localPlayerId = NetworkManager.getInstance().getMyId();
+                game.setScreen(new ScoreboardScreen(game, flowManager.getTotalScores(), 
+                    flowManager.getCurrentRound(), flowManager.getTotalRounds(), localPlayerId));
+            }
+        } else {
+            // Client: just wait for host to send ShowScoreboard or ShowResults packet
+            // For now, stay on this screen - handlers will transition us
+            Gdx.app.log("GameScreen", "Game ended, waiting for host instructions");
+        }
+        
+        dispose();
     }
 
     /**

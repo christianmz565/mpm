@@ -133,9 +133,14 @@ public class CreateRoomScreen implements Screen {
     private void createRoom() {
         try {
             int port = Integer.parseInt(portField.getText());
-            @SuppressWarnings("unused")
             int rounds = Integer.parseInt(roundsField.getText());
             String playerName = nameField.getText().trim();
+
+            // Validate rounds (must be at least 2)
+            if (rounds < 2) {
+                statusLabel.setText("Las rondas deben ser al menos 2");
+                return;
+            }
 
             if (playerName.isEmpty()) {
                 playerName = "Host";
@@ -146,7 +151,23 @@ public class CreateRoomScreen implements Screen {
             NetworkManager.getInstance().hostGame(playerName, port);
             FirewallHelper.requestFirewallPermission(port);
 
-            game.setScreen(new LobbyScreen(game, true));
+            // Register packet classes for serialization before sending any packets
+            NetworkManager.getInstance().registerAdditionalClasses(
+                to.mpm.minigames.manager.ManagerPackets.RoomConfig.class,
+                to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class,
+                to.mpm.minigames.manager.ManagerPackets.StartNextRound.class,
+                to.mpm.minigames.manager.ManagerPackets.ShowResults.class,
+                to.mpm.minigames.manager.ManagerPackets.ReturnToLobby.class,
+                java.util.HashMap.class,
+                java.util.ArrayList.class
+            );
+
+            // Broadcast room configuration to all clients (including host as client)
+            to.mpm.minigames.manager.ManagerPackets.RoomConfig roomConfig = 
+                new to.mpm.minigames.manager.ManagerPackets.RoomConfig(rounds);
+            NetworkManager.getInstance().broadcastFromHost(roomConfig);
+
+            game.setScreen(new LobbyScreen(game, true, rounds));
             dispose();
 
         } catch (NumberFormatException e) {

@@ -13,6 +13,11 @@ public enum MinigameType {
             "Catch Them All",
             "Catch falling ducks with your basket! Avoid bad ducks!",
             2, 6
+    ),
+    THE_FINALE(
+            "The Finale",
+            "Final showdown! Only the best compete!",
+            2, 99
     );
 
     private final String displayName;

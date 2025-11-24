@@ -12,7 +12,6 @@ import to.mpm.ui.UISkinProvider;
 import to.mpm.ui.components.ScoreItem;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -24,6 +23,13 @@ import java.util.List;
  * scroll
  * - VIEW_WINNER_SPOTLIGHT: Muestra el nombre del ganador en el centro con
  * sprites de patos alrededor
+ * 
+ * Plays automatic animation sequence:
+ * 1. SCROLLING: Scrolls full list from bottom to top (2-3 seconds)
+ * 2. PODIUM: Shows podium view (3 seconds)
+ * 3. FADE: Fades to black (0.5 seconds)
+ * 4. WINNER: Shows winner spotlight (3 seconds)
+ * 5. RETURN: Returns everyone to lobby
  */
 public class ResultsScreen implements Screen {
     /**
@@ -35,47 +41,86 @@ public class ResultsScreen implements Screen {
         VIEW_WINNER_SPOTLIGHT //!< Vista de foco en el ganador
     }
 
+    /**
+     * Animation states for automatic sequence.
+     */
+    private enum AnimationState {
+        SCROLLING,
+        PODIUM,
+        FADE,
+        WINNER,
+        RETURN,
+        COMPLETE
+    }
+
     private final Main game; //!< Referencia a la instancia principal del juego
     private Stage stage; //!< Escenario para elementos de UI
     private Skin skin; //!< Skin para los componentes de UI
 
     private ViewMode currentView = ViewMode.VIEW_TOP3; //!< Modo de vista actual
     private Table contentContainer; //!< Contenedor del contenido que cambia según el modo
+    private ScrollPane fullListScrollPane; //!< ScrollPane para la lista completa
 
-    private List<PlayerResult> results; //!< Lista de resultados de jugadores
+    private List<to.mpm.utils.PlayerData> results; //!< Lista de resultados de jugadores
+    private AnimationState animationState = AnimationState.SCROLLING; //!< Estado actual de la animación
+    private float stateTimer = 0f; //!< Temporizador para el estado actual
+    private to.mpm.network.handlers.ClientPacketHandler returnToLobbyHandler; //!< Handler para volver al lobby
+
+    /**
+     * Constructor de la pantalla de resultados con scores map.
+     *
+     * @param game referencia a la instancia principal del juego
+     * @param finalScores mapa de playerId a puntaje final
+     */
+    public ResultsScreen(Main game, java.util.Map<Integer, Integer> finalScores) {
+        this.game = game;
+        this.results = new ArrayList<>();
+
+        // Convert scores to PlayerData list
+        java.util.Map<Integer, String> playerNames = to.mpm.network.NetworkManager.getInstance().getConnectedPlayers();
+        for (java.util.Map.Entry<Integer, Integer> entry : finalScores.entrySet()) {
+            int playerId = entry.getKey();
+            String playerName = playerNames.getOrDefault(playerId, "Player " + playerId);
+            results.add(new to.mpm.utils.PlayerData(playerId, playerName, entry.getValue()));
+        }
+        java.util.Collections.sort(results); // Sort by score descending
+
+        Gdx.app.log("ResultsScreen", "Initialized with " + results.size() + " players");
+    }
 
     /**
      * Constructor de la pantalla de resultados con vista por defecto.
+     * @deprecated Use constructor with scores map instead
      *
      * @param game referencia a la instancia principal del juego
      */
+    @Deprecated
     public ResultsScreen(Main game) {
         this(game, ViewMode.VIEW_TOP3);
     }
 
     /**
      * Constructor de la pantalla de resultados con modo de vista específico.
+     * @deprecated Use constructor with scores map instead
      *
      * @param game     referencia a la instancia principal del juego
      * @param viewMode modo de vista inicial
      */
+    @Deprecated
     public ResultsScreen(Main game, ViewMode viewMode) {
         this.game = game;
         this.currentView = viewMode;
         this.results = new ArrayList<>();
 
-        results.add(new PlayerResult("Nombre", 123000, 1));
-        results.add(new PlayerResult("Nombre", 123000, 2));
-        results.add(new PlayerResult("Nombre", 123000, 3));
-        results.add(new PlayerResult("Nombre", 123000, 4));
-        results.add(new PlayerResult("Nombre", 123000, 5));
-        results.add(new PlayerResult("Nombre", 123000, 6));
+        // Dummy data for testing
+        results.add(new to.mpm.utils.PlayerData(1, "Nombre", 123000));
+        results.add(new to.mpm.utils.PlayerData(2, "Nombre", 123000));
+        results.add(new to.mpm.utils.PlayerData(3, "Nombre", 123000));
+        results.add(new to.mpm.utils.PlayerData(4, "Nombre", 123000));
+        results.add(new to.mpm.utils.PlayerData(5, "Nombre", 123000));
+        results.add(new to.mpm.utils.PlayerData(6, "Nombre", 123000));
 
-        results.sort(Comparator.comparingInt((PlayerResult r) -> r.score).reversed());
-
-        for (int i = 0; i < results.size(); i++) {
-            results.get(i).rank = i + 1;
-        }
+        java.util.Collections.sort(results);
     }
 
     /**
@@ -94,7 +139,15 @@ public class ResultsScreen implements Screen {
         contentContainer = new Table();
         root.add(contentContainer).expand().fill();
 
+        // Start with full list view for scrolling animation
+        currentView = ViewMode.VIEW_FULL_LIST;
         renderCurrentView();
+
+        // Register ReturnToLobby packet handler
+        returnToLobbyHandler = new ReturnToLobbyHandler();
+        to.mpm.network.NetworkManager.getInstance().registerClientHandler(returnToLobbyHandler);
+
+        Gdx.app.log("ResultsScreen", "Starting animation sequence");
     }
 
     /**
@@ -123,9 +176,9 @@ public class ResultsScreen implements Screen {
     private void renderPodiumView() {
         Table podiumTable = new Table();
 
-        PlayerResult first = results.size() > 0 ? results.get(0) : null;
-        PlayerResult second = results.size() > 1 ? results.get(1) : null;
-        PlayerResult third = results.size() > 2 ? results.get(2) : null;
+        to.mpm.utils.PlayerData first = results.size() > 0 ? results.get(0) : null;
+        to.mpm.utils.PlayerData second = results.size() > 1 ? results.get(1) : null;
+        to.mpm.utils.PlayerData third = results.size() > 2 ? results.get(2) : null;
 
         Table positions = new Table();
 
@@ -149,11 +202,11 @@ public class ResultsScreen implements Screen {
         if (results.size() > 3) {
             Table remainingPlayers = new Table();
             for (int i = 3; i < Math.min(results.size(), 6); i++) {
-                PlayerResult pr = results.get(i);
+                to.mpm.utils.PlayerData pr = results.get(i);
                 Table item = new ScoreItem(skin)
-                        .playerName(pr.name)
-                        .rank(pr.rank)
-                        .score(pr.score)
+                        .playerName(pr.getPlayerName())
+                        .rank(i + 1)
+                        .score(pr.getScore())
                         .build();
                 remainingPlayers.add(item).fillX().expandX().padBottom(UIStyles.Spacing.TINY).row();
             }
@@ -170,7 +223,7 @@ public class ResultsScreen implements Screen {
      * @param position posición en el podio (1, 2 o 3)
      * @return tabla con el panel de posición
      */
-    private Table createPodiumPosition(PlayerResult result, int position) {
+    private Table createPodiumPosition(to.mpm.utils.PlayerData result, int position) {
         Table positionTable = new Table(skin);
         positionTable.pad(UIStyles.Spacing.MEDIUM);
 
@@ -178,11 +231,11 @@ public class ResultsScreen implements Screen {
         rankLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
         positionTable.add(rankLabel).padBottom(UIStyles.Spacing.SMALL).row();
 
-        Label nameLabel = new Label(result.name, skin);
+        Label nameLabel = new Label(result.getPlayerName(), skin);
         nameLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
         positionTable.add(nameLabel).padBottom(UIStyles.Spacing.SMALL).row();
 
-        Label scoreLabel = new Label(String.valueOf(result.score), skin);
+        Label scoreLabel = new Label(String.valueOf(result.getScore()), skin);
         scoreLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         scoreLabel.setColor(position == 1 ? UIStyles.Colors.SECONDARY : UIStyles.Colors.TEXT_PRIMARY);
         positionTable.add(scoreLabel);
@@ -203,20 +256,21 @@ public class ResultsScreen implements Screen {
         listTable.add(arrow).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table scoresContainer = new Table();
-        for (PlayerResult pr : results) {
+        for (int i = 0; i < results.size(); i++) {
+            to.mpm.utils.PlayerData pr = results.get(i);
             Table scoreItem = new ScoreItem(skin)
-                    .rank(pr.rank)
-                    .playerName(pr.name)
-                    .score(pr.score)
-                    .highlighted(pr.rank == 1)
+                    .rank(i + 1)
+                    .playerName(pr.getPlayerName())
+                    .score(pr.getScore())
+                    .highlighted(i == 0)
                     .build();
 
             scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.SMALL).row();
         }
 
-        ScrollPane scrollPane = new ScrollPane(scoresContainer, skin);
-        scrollPane.setFadeScrollBars(false);
-        listTable.add(scrollPane).width(UIStyles.Layout.PANEL_MAX_WIDTH)
+        fullListScrollPane = new ScrollPane(scoresContainer, skin);
+        fullListScrollPane.setFadeScrollBars(false);
+        listTable.add(fullListScrollPane).width(UIStyles.Layout.PANEL_MAX_WIDTH)
                 .height(UIStyles.Layout.LIST_MAX_HEIGHT);
 
         contentContainer.add(listTable);
@@ -231,18 +285,18 @@ public class ResultsScreen implements Screen {
         if (results.isEmpty())
             return;
 
-        PlayerResult winner = results.get(0);
+        to.mpm.utils.PlayerData winner = results.get(0);
 
         Table spotlightTable = new Table();
 
         Table winnerPanel = new Table(skin);
         winnerPanel.pad(UIStyles.Spacing.XLARGE);
 
-        Label nameLabel = new Label(winner.name, skin);
+        Label nameLabel = new Label(winner.getPlayerName(), skin);
         nameLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         winnerPanel.add(nameLabel).padBottom(UIStyles.Spacing.MEDIUM).row();
 
-        Label scoreLabel = new Label(String.valueOf(winner.score), skin);
+        Label scoreLabel = new Label(String.valueOf(winner.getScore()), skin);
         scoreLabel.setFontScale(UIStyles.Typography.TITLE_SCALE * 1.2f);
         scoreLabel.setColor(UIStyles.Colors.SECONDARY);
         winnerPanel.add(scoreLabel);
@@ -263,18 +317,97 @@ public class ResultsScreen implements Screen {
     }
 
     /**
-     * Renderiza la pantalla y actualiza la lógica del frame.
+     * Renderiza la pantalla y actualiza la animación del frame.
      *
      * @param delta tiempo transcurrido desde el último frame en segundos
      */
     @Override
     public void render(float delta) {
+        stateTimer += delta;
+
+        // Update animation state machine
+        switch (animationState) {
+            case SCROLLING:
+                updateScrollingState();
+                if (stateTimer >= 2.5f) {
+                    stateTimer = 0f;
+                    animationState = AnimationState.PODIUM;
+                    currentView = ViewMode.VIEW_TOP3;
+                    renderCurrentView();
+                    Gdx.app.log("ResultsScreen", "Transition to PODIUM state");
+                }
+                break;
+
+            case PODIUM:
+                if (stateTimer >= 3.0f) {
+                    stateTimer = 0f;
+                    animationState = AnimationState.FADE;
+                    to.mpm.ui.transitions.ScreenTransition.fadeOut(stage, () -> {
+                        animationState = AnimationState.WINNER;
+                        stateTimer = 0f;
+                        currentView = ViewMode.VIEW_WINNER_SPOTLIGHT;
+                        renderCurrentView();
+                        to.mpm.ui.transitions.ScreenTransition.fadeIn(stage, null);
+                        Gdx.app.log("ResultsScreen", "Transition to WINNER state");
+                    });
+                    Gdx.app.log("ResultsScreen", "Starting FADE transition");
+                }
+                break;
+
+            case FADE:
+                // Wait for fade transition to complete
+                break;
+
+            case WINNER:
+                if (stateTimer >= 3.0f) {
+                    stateTimer = 0f;
+                    animationState = AnimationState.RETURN;
+                    returnToLobby();
+                }
+                break;
+
+            case RETURN:
+            case COMPLETE:
+                // Waiting for transition or already done
+                break;
+        }
+
         Gdx.gl.glClearColor(UIStyles.Colors.BACKGROUND.r, UIStyles.Colors.BACKGROUND.g,
                 UIStyles.Colors.BACKGROUND.b, UIStyles.Colors.BACKGROUND.a);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(delta);
         stage.draw();
+    }
+
+    /**
+     * Updates the scrolling animation state.
+     * Smoothly scrolls from bottom to top of the player list.
+     */
+    private void updateScrollingState() {
+        if (fullListScrollPane != null) {
+            float progress = Math.min(1.0f, stateTimer / 2.5f);
+            float maxScroll = fullListScrollPane.getMaxY();
+            fullListScrollPane.setScrollY(maxScroll * (1.0f - progress));
+        }
+    }
+
+    /**
+     * Host: Returns everyone to the lobby.
+     * Broadcasts ReturnToLobby packet and resets GameFlowManager.
+     */
+    private void returnToLobby() {
+        if (to.mpm.network.NetworkManager.getInstance().isHost()) {
+            Gdx.app.log("ResultsScreen", "Host returning everyone to lobby");
+            to.mpm.minigames.manager.ManagerPackets.ReturnToLobby packet = 
+                new to.mpm.minigames.manager.ManagerPackets.ReturnToLobby();
+            to.mpm.network.NetworkManager.getInstance().broadcastFromHost(packet);
+            
+            to.mpm.minigames.manager.GameFlowManager.getInstance().reset();
+            game.setScreen(new LobbyScreen(game, true));
+            dispose();
+        }
+        // Clients will transition when they receive the packet
     }
 
     /**
@@ -314,28 +447,33 @@ public class ResultsScreen implements Screen {
      */
     @Override
     public void dispose() {
-        stage.dispose();
+        if (returnToLobbyHandler != null) {
+            to.mpm.network.NetworkManager.getInstance().unregisterClientHandler(returnToLobbyHandler);
+            returnToLobbyHandler = null;
+        }
+        if (stage != null) {
+            stage.dispose();
+        }
     }
 
     /**
-     * Clase interna para almacenar resultados de jugador.
+     * Handler for ReturnToLobby packet.
      */
-    private static class PlayerResult {
-        String name; //!< Nombre del jugador
-        int score; //!< Puntaje del jugador
-        int rank; //!< Ranking del jugador
+    private final class ReturnToLobbyHandler implements to.mpm.network.handlers.ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends to.mpm.network.NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ReturnToLobby.class);
+        }
 
-        /**
-         * Constructor del resultado de jugador.
-         *
-         * @param name  nombre del jugador
-         * @param score puntaje del jugador
-         * @param rank  ranking del jugador
-         */
-        PlayerResult(String name, int score, int rank) {
-            this.name = name;
-            this.score = score;
-            this.rank = rank;
+        @Override
+        public void handle(to.mpm.network.handlers.ClientPacketContext context, to.mpm.network.NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ReturnToLobby) {
+                Gdx.app.log("ResultsScreen", "Received ReturnToLobby, transitioning to lobby");
+                to.mpm.minigames.manager.GameFlowManager.getInstance().reset();
+                game.setScreen(new LobbyScreen(game, false));
+                dispose();
+            }
         }
     }
+
 }

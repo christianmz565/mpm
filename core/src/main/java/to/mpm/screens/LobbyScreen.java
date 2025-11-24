@@ -8,8 +8,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.minigames.MinigameType;
-import to.mpm.minigames.selection.GameSelectionStrategy;
-import to.mpm.minigames.selection.RandomGameSelection;
 import to.mpm.network.NetworkConfig;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.NetworkPacket;
@@ -38,6 +36,7 @@ public class LobbyScreen implements Screen {
     private final boolean isHost; // !< indica si este jugador es el host
     private final String serverIp; // !< dirección IP del servidor (para clientes)
     private final int serverPort; // !< puerto del servidor (para clientes)
+    private int rounds; // !< número de rondas configuradas
     private Stage stage; // !< stage para renderizar componentes de UI
     private Skin skin; // !< skin para estilizar componentes
     private Label ipLabel; // !< etiqueta que muestra la IP del servidor
@@ -53,9 +52,22 @@ public class LobbyScreen implements Screen {
      *
      * @param game   instancia del juego principal
      * @param isHost true si este jugador es el host, false si es cliente
+     * @param rounds número de rondas (solo usado por host inicialmente)
+     */
+    public LobbyScreen(Main game, boolean isHost, int rounds) {
+        this(game, isHost, null, 0);
+        this.rounds = rounds;
+    }
+
+    /**
+     * Construye una nueva pantalla de sala para el host (sin rondas especificadas).
+     *
+     * @param game   instancia del juego principal
+     * @param isHost true si este jugador es el host, false si es cliente
      */
     public LobbyScreen(Main game, boolean isHost) {
         this(game, isHost, null, 0);
+        this.rounds = 0; // Will be set via RoomConfig packet
     }
 
     /**
@@ -71,6 +83,7 @@ public class LobbyScreen implements Screen {
         this.isHost = isHost;
         this.serverIp = serverIp;
         this.serverPort = serverPort;
+        this.rounds = 0; // Will be set via RoomConfig packet
     }
 
     /**
@@ -162,6 +175,10 @@ public class LobbyScreen implements Screen {
         NetworkManager networkManager = NetworkManager.getInstance();
         lobbyClientHandler = new LobbyClientHandler();
         networkManager.registerClientHandler(lobbyClientHandler);
+
+        // Register RoomConfig handler for both host and clients
+        RoomConfigClientHandler roomConfigHandler = new RoomConfigClientHandler();
+        networkManager.registerClientHandler(roomConfigHandler);
 
         if (isHost) {
             lobbyServerHandler = new LobbyServerHandler();
@@ -265,7 +282,17 @@ public class LobbyScreen implements Screen {
             return;
         }
 
-        GameSelectionStrategy selectionStrategy = new RandomGameSelection();
+        if (rounds < 2) {
+            Gdx.app.error("LobbyScreen", "Cannot start game: rounds not configured!");
+            return;
+        }
+
+        // Initialize GameFlowManager with rounds configuration
+        to.mpm.minigames.manager.GameFlowManager.getInstance().initialize(rounds);
+        to.mpm.minigames.manager.GameFlowManager.getInstance().startRound();
+
+        // Select first minigame randomly
+        to.mpm.minigames.selection.GameSelectionStrategy selectionStrategy = new to.mpm.minigames.selection.RandomGameSelection();
         int playerCount = NetworkManager.getInstance().getPlayerCount();
         MinigameType selectedGame = selectionStrategy.selectGame(playerCount);
 
@@ -363,6 +390,25 @@ public class LobbyScreen implements Screen {
                 onPlayerJoined(joined);
             } else if (packet instanceof Packets.PlayerLeft left) {
                 onPlayerLeft(left);
+            }
+        }
+    }
+
+    /**
+     * Manejador de paquetes para configuración de sala.
+     * Recibido tanto por host como clientes.
+     */
+    private final class RoomConfigClientHandler implements ClientPacketHandler {
+        @Override
+        public List<Class<? extends NetworkPacket>> receivablePackets() {
+            return List.of(to.mpm.minigames.manager.ManagerPackets.RoomConfig.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.RoomConfig roomConfig) {
+                rounds = roomConfig.rounds;
+                Gdx.app.log("LobbyScreen", "Room configured with " + rounds + " rounds");
             }
         }
     }
