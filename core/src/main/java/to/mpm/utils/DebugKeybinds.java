@@ -53,7 +53,7 @@ public class DebugKeybinds {
                 () -> switchScreen(new LobbyScreen(game, true)));
 
         f5Pressed = handleKey(f5Pressed, Input.Keys.F5, "Switching to Game Screen (Ball Movement)",
-                () -> switchScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT)));
+            () -> switchScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT, 1, 3)));
 
         f6Pressed = handleKey(f6Pressed, Input.Keys.F6, "Switching to Spectator Screen",
                 () -> switchScreen(new SpectatorScreen(game)));

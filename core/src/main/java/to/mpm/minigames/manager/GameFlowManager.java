@@ -110,7 +110,7 @@ public class GameFlowManager {
      * @return true if the next round should be the finale
      */
     public boolean shouldPlayFinale() {
-        return initialized && currentRound == totalRounds - 1;
+        return initialized && currentRound == totalRounds;
     }
 
     /**

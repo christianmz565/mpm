@@ -239,7 +239,9 @@ public class LobbyScreen implements Screen {
         if (packet.minigameType != null && !packet.minigameType.isEmpty()) {
             try {
                 MinigameType type = MinigameType.valueOf(packet.minigameType);
-                game.setScreen(new GameScreen(game, type));
+                int roundNumber = packet.currentRound > 0 ? packet.currentRound : 1;
+                int configuredRounds = packet.totalRounds > 0 ? packet.totalRounds : (rounds > 0 ? rounds : 1);
+                game.setScreen(new GameScreen(game, type, roundNumber, configuredRounds));
                 dispose();
             } catch (IllegalArgumentException e) {
                 Gdx.app.error("LobbyScreen", "Unknown minigame type: " + packet.minigameType);
@@ -288,8 +290,9 @@ public class LobbyScreen implements Screen {
         }
 
         // Initialize GameFlowManager with rounds configuration
-        to.mpm.minigames.manager.GameFlowManager.getInstance().initialize(rounds);
-        to.mpm.minigames.manager.GameFlowManager.getInstance().startRound();
+        to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+        flowManager.initialize(rounds);
+        flowManager.startRound();
 
         // Select first minigame randomly
         to.mpm.minigames.selection.GameSelectionStrategy selectionStrategy = new to.mpm.minigames.selection.RandomGameSelection();
@@ -301,9 +304,11 @@ public class LobbyScreen implements Screen {
 
         Packets.StartGame packet = new Packets.StartGame();
         packet.minigameType = selectedGame.name();
+        packet.currentRound = flowManager.getCurrentRound();
+        packet.totalRounds = flowManager.getTotalRounds();
         NetworkManager.getInstance().broadcastFromHost(packet);
 
-        game.setScreen(new GameScreen(game, selectedGame));
+        game.setScreen(new GameScreen(game, selectedGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         dispose();
     }
 

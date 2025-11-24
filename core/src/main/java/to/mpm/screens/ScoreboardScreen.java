@@ -5,6 +5,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.minigames.MinigameType;
@@ -19,8 +20,10 @@ import to.mpm.utils.PlayerData;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Pantalla de marcador mostrando los puntajes acumulados después de cada ronda.
@@ -60,14 +63,25 @@ public class ScoreboardScreen implements Screen {
         this.totalRounds = totalRounds;
         this.localPlayerId = localPlayerId;
         
-        // Convert scores to PlayerData list
+        // Convert scores to PlayerData list, ensuring zero-score players are included
         sortedPlayers = new ArrayList<>();
         Map<Integer, String> playerNames = NetworkManager.getInstance().getConnectedPlayers();
+        Set<Integer> processedPlayers = new HashSet<>();
+
         for (Map.Entry<Integer, Integer> entry : scores.entrySet()) {
             int playerId = entry.getKey();
             String playerName = playerNames.getOrDefault(playerId, "Player " + playerId);
             sortedPlayers.add(new PlayerData(playerId, playerName, entry.getValue()));
+            processedPlayers.add(playerId);
         }
+
+        for (Map.Entry<Integer, String> entry : playerNames.entrySet()) {
+            int playerId = entry.getKey();
+            if (!processedPlayers.contains(playerId)) {
+                sortedPlayers.add(new PlayerData(playerId, entry.getValue(), 0));
+            }
+        }
+
         Collections.sort(sortedPlayers); // Sort by score descending
     }
 
@@ -82,27 +96,36 @@ public class ScoreboardScreen implements Screen {
 
         Table root = new Table();
         root.setFillParent(true);
+        root.top();
+        root.pad(UIStyles.Spacing.LARGE);
+        root.defaults().padBottom(UIStyles.Spacing.MEDIUM);
         stage.addActor(root);
 
         // Round indicator
         roundLabel = new Label("Round " + currentRound + "/" + totalRounds + " Complete!", skin);
         roundLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-        root.add(roundLabel).padBottom(UIStyles.Spacing.MEDIUM).padTop(UIStyles.Spacing.LARGE).row();
+        roundLabel.setAlignment(Align.center);
+        root.add(roundLabel).expandX().center().row();
 
         Label titleLabel = new Label("Scoreboard", skin);
         titleLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
         titleLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-        root.add(titleLabel).padBottom(UIStyles.Spacing.LARGE).row();
+        titleLabel.setAlignment(Align.center);
+        root.add(titleLabel).expandX().center().padBottom(UIStyles.Spacing.LARGE).row();
 
         // Scores list
         scoresContainer = new Table();
         scoresScroll = new ScrollPane(scoresContainer, skin);
         scoresScroll.setFadeScrollBars(false);
 
-        root.add(scoresScroll).width(UIStyles.Layout.PANEL_MAX_WIDTH)
-                .height(UIStyles.Layout.LIST_MAX_HEIGHT)
-                .expand().row();
+        root.add(scoresScroll)
+            .width(UIStyles.Layout.PANEL_MAX_WIDTH)
+            .maxHeight(UIStyles.Layout.LIST_MAX_HEIGHT)
+            .expand()
+            .fill()
+            .padBottom(UIStyles.Spacing.LARGE)
+            .row();
 
         updateScoresList();
 
@@ -110,7 +133,11 @@ public class ScoreboardScreen implements Screen {
         countdownLabel = new Label("Next round in: 5", skin);
         countdownLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
         countdownLabel.setColor(UIStyles.Colors.ACCENT);
-        root.add(countdownLabel).padTop(UIStyles.Spacing.LARGE).padBottom(UIStyles.Spacing.LARGE);
+        countdownLabel.setAlignment(Align.center);
+        root.add(countdownLabel)
+            .width(UIStyles.Layout.PANEL_MAX_WIDTH)
+            .center()
+            .padTop(UIStyles.Spacing.LARGE);
 
         // Register packet handlers
         startNextRoundHandler = new StartNextRoundHandler();
@@ -133,14 +160,11 @@ public class ScoreboardScreen implements Screen {
             boolean isLocalPlayer = player.getPlayerId() == localPlayerId;
 
             Table scoreItem = new ScoreItem(skin)
+                    .rank(i + 1)
                     .playerName(player.getPlayerName() + (isLocalPlayer ? " (You)" : ""))
                     .score(player.getScore())
+                    .highlighted(isLocalPlayer)
                     .build();
-
-            // Highlight local player
-            if (isLocalPlayer) {
-                scoreItem.setBackground(skin.getDrawable("window"));
-            }
 
             scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.SMALL).row();
         }
@@ -148,9 +172,13 @@ public class ScoreboardScreen implements Screen {
         // Scroll to local player position (center if possible)
         stage.act(0);
         float localPlayerY = 0;
+        float rowHeight = 0;
+        if (scoresContainer.getChildren().size > 0) {
+            rowHeight = scoresContainer.getChildren().first().getHeight() + UIStyles.Spacing.SMALL;
+        }
         for (int i = 0; i < sortedPlayers.size(); i++) {
             if (sortedPlayers.get(i).getPlayerId() == localPlayerId) {
-                localPlayerY = i * (scoresContainer.getCells().first().getPrefHeight() + UIStyles.Spacing.SMALL);
+                localPlayerY = i * rowHeight;
                 break;
             }
         }
@@ -236,7 +264,7 @@ public class ScoreboardScreen implements Screen {
 
         // Transition to game screen or spectator screen
         if (participatingPlayers == null || participatingPlayers.contains(localPlayerId)) {
-            game.setScreen(new GameScreen(game, nextGame));
+            game.setScreen(new GameScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         } else {
             game.setScreen(new SpectatorScreen(game));
         }
@@ -313,7 +341,7 @@ public class ScoreboardScreen implements Screen {
                 // Check if local player is participating
                 if (startNextRound.participatingPlayerIds == null || 
                     startNextRound.participatingPlayerIds.contains(localPlayerId)) {
-                    game.setScreen(new GameScreen(game, minigameType));
+                    game.setScreen(new GameScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 } else {
                     // Eliminated from finale
                     game.setScreen(new SpectatorScreen(game));

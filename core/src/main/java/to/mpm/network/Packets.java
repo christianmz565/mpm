@@ -36,6 +36,8 @@ public class Packets {
      */
     public static class StartGame extends NetworkPacket {
         public String minigameType; //!< tipo de minijuego a iniciar (nombre del enum)
+        public int currentRound; //!< ronda que se va a jugar
+        public int totalRounds; //!< total de rondas configuradas
     }
 
     /**

@@ -36,10 +36,14 @@ public class GameScreen implements Screen {
     private Label scoreLabel; // !< etiqueta que muestra la puntuación del jugador
     private Label timerLabel; // !< etiqueta que muestra el temporizador
     private Label roundLabel; // !< etiqueta que muestra la ronda actual
-    private float gameTimer = 60f; // !< temporizador del juego en segundos
+    private float gameTimer = 10f; // !< temporizador del juego en segundos
     private boolean gameEnded = false; // !< indica si el juego ha terminado
+    private final int currentRound; // !< ronda en curso (1-based)
+    private final int totalRounds; // !< total de rondas configuradas
 
     private StartGamePacketHandler startGameHandler;
+    private ShowScoreboardPacketHandler showScoreboardHandler;
+    private ShowResultsPacketHandler showResultsHandler;
 
     /**
      * Construye una nueva pantalla de juego.
@@ -48,8 +52,17 @@ public class GameScreen implements Screen {
      * @param minigameType tipo de minijuego a ejecutar
      */
     public GameScreen(Main game, MinigameType minigameType) {
+        this(game, minigameType, 0, 0);
+    }
+
+    /**
+     * Construye una nueva pantalla de juego con contexto de ronda.
+     */
+    public GameScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds) {
         this.game = game;
         this.minigameType = minigameType;
+        this.currentRound = currentRound;
+        this.totalRounds = totalRounds;
     }
 
     /**
@@ -73,9 +86,16 @@ public class GameScreen implements Screen {
         Table topCenterContainer = new Table();
         topCenterContainer.pad(UIStyles.Spacing.MEDIUM);
 
+        int roundToDisplay = this.currentRound;
+        int totalRoundsToDisplay = this.totalRounds;
         to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
-        if (flowManager.isInitialized()) {
-            roundLabel = new Label("Round " + flowManager.getCurrentRound() + "/" + flowManager.getTotalRounds(), skin);
+        if ((roundToDisplay <= 0 || totalRoundsToDisplay <= 0) && flowManager.isInitialized()) {
+            roundToDisplay = flowManager.getCurrentRound();
+            totalRoundsToDisplay = flowManager.getTotalRounds();
+        }
+
+        if (roundToDisplay > 0 && totalRoundsToDisplay > 0) {
+            roundLabel = new Label("Round " + roundToDisplay + "/" + totalRoundsToDisplay, skin);
             roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
             roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
             topCenterContainer.add(roundLabel).padBottom(UIStyles.Spacing.TINY).row();
@@ -119,8 +139,15 @@ public class GameScreen implements Screen {
         currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
         currentMinigame.initialize();
 
+        NetworkManager networkManager = NetworkManager.getInstance();
         startGameHandler = new StartGamePacketHandler();
-        NetworkManager.getInstance().registerClientHandler(startGameHandler);
+        networkManager.registerClientHandler(startGameHandler);
+
+        showScoreboardHandler = new ShowScoreboardPacketHandler();
+        networkManager.registerClientHandler(showScoreboardHandler);
+
+        showResultsHandler = new ShowResultsPacketHandler();
+        networkManager.registerClientHandler(showResultsHandler);
 
         Gdx.app.log("GameScreen", "Started minigame: " + minigameType.getDisplayName());
     }
@@ -216,13 +243,13 @@ public class GameScreen implements Screen {
                 game.setScreen(new ScoreboardScreen(game, flowManager.getTotalScores(), 
                     flowManager.getCurrentRound(), flowManager.getTotalRounds(), localPlayerId));
             }
+
+            dispose();
         } else {
             // Client: just wait for host to send ShowScoreboard or ShowResults packet
             // For now, stay on this screen - handlers will transition us
             Gdx.app.log("GameScreen", "Game ended, waiting for host instructions");
         }
-        
-        dispose();
     }
 
     /**
@@ -277,8 +304,56 @@ public class GameScreen implements Screen {
             NetworkManager.getInstance().unregisterClientHandler(startGameHandler);
             startGameHandler = null;
         }
+        if (showScoreboardHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(showScoreboardHandler);
+            showScoreboardHandler = null;
+        }
+        if (showResultsHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(showResultsHandler);
+            showResultsHandler = null;
+        }
         if (uiStage != null) {
             uiStage.dispose();
+        }
+    }
+
+    /**
+     * Cambia a la pantalla de marcador cuando el host lo solicita.
+     */
+    private final class ShowScoreboardPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ShowScoreboard showScoreboard) {
+                Gdx.app.log("GameScreen", "Received ShowScoreboard for round " + showScoreboard.currentRound);
+                int localPlayerId = NetworkManager.getInstance().getMyId();
+                game.setScreen(new ScoreboardScreen(game, showScoreboard.allPlayerScores,
+                        showScoreboard.currentRound, showScoreboard.totalRounds, localPlayerId));
+                dispose();
+            }
+        }
+    }
+
+    /**
+     * Cambia a la pantalla de resultados cuando finaliza la partida.
+     */
+    private final class ShowResultsPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ShowResults.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ShowResults showResults) {
+                Gdx.app.log("GameScreen", "Received ShowResults packet");
+                game.setScreen(new ResultsScreen(game, showResults.finalScores));
+                dispose();
+            }
         }
     }
 
@@ -294,7 +369,9 @@ public class GameScreen implements Screen {
         @Override
         public void handle(ClientPacketContext context, NetworkPacket packet) {
             if (packet instanceof Packets.StartGame startGame) {
-                game.setScreen(new GameScreen(game, MinigameType.valueOf(startGame.minigameType)));
+                int roundNumber = startGame.currentRound > 0 ? startGame.currentRound : 1;
+                int roundsTotal = startGame.totalRounds > 0 ? startGame.totalRounds : 1;
+                game.setScreen(new GameScreen(game, MinigameType.valueOf(startGame.minigameType), roundNumber, roundsTotal));
             }
         }
     }
