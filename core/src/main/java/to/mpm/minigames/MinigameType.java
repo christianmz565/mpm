@@ -13,7 +13,14 @@ public enum MinigameType {
             "Catch Them All",
             "Catch falling ducks with your basket! Avoid bad ducks!",
             2, 6
+    ),
+    // --- AGREGA ESTO AQUÍ ABAJO ---
+    SUMO(
+            "Pond Push", // El nombre que verán los jugadores
+            "Push other ducks off the platform! Last duck standing wins.",
+            2, 6
     );
+    // -----------------------------
 
     private final String displayName;
     private final String description;

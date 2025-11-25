@@ -265,18 +265,8 @@ public class LobbyScreen implements Screen {
             return;
         }
 
-        GameSelectionStrategy selectionStrategy = new RandomGameSelection();
-        int playerCount = NetworkManager.getInstance().getPlayerCount();
-        MinigameType selectedGame = selectionStrategy.selectGame(playerCount);
-
-        Gdx.app.log("LobbyScreen", "Selected game: " + selectedGame.getDisplayName() +
-                " using " + selectionStrategy.getStrategyName());
-
-        Packets.StartGame packet = new Packets.StartGame();
-        packet.minigameType = selectedGame.name();
-        NetworkManager.getInstance().broadcastFromHost(packet);
-
-        game.setScreen(new GameScreen(game, selectedGame));
+        // --- CAMBIO: Ir a la pantalla de selección en lugar de elegir al azar ---
+        game.setScreen(new MinigameSelectionScreen(game, true)); 
         dispose();
     }
 
