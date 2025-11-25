@@ -13,6 +13,9 @@ import to.mpm.minigames.Minigame;
 import to.mpm.minigames.MinigameFactory;
 import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
 
@@ -33,7 +36,12 @@ public class SpectatorScreen implements Screen {
     private Skin skin;
     private Label timerLabel;
     private Label roundLabel;
-    private float gameTimer = 60f;
+    private float gameTimer = 10f;
+
+    // Packet handlers
+    private ClientPacketHandler showScoreboardHandler;
+    private ClientPacketHandler showResultsHandler;
+    private ClientPacketHandler startNextRoundHandler;
 
     /**
      * Construye una nueva pantalla de espectador.
@@ -94,10 +102,21 @@ public class SpectatorScreen implements Screen {
 
         uiRoot.add(topContainer).expandX().center().row();
 
-        // Initialize minigame (local instance for spectating)
-        int localPlayerId = NetworkManager.getInstance().getMyId();
-        currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
+        // Initialize minigame in spectator mode (no local player creation)
+        currentMinigame = MinigameFactory.createMinigame(minigameType, -1); // Use -1 as sentinel for spectator
         currentMinigame.initialize();
+
+        // Register packet handlers for screen transitions
+        NetworkManager networkManager = NetworkManager.getInstance();
+        
+        showScoreboardHandler = new ShowScoreboardPacketHandler();
+        networkManager.registerClientHandler(showScoreboardHandler);
+
+        showResultsHandler = new ShowResultsPacketHandler();
+        networkManager.registerClientHandler(showResultsHandler);
+
+        startNextRoundHandler = new StartNextRoundPacketHandler();
+        networkManager.registerClientHandler(startNextRoundHandler);
 
         Gdx.app.log("SpectatorScreen", "Spectating minigame: " + minigameType.getDisplayName());
     }
@@ -123,7 +142,7 @@ public class SpectatorScreen implements Screen {
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Render minigame
+        // Render minigame (spectators see the game but don't control it)
         currentMinigame.render(batch, shapeRenderer);
 
         // Render UI overlay
@@ -171,6 +190,17 @@ public class SpectatorScreen implements Screen {
      */
     @Override
     public void dispose() {
+        // Unregister packet handlers
+        if (showScoreboardHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(showScoreboardHandler);
+        }
+        if (showResultsHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(showResultsHandler);
+        }
+        if (startNextRoundHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(startNextRoundHandler);
+        }
+
         if (currentMinigame != null) {
             currentMinigame.dispose();
         }
@@ -179,6 +209,85 @@ public class SpectatorScreen implements Screen {
         }
         if (uiStage != null) {
             uiStage.dispose();
+        }
+    }
+
+    /**
+     * Handler for ShowScoreboard packets - transitions spectators to scoreboard screen.
+     */
+    private final class ShowScoreboardPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ShowScoreboard showScoreboard) {
+                Gdx.app.log("SpectatorScreen", "Received ShowScoreboard for round " + showScoreboard.currentRound);
+                int localPlayerId = NetworkManager.getInstance().getMyId();
+                Gdx.app.postRunnable(() -> {
+                    game.setScreen(new ScoreboardScreen(game, showScoreboard.allPlayerScores,
+                        showScoreboard.currentRound, showScoreboard.totalRounds, localPlayerId));
+                });
+            }
+        }
+    }
+
+    /**
+     * Handler for ShowResults packets - transitions spectators to results screen.
+     */
+    private final class ShowResultsPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ShowResults.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ShowResults showResults) {
+                Gdx.app.log("SpectatorScreen", "Received ShowResults packet");
+                Gdx.app.postRunnable(() -> {
+                    game.setScreen(new ResultsScreen(game, showResults.finalScores));
+                });
+            }
+        }
+    }
+
+    /**
+     * Handler for StartNextRound packets - routes spectators back to SpectatorScreen.
+     */
+    private final class StartNextRoundPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.StartNextRound.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.StartNextRound startNextRound) {
+                Gdx.app.log("SpectatorScreen", "Received StartNextRound packet");
+                Gdx.app.postRunnable(() -> {
+                    MinigameType nextMinigameType = MinigameType.valueOf(startNextRound.minigameType);
+                    int myId = NetworkManager.getInstance().getMyId();
+                    
+                    // If participatingPlayerIds is set (finale), check if we're included
+                    // If null (normal round), spectators remain spectators
+                    boolean shouldParticipate = startNextRound.participatingPlayerIds != null && 
+                                                startNextRound.participatingPlayerIds.contains(myId);
+                    
+                    if (shouldParticipate) {
+                        // Spectator is now participating (only happens in finale edge cases)
+                        game.setScreen(new GameScreen(game, nextMinigameType,
+                            startNextRound.roundNumber, totalRounds));
+                    } else {
+                        // Remain as spectator
+                        game.setScreen(new SpectatorScreen(game, nextMinigameType,
+                            startNextRound.roundNumber, totalRounds));
+                    }
+                    dispose();
+                });
+            }
         }
     }
 }

@@ -21,6 +21,8 @@ import to.mpm.network.handlers.ClientPacketContext;
 import to.mpm.network.handlers.ClientPacketHandler;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
@@ -34,16 +36,45 @@ public class GameScreen implements Screen {
     private Stage uiStage; // !< stage para la superposición de UI
     private Skin skin; // !< skin para estilizar componentes de UI
     private Label scoreLabel; // !< etiqueta que muestra la puntuación del jugador
+    private Table incrementsContainer; // !< contenedor para los incrementos de puntuación
     private Label timerLabel; // !< etiqueta que muestra el temporizador
     private Label roundLabel; // !< etiqueta que muestra la ronda actual
     private float gameTimer = 10f; // !< temporizador del juego en segundos
     private boolean gameEnded = false; // !< indica si el juego ha terminado
     private final int currentRound; // !< ronda en curso (1-based)
     private final int totalRounds; // !< total de rondas configuradas
+    private int previousScore = 0; // !< puntuación anterior para detectar cambios
+    private final List<ScorePopup> scorePopups = new ArrayList<>(); // !< lista de popups activos
 
     private StartGamePacketHandler startGameHandler;
     private ShowScoreboardPacketHandler showScoreboardHandler;
     private ShowResultsPacketHandler showResultsHandler;
+    
+    /**
+     * Clase interna para representar un popup de puntuación.
+     */
+    private static class ScorePopup {
+        Label label;
+        float age;
+        float fadeTime;
+        
+        ScorePopup(Label label, float fadeTime) {
+            this.label = label;
+            this.age = 0f;
+            this.fadeTime = fadeTime;
+        }
+        
+        boolean update(float delta) {
+            age += delta;
+            if (age >= fadeTime) {
+                return true; // Fully faded
+            }
+            // Update alpha based on age
+            float alpha = 1f - (age / fadeTime);
+            label.getColor().a = alpha;
+            return false;
+        }
+    }
 
     /**
      * Construye una nueva pantalla de juego.
@@ -122,11 +153,10 @@ public class GameScreen implements Screen {
         scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         scoreContent.add(scoreLabel).row();
 
-        Label incrementLabel = new Label("+0\n+0\n+0\n+0", skin);
-        incrementLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
-        incrementLabel.setColor(UIStyles.Colors.SECONDARY);
-        incrementLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
-        scoreContent.add(incrementLabel).padTop(UIStyles.Spacing.TINY).right();
+        // Container for score increment popups
+        incrementsContainer = new Table();
+        incrementsContainer.top();
+        scoreContent.add(incrementsContainer).padTop(UIStyles.Spacing.TINY).right().row();
 
         scoreContainer.add(scoreContent);
         
@@ -181,10 +211,32 @@ public class GameScreen implements Screen {
             }
         }
 
-        // Update score display
+        // Update score display and handle score popups
         int localPlayerId = NetworkManager.getInstance().getMyId();
         int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
         scoreLabel.setText(currentScore + " pts");
+        
+        // Detect score changes and create popup
+        if (currentScore != previousScore) {
+            int increment = currentScore - previousScore;
+            Label popupLabel = new Label("+" + increment, skin);
+            popupLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
+            popupLabel.setColor(UIStyles.Colors.SECONDARY);
+            popupLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
+            
+            ScorePopup popup = new ScorePopup(popupLabel, 2.0f); // 2 second fade
+            scorePopups.add(popup);
+            previousScore = currentScore;
+        }
+        
+        // Update score popups and remove faded ones
+        scorePopups.removeIf(popup -> popup.update(delta));
+        
+        // Rebuild increments container
+        incrementsContainer.clear();
+        for (ScorePopup popup : scorePopups) {
+            incrementsContainer.add(popup.label).right().row();
+        }
 
         // Check if game should end (timer expired OR minigame finished)
         boolean timeUp = !isFinale && gameTimer <= 0;

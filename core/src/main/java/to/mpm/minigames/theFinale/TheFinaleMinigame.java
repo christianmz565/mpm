@@ -53,13 +53,16 @@ public class TheFinaleMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Create local player with a color based on id
-        float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        localPlayer = new Player(true,
-                localPlayerId == 0 ? 100 : 540,
-                240,
-                color[0], color[1], color[2]);
-        players.put(localPlayerId, localPlayer);
+        // Skip creating local player for spectators (playerId == -1)
+        if (localPlayerId != -1) {
+            // Create local player with a color based on id
+            float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
+            localPlayer = new Player(true,
+                    localPlayerId == 0 ? 100 : 540,
+                    240,
+                    color[0], color[1], color[2]);
+            players.put(localPlayerId, localPlayer);
+        }
 
         clientHandler = new FinaleClientHandler();
         nm.registerClientHandler(clientHandler);
@@ -105,8 +108,11 @@ public class TheFinaleMinigame implements Minigame {
             finished = true;
         }
         
-        localPlayer.update();
-        sendPlayerPosition();
+        // Spectators (localPlayer == null) don't update or send position
+        if (localPlayer != null) {
+            localPlayer.update();
+            sendPlayerPosition();
+        }
     }
 
     @Override
@@ -125,6 +131,9 @@ public class TheFinaleMinigame implements Minigame {
 
     @Override
     public void handleInput(float delta) {
+        // Spectators (localPlayer == null) don't handle input
+        if (localPlayer == null) return;
+
         float dx = 0, dy = 0;
 
         if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {

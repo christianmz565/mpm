@@ -64,12 +64,17 @@ public class ScoreboardScreen implements Screen {
         this.localPlayerId = localPlayerId;
         
         // Convert scores to PlayerData list, ensuring zero-score players are included
+        // Filter out spectators from scoreboard display
         sortedPlayers = new ArrayList<>();
         Map<Integer, String> playerNames = NetworkManager.getInstance().getConnectedPlayers();
         Set<Integer> processedPlayers = new HashSet<>();
+        to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
 
         for (Map.Entry<Integer, Integer> entry : scores.entrySet()) {
             int playerId = entry.getKey();
+            // Skip spectators
+            if (flowManager.isSpectator(playerId)) continue;
+            
             String playerName = playerNames.getOrDefault(playerId, "Player " + playerId);
             sortedPlayers.add(new PlayerData(playerId, playerName, entry.getValue()));
             processedPlayers.add(playerId);
@@ -77,6 +82,9 @@ public class ScoreboardScreen implements Screen {
 
         for (Map.Entry<Integer, String> entry : playerNames.entrySet()) {
             int playerId = entry.getKey();
+            // Skip spectators
+            if (flowManager.isSpectator(playerId)) continue;
+            
             if (!processedPlayers.contains(playerId)) {
                 sortedPlayers.add(new PlayerData(playerId, entry.getValue(), 0));
             }
@@ -172,14 +180,14 @@ public class ScoreboardScreen implements Screen {
         // Scroll to local player position (center if possible)
         stage.act(0);
         float localPlayerY = 0;
-        float rowHeight = 0;
-        if (scoresContainer.getChildren().size > 0) {
-            rowHeight = scoresContainer.getChildren().first().getHeight() + UIStyles.Spacing.SMALL;
-        }
+        
+        // Calculate cumulative position considering LARGE padding
         for (int i = 0; i < sortedPlayers.size(); i++) {
             if (sortedPlayers.get(i).getPlayerId() == localPlayerId) {
-                localPlayerY = i * rowHeight;
                 break;
+            }
+            if (i < scoresContainer.getChildren().size) {
+                localPlayerY += scoresContainer.getChildren().get(i).getHeight() + UIStyles.Spacing.LARGE;
             }
         }
         
@@ -246,10 +254,10 @@ public class ScoreboardScreen implements Screen {
             
             Gdx.app.log("ScoreboardScreen", "Starting finale with " + participatingPlayers.size() + " players");
         } else {
-            // Normal round: select random game
-            int playerCount = NetworkManager.getInstance().getPlayerCount();
-            nextGame = to.mpm.minigames.selection.RandomGameSelection.selectGame(playerCount);
-            Gdx.app.log("ScoreboardScreen", "Selected next game: " + nextGame.getDisplayName());
+            // Normal round: select random game (exclude spectators)
+            int activePlayerCount = flowManager.getActivePlayerCount();
+            nextGame = to.mpm.minigames.selection.RandomGameSelection.selectGame(activePlayerCount);
+            Gdx.app.log("ScoreboardScreen", "Selected next game: " + nextGame.getDisplayName() + " for " + activePlayerCount + " players");
         }
 
         // Broadcast next round info
@@ -337,12 +345,17 @@ public class ScoreboardScreen implements Screen {
                 
                 MinigameType minigameType = MinigameType.valueOf(startNextRound.minigameType);
                 
-                // Check if local player is participating
-                if (startNextRound.participatingPlayerIds == null || 
-                    startNextRound.participatingPlayerIds.contains(localPlayerId)) {
+                // Check if local player is a spectator (permanent spectators from lobby)
+                to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+                if (flowManager.isSpectator(localPlayerId)) {
+                    // Permanent spectator - always go to SpectatorScreen
+                    game.setScreen(new SpectatorScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
+                } else if (startNextRound.participatingPlayerIds == null || 
+                           startNextRound.participatingPlayerIds.contains(localPlayerId)) {
+                    // Active player participating
                     game.setScreen(new GameScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 } else {
-                    // Eliminated from finale
+                    // Eliminated from finale (temporary spectator)
                     game.setScreen(new SpectatorScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 }
                 dispose();

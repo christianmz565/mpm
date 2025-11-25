@@ -139,15 +139,30 @@ public class ResultsScreen implements Screen {
         contentContainer = new Table();
         root.add(contentContainer).expand().fill();
 
-        // Start with full list view for scrolling animation
-        currentView = ViewMode.VIEW_FULL_LIST;
+        // Determine initial state based on player count
+        if (results.size() <= 3) {
+            // Skip directly to winner spotlight
+            animationState = AnimationState.WINNER;
+            currentView = ViewMode.VIEW_WINNER_SPOTLIGHT;
+            Gdx.app.log("ResultsScreen", "Skipping animations, going directly to winner (≤3 players)");
+        } else if (results.size() == 4) {
+            // Skip scrolling list, go to podium
+            animationState = AnimationState.PODIUM;
+            currentView = ViewMode.VIEW_TOP3;
+            Gdx.app.log("ResultsScreen", "Skipping scrolling list, starting at podium (4 players)");
+        } else {
+            // Start with full list view for scrolling animation
+            animationState = AnimationState.SCROLLING;
+            currentView = ViewMode.VIEW_FULL_LIST;
+            Gdx.app.log("ResultsScreen", "Starting full animation sequence (5+ players)");
+        }
         renderCurrentView();
 
         // Register ReturnToLobby packet handler
         returnToLobbyHandler = new ReturnToLobbyHandler();
         to.mpm.network.NetworkManager.getInstance().registerClientHandler(returnToLobbyHandler);
 
-        Gdx.app.log("ResultsScreen", "Starting animation sequence");
+        Gdx.app.log("ResultsScreen", "Animation sequence initialized");
     }
 
     /**
@@ -170,38 +185,38 @@ public class ResultsScreen implements Screen {
     }
 
     /**
-     * Renderiza la vista de podio mostrando los 3 primeros jugadores.
-     * Disposición: 2° puesto | 1° puesto (más alto) | 3° puesto
+     * Renderiza la vista de podio mostrando los jugadores 2-4.
+     * Disposición: 3° puesto | 2° puesto (más alto) | 4° puesto
      */
     private void renderPodiumView() {
         Table podiumTable = new Table();
 
-        to.mpm.utils.PlayerData first = results.size() > 0 ? results.get(0) : null;
         to.mpm.utils.PlayerData second = results.size() > 1 ? results.get(1) : null;
         to.mpm.utils.PlayerData third = results.size() > 2 ? results.get(2) : null;
+        to.mpm.utils.PlayerData fourth = results.size() > 3 ? results.get(3) : null;
 
         Table positions = new Table();
 
-        if (second != null) {
-            Table secondPlace = createPodiumPosition(second, 2);
-            positions.add(secondPlace).bottom().padBottom(50f).padRight(UIStyles.Spacing.MEDIUM);
-        }
-
-        if (first != null) {
-            Table firstPlace = createPodiumPosition(first, 1);
-            positions.add(firstPlace).bottom().padRight(UIStyles.Spacing.MEDIUM).padBottom(UIStyles.Spacing.XXLARGE);
-        }
-
         if (third != null) {
             Table thirdPlace = createPodiumPosition(third, 3);
-            positions.add(thirdPlace).bottom().padBottom(50f);
+            positions.add(thirdPlace).bottom().padBottom(50f).padRight(UIStyles.Spacing.MEDIUM);
+        }
+
+        if (second != null) {
+            Table secondPlace = createPodiumPosition(second, 2);
+            positions.add(secondPlace).bottom().padRight(UIStyles.Spacing.MEDIUM).padBottom(UIStyles.Spacing.XXLARGE);
+        }
+
+        if (fourth != null) {
+            Table fourthPlace = createPodiumPosition(fourth, 4);
+            positions.add(fourthPlace).bottom().padBottom(50f);
         }
 
         podiumTable.add(positions).row();
 
-        if (results.size() > 3) {
+        if (results.size() > 4) {
             Table remainingPlayers = new Table();
-            for (int i = 3; i < Math.min(results.size(), 6); i++) {
+            for (int i = 4; i < Math.min(results.size(), 7); i++) {
                 to.mpm.utils.PlayerData pr = results.get(i);
                 Table item = new ScoreItem(skin)
                         .playerName(pr.getPlayerName())
@@ -244,8 +259,7 @@ public class ResultsScreen implements Screen {
     }
 
     /**
-     * Renderiza la vista de lista completa con todos los jugadores ordenados por
-     * ranking.
+     * Renderiza la vista de lista completa con jugadores desde el 4° lugar.
      * Incluye una flecha hacia arriba indicando scroll.
      */
     private void renderFullListView() {
@@ -256,13 +270,14 @@ public class ResultsScreen implements Screen {
         listTable.add(arrow).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table scoresContainer = new Table();
-        for (int i = 0; i < results.size(); i++) {
+        // Start from index 3 (4th place) onwards
+        for (int i = 3; i < results.size(); i++) {
             to.mpm.utils.PlayerData pr = results.get(i);
             Table scoreItem = new ScoreItem(skin)
                     .rank(i + 1)
                     .playerName(pr.getPlayerName())
                     .score(pr.getScore())
-                    .highlighted(i == 0)
+                    .highlighted(false)
                     .build();
 
             scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.LARGE).row();
@@ -331,10 +346,23 @@ public class ResultsScreen implements Screen {
                 updateScrollingState();
                 if (stateTimer >= 2.5f) {
                     stateTimer = 0f;
-                    animationState = AnimationState.PODIUM;
-                    currentView = ViewMode.VIEW_TOP3;
-                    renderCurrentView();
-                    Gdx.app.log("ResultsScreen", "Transition to PODIUM state");
+                    // Skip to winner if 3 or fewer players
+                    if (results.size() <= 3) {
+                        animationState = AnimationState.FADE;
+                        to.mpm.ui.transitions.ScreenTransition.fadeOut(stage, () -> {
+                            animationState = AnimationState.WINNER;
+                            stateTimer = 0f;
+                            currentView = ViewMode.VIEW_WINNER_SPOTLIGHT;
+                            renderCurrentView();
+                            to.mpm.ui.transitions.ScreenTransition.fadeIn(stage, null);
+                            Gdx.app.log("ResultsScreen", "Skipped podium, transition to WINNER state");
+                        });
+                    } else {
+                        animationState = AnimationState.PODIUM;
+                        currentView = ViewMode.VIEW_TOP3;
+                        renderCurrentView();
+                        Gdx.app.log("ResultsScreen", "Transition to PODIUM state");
+                    }
                 }
                 break;
 

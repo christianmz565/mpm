@@ -17,10 +17,12 @@ public class GameFlowManager {
     private int currentRound; //!< current round number (1-based)
     private int totalRounds; //!< total rounds configured for this game
     private final Map<Integer, Integer> accumulatedScores; //!< playerId -> total score across all rounds
+    private final Set<Integer> spectatorIds; //!< players marked as spectators (won't accumulate scores)
     private boolean initialized; //!< whether initialize() has been called
 
     private GameFlowManager() {
         this.accumulatedScores = new HashMap<>();
+        this.spectatorIds = new HashSet<>();
         this.initialized = false;
     }
 
@@ -51,6 +53,7 @@ public class GameFlowManager {
         this.totalRounds = rounds;
         this.currentRound = 0;
         this.accumulatedScores.clear();
+        this.spectatorIds.clear();
         this.initialized = true;
 
         // Register packet classes for serialization
@@ -96,7 +99,10 @@ public class GameFlowManager {
             for (Map.Entry<Integer, Integer> entry : roundScores.entrySet()) {
                 int playerId = entry.getKey();
                 int score = entry.getValue();
-                accumulatedScores.merge(playerId, score, Integer::sum);
+                // Only accumulate scores for non-spectators
+                if (!spectatorIds.contains(playerId)) {
+                    accumulatedScores.merge(playerId, score, Integer::sum);
+                }
             }
         }
 
@@ -230,8 +236,43 @@ public class GameFlowManager {
         this.currentRound = 0;
         this.totalRounds = 0;
         this.accumulatedScores.clear();
+        this.spectatorIds.clear();
         this.initialized = false;
         Gdx.app.log("GameFlowManager", "Game flow reset");
+    }
+
+    /**
+     * Sets the spectator player IDs.
+     * Spectators won't accumulate scores during the game.
+     * 
+     * @param spectators set of player IDs marked as spectators
+     */
+    public void setSpectators(Set<Integer> spectators) {
+        this.spectatorIds.clear();
+        if (spectators != null) {
+            this.spectatorIds.addAll(spectators);
+        }
+        Gdx.app.log("GameFlowManager", "Registered " + this.spectatorIds.size() + " spectators");
+    }
+
+    /**
+     * Gets the number of active (non-spectator) players.
+     * 
+     * @return count of active players
+     */
+    public int getActivePlayerCount() {
+        int totalPlayers = NetworkManager.getInstance().getPlayerCount();
+        return totalPlayers - spectatorIds.size();
+    }
+
+    /**
+     * Checks if a player is a spectator.
+     * 
+     * @param playerId the player ID to check
+     * @return true if the player is a spectator
+     */
+    public boolean isSpectator(int playerId) {
+        return spectatorIds.contains(playerId);
     }
 
     /**

@@ -2,6 +2,7 @@ package to.mpm.minigames.manager;
 
 import to.mpm.network.NetworkPacket;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +19,19 @@ public class ManagerPackets {
      */
     public static class RoomConfig extends NetworkPacket {
         public int rounds; //!< total number of rounds to play
+        public List<Integer> spectatorIds; //!< list of player IDs marked as spectators
 
         public RoomConfig() {
         }
 
         public RoomConfig(int rounds) {
             this.rounds = rounds;
+            this.spectatorIds = new ArrayList<>();
+        }
+
+        public RoomConfig(int rounds, List<Integer> spectatorIds) {
+            this.rounds = rounds;
+            this.spectatorIds = spectatorIds;
         }
     }
 

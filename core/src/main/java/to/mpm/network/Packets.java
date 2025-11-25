@@ -104,4 +104,12 @@ public class Packets {
             preferTransport(Transports.UDP);
         }
     }
+    
+    /**
+     * Paquete para actualizar el estado de espectador de un jugador.
+     */
+    public static class SpectatorStatus extends NetworkPacket {
+        public int playerId; //!< id del jugador
+        public boolean isSpectator; //!< true si es espectador, false si es jugador
+    }
 }
