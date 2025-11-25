@@ -13,12 +13,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * y proporciona una interfaz unificada para enviar paquetes
  */
 public class NetworkManager {
-    private static NetworkManager instance; // !< instancia singleton
+    private static NetworkManager instance; //!< instancia singleton
+    private NetworkServer server; //!< instancia del servidor de red
+    private NetworkClient client; //!< instancia del cliente de red
+    private boolean isHost; //!< indica si este es el host
 
-    private NetworkServer server; // !< instancia del servidor de red
-    private NetworkClient client; // !< instancia del cliente de red
-    private boolean isHost; // !< indica si este es el host
-
+    /**
+     * Constructor privado para el singleton.
+     */
     private NetworkManager() {
     }
 
@@ -36,6 +38,7 @@ public class NetworkManager {
 
     /**
      * Inicia un juego como host con un nombre de jugador personalizado.
+     * <p>
      * Crea tanto un NetworkServer como un NetworkClient (para el host).
      *
      * @param hostPlayerName el nombre del jugador host
@@ -83,7 +86,9 @@ public class NetworkManager {
 
     /**
      * Envía un paquete a través de la red.
+     * <p>
      * Si es host, envía a todos los clientes.
+     * <p>
      * Si es cliente, envía al servidor.
      * 
      * @param packet el paquete a enviar

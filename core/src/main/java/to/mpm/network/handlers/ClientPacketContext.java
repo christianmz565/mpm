@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Clase que contiene el contexto para el manejo de paquetes en el cliente.
  */
 public class ClientPacketContext extends PacketContext {
-    private final NetworkClient client; // !< instancia del cliente de red
+    private final NetworkClient client; //!< instancia del cliente de red
 
     /**
      * Construye un nuevo contexto de paquete para el cliente.

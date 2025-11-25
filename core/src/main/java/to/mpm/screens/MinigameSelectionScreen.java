@@ -16,6 +16,7 @@ import to.mpm.ui.UISkinProvider;
 
 /**
  * Pantalla de selección de minijuegos.
+ * <p>
  * Solo el host puede seleccionar el minijuego.
  */
 public class MinigameSelectionScreen implements Screen {
@@ -118,6 +119,8 @@ public class MinigameSelectionScreen implements Screen {
 
         Packets.StartGame packet = new Packets.StartGame();
         packet.minigameType = type.name();
+        packet.currentRound = 1;
+        packet.totalRounds = 1;
         NetworkManager.getInstance().broadcastFromHost(packet);
 
         startGame(type);
@@ -129,7 +132,7 @@ public class MinigameSelectionScreen implements Screen {
      * @param type tipo de minijuego a iniciar
      */
     private void startGame(MinigameType type) {
-        game.setScreen(new GameScreen(game, type));
+        game.setScreen(new GameScreen(game, type, 1, 1));
         dispose();
     }
 

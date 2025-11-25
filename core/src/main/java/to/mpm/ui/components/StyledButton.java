@@ -8,7 +8,6 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de botones con estilo consistente.
- * Utiliza el patrón Builder para configuración flexible de botones de interfaz.
  */
 public class StyledButton {
     private final Skin skin; //!< skin para renderizar el botón

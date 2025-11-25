@@ -7,11 +7,13 @@ import java.util.Map;
 
 /**
  * Interfaz base para todos los minijuegos.
+ * <p>
  * Cada minijuego debe implementar esta interfaz para integrarse con el sistema.
  */
 public interface Minigame {
     /**
      * Inicializa el minijuego.
+     * <p>
      * Se llama una vez al comenzar el juego.
      */
     void initialize();
@@ -26,7 +28,7 @@ public interface Minigame {
     /**
      * Renderiza el minijuego.
      *
-     * @param batch      SpriteBatch para dibujar sprites
+     * @param batch         SpriteBatch para dibujar sprites
      * @param shapeRenderer ShapeRenderer para formas geométricas
      */
     void render(SpriteBatch batch, ShapeRenderer shapeRenderer);

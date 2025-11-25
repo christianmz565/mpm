@@ -1,4 +1,4 @@
-package to.mpm.minigames.ballmovement;
+package to.mpm.minigames.theFinale;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -20,29 +20,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Minijuego simple de movimiento de bolas.
- * Cada jugador controla una bola de color que puede moverse libremente.
+ * Placeholder
  */
-public class BallMovementMinigame implements Minigame {
+public class TheFinaleMinigame implements Minigame {
     private static final float PLAYER_RADIUS = 20f;
     private static final float MOVE_SPEED = 200f;
+    private static final float FINALE_DURATION = 10f;
     private static final float[][] PLAYER_COLORS = {
-            { 1f, 0f, 0f }, // 0 - Red
-            { 0f, 0f, 1f }, // 1 - Blue
-            { 0f, 1f, 0f }, // 2 - Green
-            { 1f, 1f, 0f }, // 3 - Yellow
-            { 1f, 0f, 1f }, // 4 - Magenta
-            { 0f, 1f, 1f }, // 5 - Cyan
+            { 1f, 0f, 0f },
+            { 0f, 0f, 1f },
+            { 0f, 1f, 0f },
+            { 1f, 1f, 0f },
+            { 1f, 0f, 1f },
+            { 0f, 1f, 1f },
     };
 
     private final int localPlayerId;
     private Player localPlayer;
     private final IntMap<Player> players = new IntMap<>();
     private boolean finished = false;
-    private BallMovementClientHandler clientHandler;
-    private BallMovementServerRelay serverRelay;
+    private float timer = FINALE_DURATION;
+    private FinaleClientHandler clientHandler;
+    private FinaleServerRelay serverRelay;
 
-    public BallMovementMinigame(int localPlayerId) {
+    public TheFinaleMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
     }
 
@@ -50,9 +51,8 @@ public class BallMovementMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Skip creating local player for spectators (playerId == -1)
         if (localPlayerId != -1) {
-            // Create local player with a color based on id
+
             float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
             localPlayer = new Player(true,
                     localPlayerId == 0 ? 100 : 540,
@@ -61,11 +61,11 @@ public class BallMovementMinigame implements Minigame {
             players.put(localPlayerId, localPlayer);
         }
 
-        clientHandler = new BallMovementClientHandler();
+        clientHandler = new FinaleClientHandler();
         nm.registerClientHandler(clientHandler);
 
         if (nm.isHost()) {
-            serverRelay = new BallMovementServerRelay();
+            serverRelay = new FinaleServerRelay();
             nm.registerServerHandler(serverRelay);
         }
     }
@@ -105,7 +105,11 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void update(float delta) {
-        // Spectators (localPlayer == null) don't update or send position
+        timer -= delta;
+        if (timer <= 0) {
+            finished = true;
+        }
+
         if (localPlayer != null) {
             localPlayer.update();
             sendPlayerPosition();
@@ -116,7 +120,6 @@ public class BallMovementMinigame implements Minigame {
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Draw all players
         for (IntMap.Entry<Player> entry : players) {
             Player p = entry.value;
             shapeRenderer.setColor(p.r, p.g, p.b, 1f);
@@ -128,7 +131,7 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void handleInput(float delta) {
-        // Spectators (localPlayer == null) don't handle input
+
         if (localPlayer == null)
             return;
 
@@ -150,7 +153,6 @@ public class BallMovementMinigame implements Minigame {
         localPlayer.x += dx;
         localPlayer.y += dy;
 
-        // Keep inside bounds
         localPlayer.x = Math.max(PLAYER_RADIUS, Math.min(640 - PLAYER_RADIUS, localPlayer.x));
         localPlayer.y = Math.max(PLAYER_RADIUS, Math.min(480 - PLAYER_RADIUS, localPlayer.y));
     }
@@ -170,13 +172,13 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public Map<Integer, Integer> getScores() {
-        // This minigame doesn't have scores
+
         return new HashMap<>();
     }
 
     @Override
     public int getWinnerId() {
-        return -1; // No winner in this game
+        return -1;
     }
 
     @Override
@@ -198,7 +200,7 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
-        // Not needed for this simple game
+
     }
 
     private static class Player extends SyncedObject {
@@ -223,7 +225,7 @@ public class BallMovementMinigame implements Minigame {
         }
     }
 
-    private final class BallMovementClientHandler implements ClientPacketHandler {
+    private final class FinaleClientHandler implements ClientPacketHandler {
         @Override
         public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
             return java.util.List.of(
@@ -244,7 +246,7 @@ public class BallMovementMinigame implements Minigame {
         }
     }
 
-    private static final class BallMovementServerRelay implements ServerPacketHandler {
+    private static final class FinaleServerRelay implements ServerPacketHandler {
         @Override
         public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
             return java.util.List.of(Packets.PlayerPosition.class);

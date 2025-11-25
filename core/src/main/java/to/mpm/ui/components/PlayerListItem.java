@@ -8,6 +8,7 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de elementos de lista de jugadores.
+ * <p>
  * Muestra nombre del jugador, indicador de rol y puntuación opcional.
  */
 public class PlayerListItem {
