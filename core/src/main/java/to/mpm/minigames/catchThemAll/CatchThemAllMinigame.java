@@ -61,17 +61,20 @@ public class CatchThemAllMinigame implements Minigame {
 
         GameRenderer.initialize();
 
-        scores.put(localPlayerId, 0);
+        // Skip creating local player for spectators (playerId == -1)
+        if (localPlayerId != -1) {
+            scores.put(localPlayerId, 0);
 
-        float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        float startX = 100 + (localPlayerId * 80);
-        localPlayer = new Player(
-                true,
-                startX,
-                Player.GROUND_Y,
-                color[0], color[1], color[2]
-        );
-        players.put(localPlayerId, localPlayer);
+            float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
+            float startX = 100 + (localPlayerId * 80);
+            localPlayer = new Player(
+                    true,
+                    startX,
+                    Player.GROUND_Y,
+                    color[0], color[1], color[2]
+            );
+            players.put(localPlayerId, localPlayer);
+        }
 
         nm.registerAdditionalClasses(
             Duck.DuckType.class,
@@ -217,7 +220,8 @@ public class CatchThemAllMinigame implements Minigame {
             NetworkHandler.sendDuckUpdates(ducks);
             
             NetworkHandler.sendAllPlayerPositions(players);
-        } else {
+        } else if (localPlayer != null) {
+            // Spectators (localPlayer == null) don't send position
             NetworkHandler.sendPlayerPosition(localPlayerId, localPlayer);
         }
     }
@@ -229,7 +233,10 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void handleInput(float delta) {
-        InputHandler.handleInput(localPlayer, delta);
+        // Spectators (localPlayer == null) don't handle input
+        if (localPlayer != null) {
+            InputHandler.handleInput(localPlayer, delta);
+        }
     }
 
     @Override

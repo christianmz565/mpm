@@ -8,6 +8,7 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Contenedor reutilizable para mensajes de marcador de posición.
+ * <p>
  * Crea un Label centrado con ancho controlado para evitar desbordes verticales.
  */
 public class PlaceholderPanel {

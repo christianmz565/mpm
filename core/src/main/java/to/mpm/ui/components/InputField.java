@@ -8,8 +8,6 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de campos de entrada etiquetados.
- * Proporciona un diseño consistente para entradas de formulario utilizando el
- * patrón Builder.
  */
 public class InputField {
     private final Skin skin; //!< skin para renderizar componentes UI

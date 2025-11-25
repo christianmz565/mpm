@@ -13,6 +13,9 @@ import java.util.UUID;
  * objetos.
  */
 public final class KryoClassRegistrar {
+    /**
+     * Constructor por defecto privado para evitar instanciación.
+     */
     private KryoClassRegistrar() {
     }
 
@@ -33,6 +36,7 @@ public final class KryoClassRegistrar {
         kryo.register(Packets.SyncUpdate.class);
         kryo.register(Packets.SyncedObjectCreated.class);
         kryo.register(Packets.PlayerPosition.class);
+        kryo.register(Packets.SpectatorStatus.class);
         kryo.register(Packets.RPC.class);
         kryo.register(Packets.Ping.class);
         kryo.register(Packets.Pong.class);
