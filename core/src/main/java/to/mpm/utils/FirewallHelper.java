@@ -35,27 +35,26 @@ public class FirewallHelper {
     private static void requestWindowsFirewall(int port) {
         SwingUtilities.invokeLater(() -> {
             String message = "Necesitas permitir el acceso a la red para el juego.\n" +
-                "El servidor se está ejecutando en el puerto " + port + ".\n" +
-                "Cuando aparezca el aviso del firewall de Windows, selecciona 'Permitir acceso'.";
+                    "El servidor se está ejecutando en el puerto " + port + ".\n" +
+                    "Cuando aparezca el aviso del firewall de Windows, selecciona 'Permitir acceso'.";
 
             JOptionPane.showMessageDialog(
-                null,
-                message,
-                "Permiso de Firewall",
-                JOptionPane.INFORMATION_MESSAGE
-            );
+                    null,
+                    message,
+                    "Permiso de Firewall",
+                    JOptionPane.INFORMATION_MESSAGE);
         });
 
-        // TODO: check whether this actually achieves something or if we just need to try a connection for windows to ask for permission
+        // TODO: check whether this actually achieves something or if we just need to
+        // try a connection for windows to ask for permission
         // TODO: prevent duplicate rules?
         try {
             String appName = "MicroPatosMania";
             String javaPath = System.getProperty("java.home") + "\\bin\\javaw.exe";
 
             String command = String.format(
-                "netsh advfirewall firewall add rule name=\"%s\" dir=in action=allow program=\"%s\" enable=yes",
-                appName, javaPath
-            );
+                    "netsh advfirewall firewall add rule name=\"%s\" dir=in action=allow program=\"%s\" enable=yes",
+                    appName, javaPath);
 
             ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", command);
             pb.start();
@@ -73,15 +72,14 @@ public class FirewallHelper {
     private static void requestLinuxFirewall(int port) {
         SwingUtilities.invokeLater(() -> {
             String message = "Necesitas permitir el acceso a la red para el juego.\n" +
-                "El servidor se está ejecutando en el puerto " + port + ".\n" +
-                "Revisa la documentación de tu distribución para permitir conexiones entrantes.\n";
+                    "El servidor se está ejecutando en el puerto " + port + ".\n" +
+                    "Revisa la documentación de tu distribución para permitir conexiones entrantes.\n";
 
             JOptionPane.showMessageDialog(
-                null,
-                message,
-                "Permiso de Firewall",
-                JOptionPane.INFORMATION_MESSAGE
-            );
+                    null,
+                    message,
+                    "Permiso de Firewall",
+                    JOptionPane.INFORMATION_MESSAGE);
         });
     }
 
@@ -94,15 +92,14 @@ public class FirewallHelper {
     private static void requestMacFirewall(int port) {
         SwingUtilities.invokeLater(() -> {
             String message = "Necesitas permitir el acceso a la red para el juego.\n" +
-                "El servidor se está ejecutando en el puerto " + port + ".\n" +
-                "Cuando aparezca el aviso del firewall de macOS, selecciona 'Permitir acceso'.";
+                    "El servidor se está ejecutando en el puerto " + port + ".\n" +
+                    "Cuando aparezca el aviso del firewall de macOS, selecciona 'Permitir acceso'.";
 
             JOptionPane.showMessageDialog(
-                null,
-                message,
-                "Permiso de Firewall",
-                JOptionPane.INFORMATION_MESSAGE
-            );
+                    null,
+                    message,
+                    "Permiso de Firewall",
+                    JOptionPane.INFORMATION_MESSAGE);
         });
     }
 }

@@ -9,17 +9,27 @@ import to.mpm.screens.*;
 
 /**
  * Keybinds de debug
- * 
+ * <p>
  * Keybinds:
+ * <p>
  * - F1: Menú Principal
+ * <p>
  * - F2: Pantalla de Crear Sala
+ * <p>
  * - F3: Pantalla de Unirse a Sala
+ * <p>
  * - F4: Pantalla de Anfitrión de Sala (requiere crear un juego primero)
+ * <p>
  * - F5: Pantalla de Juego (requiere configuración de red)
+ * <p>
  * - F6: Pantalla de Espectador
+ * <p>
  * - F7: Pantalla de Marcador
+ * <p>
  * - F8: Pantalla de Resultados
+ * <p>
  * - F9: Pantalla de Selección de Minijuego (debug)
+ * <p>
  * - ESC: Alternar superposición de configuración
  */
 public class DebugKeybinds {
@@ -53,7 +63,7 @@ public class DebugKeybinds {
                 () -> switchScreen(new LobbyScreen(game, true)));
 
         f5Pressed = handleKey(f5Pressed, Input.Keys.F5, "Switching to Game Screen (Ball Movement)",
-            () -> switchScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT, 1, 3)));
+                () -> switchScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT, 1, 3)));
 
         f6Pressed = handleKey(f6Pressed, Input.Keys.F6, "Switching to Spectator Screen",
                 () -> switchScreen(new SpectatorScreen(game, to.mpm.minigames.MinigameType.BALL_MOVEMENT, 1, 5)));

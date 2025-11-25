@@ -4,27 +4,30 @@ import to.mpm.minigames.MinigameType;
 import java.util.Random;
 
 /**
- * Random game selection utility.
- * Selects a random minigame from all available minigames that support the given player count.
+ * Utilidad para la selección aleatoria de minijuegos.
+ * <p>
+ * Selecciona un minijuego aleatorio de todos los minijuegos disponibles que
+ * soportan la cantidad dada de jugadores.
  */
 public class RandomGameSelection {
     private static final Random random = new Random();
 
     /**
-     * Selects a random minigame suitable for the given player count.
-     * Excludes THE_FINALE from random selection.
+     * Selecciona un minijuego aleatorio adecuado para la cantidad dada de
+     * jugadores.
+     * <p>
+     * Excluye THE_FINALE de la selección aleatoria.
      *
-     * @param playerCount number of players in the game
-     * @return the selected minigame type
+     * @param playerCount número de jugadores en el juego
+     * @return el tipo de minijuego seleccionado
      */
     public static MinigameType selectGame(int playerCount) {
         MinigameType[] allGames = MinigameType.values();
-        
+
         MinigameType[] validGames = new MinigameType[allGames.length];
         int validCount = 0;
-        
+
         for (MinigameType game : allGames) {
-            // Exclude THE_FINALE from random selection (only selected explicitly)
             if (game == MinigameType.THE_FINALE) {
                 continue;
             }
@@ -32,11 +35,11 @@ public class RandomGameSelection {
                 validGames[validCount++] = game;
             }
         }
-        
+
         if (validCount == 0) {
             return allGames[0];
         }
-        
+
         int randomIndex = random.nextInt(validCount);
         return validGames[randomIndex];
     }

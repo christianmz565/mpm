@@ -7,19 +7,22 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Singleton manager for game flow across multiple rounds.
- * Tracks round progression, accumulated scores, and determines finale eligibility.
- * Host-authoritative: only the host should call mutating methods (endRound, etc.).
+ * Maneja el flujo del juego, incluyendo rondas, puntuaciones acumuladas y
+ * la lógica para determinar qué jugadores participan en la ronda final.
+ * <p>
+ * Implementa el patrón singleton para asegurar una única instancia.
  */
 public class GameFlowManager {
-    private static GameFlowManager instance;
+    private static GameFlowManager instance; //!< instancia singleton
+    private int currentRound; //!< ronda actual (desde 1)
+    private int totalRounds; //!< total de rondas configuradas
+    private final Map<Integer, Integer> accumulatedScores; //!< puntuaciones acumuladas por jugador (playerId -> score)
+    private final Set<Integer> spectatorIds; //!< jugadores marcados como espectadores
+    private boolean initialized; //!< indica si se ha llamado a initialize()
 
-    private int currentRound; //!< current round number (1-based)
-    private int totalRounds; //!< total rounds configured for this game
-    private final Map<Integer, Integer> accumulatedScores; //!< playerId -> total score across all rounds
-    private final Set<Integer> spectatorIds; //!< players marked as spectators (won't accumulate scores)
-    private boolean initialized; //!< whether initialize() has been called
-
+    /**
+     * Constructor privado para el singleton.
+     */
     private GameFlowManager() {
         this.accumulatedScores = new HashMap<>();
         this.spectatorIds = new HashSet<>();
@@ -27,9 +30,9 @@ public class GameFlowManager {
     }
 
     /**
-     * Gets the singleton instance.
+     * Obtiene la instancia.
      * 
-     * @return the GameFlowManager instance
+     * @return la instancia de GameFlowManager
      */
     public static GameFlowManager getInstance() {
         if (instance == null) {
@@ -39,15 +42,18 @@ public class GameFlowManager {
     }
 
     /**
-     * Initializes the game flow for a new session.
-     * Should be called by the host when starting the game.
-     * Registers necessary network packet classes.
+     * Inicializa el flujo del juego para una nueva sesión.
+     * <p>
+     * Debe ser llamado por el host al iniciar el juego.
+     * <p>
+     * Registra las clases de paquetes de red necesarias.
      * 
-     * @param rounds total number of rounds to play (must be >= 2)
+     * @param rounds número total de rondas a jugar (debe ser >= 2)
      */
     public void initialize(int rounds) {
         if (rounds < 2) {
-            throw new IllegalArgumentException("Rounds must be at least 2 (rounds - 1 normal + 1 finale)");
+            Gdx.app.error("GameFlowManager", "Cannot initialize game flow: rounds must be at least 2");
+            return;
         }
 
         this.totalRounds = rounds;
@@ -56,23 +62,20 @@ public class GameFlowManager {
         this.spectatorIds.clear();
         this.initialized = true;
 
-        // Register packet classes for serialization
         NetworkManager.getInstance().registerAdditionalClasses(
-            ManagerPackets.RoomConfig.class,
-            ManagerPackets.ShowScoreboard.class,
-            ManagerPackets.StartNextRound.class,
-            ManagerPackets.ShowResults.class,
-            ManagerPackets.ReturnToLobby.class,
-            HashMap.class,
-            ArrayList.class
-        );
+                ManagerPackets.RoomConfig.class,
+                ManagerPackets.ShowScoreboard.class,
+                ManagerPackets.StartNextRound.class,
+                ManagerPackets.ShowResults.class,
+                ManagerPackets.ReturnToLobby.class,
+                HashMap.class,
+                ArrayList.class);
 
         Gdx.app.log("GameFlowManager", "Initialized with " + rounds + " rounds");
     }
 
     /**
-     * Starts a new round.
-     * Increments the current round counter.
+     * Inicia una nueva ronda.
      */
     public void startRound() {
         if (!initialized) {
@@ -84,10 +87,12 @@ public class GameFlowManager {
     }
 
     /**
-     * Ends the current round and merges scores.
-     * Should be called by the host when a minigame finishes.
+     * Termina la ronda actual y fusiona las puntuaciones.
+     * <p>
+     * Debe ser llamado por el host cuando un minijuego termina.
      * 
-     * @param roundScores the scores from the minigame that just finished (playerId -> score)
+     * @param roundScores las puntuaciones del minijuego que acaba de terminar
+     *                    (playerId -> score)
      */
     public void endRound(Map<Integer, Integer> roundScores) {
         if (!initialized) {
@@ -99,7 +104,6 @@ public class GameFlowManager {
             for (Map.Entry<Integer, Integer> entry : roundScores.entrySet()) {
                 int playerId = entry.getKey();
                 int score = entry.getValue();
-                // Only accumulate scores for non-spectators
                 if (!spectatorIds.contains(playerId)) {
                     accumulatedScores.merge(playerId, score, Integer::sum);
                 }
@@ -110,21 +114,23 @@ public class GameFlowManager {
     }
 
     /**
-     * Checks if the finale should be played next.
-     * The finale is played on the last round.
+     * Verifica si la final debe jugarse a continuación.
      * 
-     * @return true if the next round should be the finale
+     * @return true si la siguiente ronda debe ser la final
      */
     public boolean shouldPlayFinale() {
         return initialized && currentRound == totalRounds;
     }
 
     /**
-     * Determines which players should participate in the finale.
-     * Returns the top 30% of players (minimum 2).
-     * If there's a tie at the cutoff, randomly includes one of the tied players.
+     * Determina qué jugadores deben participar en la final.
+     * <p>
+     * Devuelve el 30% superior de jugadores (mínimo 2).
+     * <p>
+     * Si hay un empate, incluye aleatoriamente a uno.
      * 
-     * @return list of player IDs eligible for the finale, sorted by score descending
+     * @return lista de IDs de jugadores elegibles para la final, ordenados por
+     *         puntuación descendente
      */
     public List<Integer> getFinalePlayerIds() {
         if (accumulatedScores.isEmpty()) {
@@ -132,7 +138,6 @@ public class GameFlowManager {
             return new ArrayList<>();
         }
 
-        // Sort players by score descending
         List<Map.Entry<Integer, Integer>> sortedPlayers = accumulatedScores.entrySet().stream()
                 .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue()))
                 .collect(Collectors.toList());
@@ -140,88 +145,60 @@ public class GameFlowManager {
         int totalPlayers = sortedPlayers.size();
         int finaleCount = Math.max(2, (int) Math.ceil(totalPlayers * 0.3));
 
-        // Handle edge case: if only 1 player, just return them
         if (totalPlayers == 1) {
             Gdx.app.log("GameFlowManager", "Only 1 player remaining, skipping finale");
-            return sortedPlayers.stream().map(Map.Entry::getKey).collect(Collectors.toList());
+            return Arrays.asList(sortedPlayers.get(0).getKey());
         }
 
-        // Ensure we don't select more players than exist
-        finaleCount = Math.min(finaleCount, totalPlayers);
-
-        // Get the cutoff score
-        int cutoffScore = sortedPlayers.get(finaleCount - 1).getValue();
-
-        // Separate qualified players and tied players
-        List<Integer> qualifiedPlayers = new ArrayList<>();
-        List<Integer> tiedPlayers = new ArrayList<>();
-
-        for (int i = 0; i < sortedPlayers.size(); i++) {
-            Map.Entry<Integer, Integer> entry = sortedPlayers.get(i);
-            if (i < finaleCount - 1) {
-                // Definitely in
-                qualifiedPlayers.add(entry.getKey());
-            } else if (entry.getValue() > cutoffScore) {
-                // Also definitely in (higher than cutoff)
-                qualifiedPlayers.add(entry.getKey());
-            } else if (entry.getValue() == cutoffScore) {
-                // Tied at cutoff
-                tiedPlayers.add(entry.getKey());
-            }
+        ArrayList<Integer> finalePlayerIds = new ArrayList<>();
+        for (int i = 0; i < finaleCount; i++) {
+            finalePlayerIds.add(sortedPlayers.get(i).getKey());
         }
-
-        // Randomly select from tied players to fill remaining spots
-        int remainingSpots = finaleCount - qualifiedPlayers.size();
-        Collections.shuffle(tiedPlayers, new Random());
-        for (int i = 0; i < Math.min(remainingSpots, tiedPlayers.size()); i++) {
-            qualifiedPlayers.add(tiedPlayers.get(i));
-        }
-
-        Gdx.app.log("GameFlowManager", "Finale participants: " + qualifiedPlayers.size() + " out of " + totalPlayers);
-        return qualifiedPlayers;
+        return finalePlayerIds;
     }
 
     /**
-     * Checks if the game is complete (all rounds played).
+     * Revisa si el juego ha terminado.
      * 
-     * @return true if all rounds have been played
+     * @return true si el juego ha terminado
      */
     public boolean isGameComplete() {
         return initialized && currentRound >= totalRounds;
     }
 
     /**
-     * Gets the accumulated scores for all players.
+     * Obtiene las puntuaciones acumuladas de todos los jugadores.
      * 
-     * @return map of playerId to total score (defensive copy)
+     * @return mapa de playerId a puntuación total
      */
     public Map<Integer, Integer> getTotalScores() {
         return new HashMap<>(accumulatedScores);
     }
 
     /**
-     * Gets the current round number (1-based).
+     * Obtiene la ronda actual.
      * 
-     * @return current round number
+     * @return número de la ronda actual
      */
     public int getCurrentRound() {
         return currentRound;
     }
 
     /**
-     * Gets the total number of rounds.
+     * Obtiene el número total de rondas.
      * 
-     * @return total rounds
+     * @return número total de rondas
      */
     public int getTotalRounds() {
         return totalRounds;
     }
 
     /**
-     * Removes a player from the accumulated scores.
-     * Should be called when a player disconnects.
+     * Elimina a un jugador de las puntuaciones acumuladas.
+     * <p>
+     * Debe llamarse cuando un jugador se desconecta.
      * 
-     * @param playerId the player to remove
+     * @param playerId el jugador a eliminar
      */
     public void removePlayer(int playerId) {
         accumulatedScores.remove(playerId);
@@ -229,8 +206,9 @@ public class GameFlowManager {
     }
 
     /**
-     * Resets the game flow manager to initial state.
-     * Should be called when returning to lobby or starting a new game.
+     * Restablece el gestor del flujo del juego a su estado inicial.
+     * <p>
+     * Debe llamarse al regresar al lobby o al iniciar un nuevo juego.
      */
     public void reset() {
         this.currentRound = 0;
@@ -242,10 +220,9 @@ public class GameFlowManager {
     }
 
     /**
-     * Sets the spectator player IDs.
-     * Spectators won't accumulate scores during the game.
+     * Establece los IDs de los jugadores espectadores.
      * 
-     * @param spectators set of player IDs marked as spectators
+     * @param spectators conjunto de IDs de jugadores marcados como espectadores
      */
     public void setSpectators(Set<Integer> spectators) {
         this.spectatorIds.clear();
@@ -256,9 +233,9 @@ public class GameFlowManager {
     }
 
     /**
-     * Gets the number of active (non-spectator) players.
+     * Obtiene el número de jugadores activos (no espectadores).
      * 
-     * @return count of active players
+     * @return número de jugadores activos
      */
     public int getActivePlayerCount() {
         int totalPlayers = NetworkManager.getInstance().getPlayerCount();
@@ -266,19 +243,19 @@ public class GameFlowManager {
     }
 
     /**
-     * Checks if a player is a spectator.
+     * Verifica si un jugador es espectador.
      * 
-     * @param playerId the player ID to check
-     * @return true if the player is a spectator
+     * @param playerId el ID del jugador a verificar
+     * @return true si el jugador es espectador
      */
     public boolean isSpectator(int playerId) {
         return spectatorIds.contains(playerId);
     }
 
     /**
-     * Checks if the manager is initialized.
+     * Verifica si el gestor está inicializado.
      * 
-     * @return true if initialized
+     * @return true si está inicializado
      */
     public boolean isInitialized() {
         return initialized;

@@ -10,28 +10,29 @@ import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 /**
- * Utility class for screen transitions.
- * Provides reusable fade effects for scene changes.
+ * Clase de utilidad para transiciones de pantalla.
+ * <p>
+ * Proporciona efectos de fundido de entrada y salida para cambiar entre
+ * pantallas.
  */
 public class ScreenTransition {
-
     /**
-     * Callback interface for transition completion.
+     * Interfaz de callback para la finalización de la transición.
      */
     public interface TransitionCallback {
         void onComplete();
     }
 
     /**
-     * Creates a fade-out effect on the given stage.
-     * Fades a black overlay from transparent to opaque.
+     * Crea un efecto de fade-out en el stage dado.
+     * <p>
+     * Funde una superposición negra de transparente a opaca.
      * 
-     * @param stage the stage to fade out
-     * @param duration fade duration in seconds
-     * @param callback callback to execute when fade completes
+     * @param stage    el stage para hacer fade out
+     * @param duration duración del fade en segundos
+     * @param callback callback a ejecutar cuando el fade complete
      */
     public static void fadeOut(Stage stage, float duration, TransitionCallback callback) {
-        // Create a black overlay
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.BLACK);
         pixmap.fill();
@@ -40,31 +41,29 @@ public class ScreenTransition {
 
         Image fadeImage = new Image(new TextureRegionDrawable(new TextureRegion(texture)));
         fadeImage.setFillParent(true);
-        fadeImage.getColor().a = 0f; // Start transparent
+        fadeImage.getColor().a = 0f;
 
         stage.addActor(fadeImage);
 
-        // Fade to opaque, then call callback
         fadeImage.addAction(
-            Actions.sequence(
-                Actions.fadeIn(duration),
-                Actions.run(() -> {
-                    if (callback != null) {
-                        callback.onComplete();
-                    }
-                    texture.dispose();
-                })
-            )
-        );
+                Actions.sequence(
+                        Actions.fadeIn(duration),
+                        Actions.run(() -> {
+                            if (callback != null) {
+                                callback.onComplete();
+                            }
+                            texture.dispose();
+                        })));
     }
 
     /**
-     * Creates a fade-in effect on the given stage.
-     * Fades a black overlay from opaque to transparent.
+     * Crea un efecto de fade-in en el stage dado.
+     * <p>
+     * Funde una superposición negra de opaca a transparente.
      * 
-     * @param stage the stage to fade in
-     * @param duration fade duration in seconds
-     * @param callback callback to execute when fade completes
+     * @param stage    el stage para hacer fade in
+     * @param duration duración del fade en segundos
+     * @param callback callback a ejecutar cuando el fade complete
      */
     public static void fadeIn(Stage stage, float duration, TransitionCallback callback) {
         // Create a black overlay
@@ -76,40 +75,37 @@ public class ScreenTransition {
 
         Image fadeImage = new Image(new TextureRegionDrawable(new TextureRegion(texture)));
         fadeImage.setFillParent(true);
-        fadeImage.getColor().a = 1f; // Start opaque
+        fadeImage.getColor().a = 1f;
 
         stage.addActor(fadeImage);
 
-        // Fade to transparent, then call callback
         fadeImage.addAction(
-            Actions.sequence(
-                Actions.fadeOut(duration),
-                Actions.run(() -> {
-                    if (callback != null) {
-                        callback.onComplete();
-                    }
-                    fadeImage.remove();
-                    texture.dispose();
-                })
-            )
-        );
+                Actions.sequence(
+                        Actions.fadeOut(duration),
+                        Actions.run(() -> {
+                            if (callback != null) {
+                                callback.onComplete();
+                            }
+                            fadeImage.remove();
+                            texture.dispose();
+                        })));
     }
 
     /**
-     * Creates a fade-out effect with default duration (0.5 seconds).
+     * Crea un efecto de fade-out con duración por defecto (0.5 segundos).
      * 
-     * @param stage the stage to fade out
-     * @param callback callback to execute when fade completes
+     * @param stage    el stage para hacer fade out
+     * @param callback callback a ejecutar cuando el fade complete
      */
     public static void fadeOut(Stage stage, TransitionCallback callback) {
         fadeOut(stage, 0.5f, callback);
     }
 
     /**
-     * Creates a fade-in effect with default duration (0.5 seconds).
+     * Crea un efecto de fade-in con duración por defecto (0.5 segundos).
      * 
-     * @param stage the stage to fade in
-     * @param callback callback to execute when fade completes
+     * @param stage    el stage para hacer fade in
+     * @param callback callback a ejecutar cuando el fade complete
      */
     public static void fadeIn(Stage stage, TransitionCallback callback) {
         fadeIn(stage, 0.5f, callback);

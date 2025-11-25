@@ -16,6 +16,7 @@ import to.mpm.ui.UISkinProvider;
 
 /**
  * Pantalla de selección de minijuegos.
+ * <p>
  * Solo el host puede seleccionar el minijuego.
  */
 public class MinigameSelectionScreen implements Screen {

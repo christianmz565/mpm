@@ -31,23 +31,24 @@ import java.util.ArrayList;
 /**
  * Pantalla de sala unificada que se muestra tanto para el host como para los
  * clientes.
+ * <p>
  * Muestra información de la sala, jugadores conectados y controles apropiados
  * según el rol.
  */
 public class LobbyScreen implements Screen {
-    private final Main game; // !< instancia del juego principal
-    private final boolean isHost; // !< indica si este jugador es el host
-    private final String serverIp; // !< dirección IP del servidor (para clientes)
-    private final int serverPort; // !< puerto del servidor (para clientes)
-    private int rounds; // !< número de rondas configuradas
-    private Stage stage; // !< stage para renderizar componentes de UI
-    private Skin skin; // !< skin para estilizar componentes
-    private Label ipLabel; // !< etiqueta que muestra la IP del servidor
-    private Label portLabel; // !< etiqueta que muestra el puerto del servidor
-    private Table playersContainer; // !< contenedor de la lista de jugadores
-    private TextButton startButton; // !< botón para iniciar el juego (solo host)
-    private TextButton spectatorButton; // !< botón para alternar modo espectador
-    private final Set<Integer> spectators = new HashSet<>(); // !< conjunto de IDs de jugadores espectadores
+    private final Main game; //!< instancia del juego principal
+    private final boolean isHost; //!< indica si este jugador es el host
+    private final String serverIp; //!< dirección IP del servidor (para clientes)
+    private final int serverPort; //!< puerto del servidor (para clientes)
+    private int rounds; //!< número de rondas configuradas
+    private Stage stage; //!< stage para renderizar componentes de UI
+    private Skin skin; //!< skin para estilizar componentes
+    private Label ipLabel; //!< etiqueta que muestra la IP del servidor
+    private Label portLabel; //!< etiqueta que muestra el puerto del servidor
+    private Table playersContainer; //!< contenedor de la lista de jugadores
+    private TextButton startButton; //!< botón para iniciar el juego (solo host)
+    private TextButton spectatorButton; //!< botón para alternar modo espectador
+    private final Set<Integer> spectators = new HashSet<>(); //!< conjunto de IDs de jugadores espectadores
     private LobbyClientHandler lobbyClientHandler;
     private LobbyServerHandler lobbyServerHandler;
     private StartGameClientHandler startGameClientHandler;
@@ -72,7 +73,7 @@ public class LobbyScreen implements Screen {
      */
     public LobbyScreen(Main game, boolean isHost) {
         this(game, isHost, null, 0);
-        this.rounds = 0; // Will be set via RoomConfig packet
+        this.rounds = 0;
     }
 
     /**
@@ -88,7 +89,7 @@ public class LobbyScreen implements Screen {
         this.isHost = isHost;
         this.serverIp = serverIp;
         this.serverPort = serverPort;
-        this.rounds = 0; // Will be set via RoomConfig packet
+        this.rounds = 0;
     }
 
     /**
@@ -152,9 +153,8 @@ public class LobbyScreen implements Screen {
 
         root.add(playersScroll).expand().fill().pad(UIStyles.Spacing.LARGE).row();
 
-        // Bottom row with spectator toggle and start button
         Table bottomRow = new Table();
-        
+
         spectatorButton = new StyledButton(skin)
                 .text("Modo Espectador")
                 .onClick(this::toggleSpectator)
@@ -172,7 +172,7 @@ public class LobbyScreen implements Screen {
             root.add(bottomRow).bottom().pad(UIStyles.Spacing.LARGE).row();
         } else {
             root.add(bottomRow).bottom().pad(UIStyles.Spacing.LARGE).row();
-            
+
             Label statusLabel = new Label("Esperando a que el anfitrión inicie el juego...", skin);
             statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
             root.add(statusLabel).bottom().padBottom(UIStyles.Spacing.MEDIUM).row();
@@ -180,7 +180,6 @@ public class LobbyScreen implements Screen {
 
         updatePlayersList();
 
-        // Enable start button if there are already players connected (returning from game)
         if (isHost && startButton != null && NetworkManager.getInstance().getPlayerCount() > 1) {
             startButton.setDisabled(false);
         }
@@ -189,7 +188,6 @@ public class LobbyScreen implements Screen {
         lobbyClientHandler = new LobbyClientHandler();
         networkManager.registerClientHandler(lobbyClientHandler);
 
-        // Register RoomConfig handler for both host and clients
         RoomConfigClientHandler roomConfigHandler = new RoomConfigClientHandler();
         networkManager.registerClientHandler(roomConfigHandler);
 
@@ -210,7 +208,7 @@ public class LobbyScreen implements Screen {
     private void toggleSpectator() {
         int localPlayerId = NetworkManager.getInstance().getMyId();
         boolean isCurrentlySpectator = spectators.contains(localPlayerId);
-        
+
         if (isCurrentlySpectator) {
             spectators.remove(localPlayerId);
             spectatorButton.setText("Modo Espectador");
@@ -218,13 +216,12 @@ public class LobbyScreen implements Screen {
             spectators.add(localPlayerId);
             spectatorButton.setText("Modo Jugador");
         }
-        
-        // Broadcast spectator status
+
         Packets.SpectatorStatus packet = new Packets.SpectatorStatus();
         packet.playerId = localPlayerId;
         packet.isSpectator = !isCurrentlySpectator;
         NetworkManager.getInstance().sendPacket(packet);
-        
+
         updatePlayersList();
         Gdx.app.log("LobbyScreen", "Spectator mode toggled: " + !isCurrentlySpectator);
     }
@@ -250,7 +247,7 @@ public class LobbyScreen implements Screen {
      */
     private void onPlayerLeft(Packets.PlayerLeft packet) {
         Gdx.app.log("LobbyScreen", "Player " + packet.playerId + " disconnected");
-        spectators.remove(packet.playerId); // Remove from spectators if they were one
+        spectators.remove(packet.playerId);
         updatePlayersList();
 
         if (isHost && startButton != null) {
@@ -259,7 +256,7 @@ public class LobbyScreen implements Screen {
             }
         }
     }
-    
+
     /**
      * Maneja el cambio de estado de espectador de un jugador.
      *
@@ -271,19 +268,19 @@ public class LobbyScreen implements Screen {
         } else {
             spectators.remove(packet.playerId);
         }
-        
-        // Update button text if it's the local player
+
         int localPlayerId = NetworkManager.getInstance().getMyId();
         if (packet.playerId == localPlayerId && spectatorButton != null) {
             spectatorButton.setText(packet.isSpectator ? "Modo Jugador" : "Modo Espectador");
         }
-        
+
         updatePlayersList();
         Gdx.app.log("LobbyScreen", "Player " + packet.playerId + " spectator status: " + packet.isSpectator);
     }
 
     /**
      * Maneja el evento de inicio de juego enviado por el anfitrión.
+     * <p>
      * Solo usado por clientes.
      *
      * @param packet paquete de inicio de juego
@@ -294,16 +291,16 @@ public class LobbyScreen implements Screen {
                 MinigameType type = MinigameType.valueOf(packet.minigameType);
                 int roundNumber = packet.currentRound > 0 ? packet.currentRound : 1;
                 int configuredRounds = packet.totalRounds > 0 ? packet.totalRounds : (rounds > 0 ? rounds : 1);
-                
-                // Initialize GameFlowManager on clients with spectator information
-                to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+
+                to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager
+                        .getInstance();
                 if (!flowManager.isInitialized()) {
                     flowManager.initialize(configuredRounds);
                     flowManager.setSpectators(spectators);
-                    Gdx.app.log("LobbyScreen", "Client initialized GameFlowManager with " + spectators.size() + " spectators");
+                    Gdx.app.log("LobbyScreen",
+                            "Client initialized GameFlowManager with " + spectators.size() + " spectators");
                 }
-                
-                // Check if local player is a spectator
+
                 int localPlayerId = NetworkManager.getInstance().getMyId();
                 if (spectators.contains(localPlayerId)) {
                     game.setScreen(new SpectatorScreen(game, type, roundNumber, configuredRounds));
@@ -351,6 +348,7 @@ public class LobbyScreen implements Screen {
 
     /**
      * Inicia el juego y notifica a todos los jugadores conectados.
+     * <p>
      * Solo puede ser invocado por el host.
      */
     private void startGame() {
@@ -364,22 +362,20 @@ public class LobbyScreen implements Screen {
             return;
         }
 
-        // Initialize GameFlowManager with rounds configuration
         to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
         flowManager.initialize(rounds);
         flowManager.setSpectators(spectators);
         flowManager.startRound();
 
-        // Broadcast room config with spectator information to all clients
-        to.mpm.minigames.manager.ManagerPackets.RoomConfig configPacket = 
-            new to.mpm.minigames.manager.ManagerPackets.RoomConfig(rounds, new ArrayList<>(spectators));
+        to.mpm.minigames.manager.ManagerPackets.RoomConfig configPacket = new to.mpm.minigames.manager.ManagerPackets.RoomConfig(
+                rounds, new ArrayList<>(spectators));
         NetworkManager.getInstance().broadcastFromHost(configPacket);
 
-        // Select first minigame randomly (count only non-spectator players)
         int activePlayerCount = NetworkManager.getInstance().getPlayerCount() - spectators.size();
         MinigameType selectedGame = to.mpm.minigames.selection.RandomGameSelection.selectGame(activePlayerCount);
 
-        Gdx.app.log("LobbyScreen", "Selected game: " + selectedGame.getDisplayName() + " for " + activePlayerCount + " players (" + spectators.size() + " spectators)");
+        Gdx.app.log("LobbyScreen", "Selected game: " + selectedGame.getDisplayName() + " for " + activePlayerCount
+                + " players (" + spectators.size() + " spectators)");
 
         Packets.StartGame packet = new Packets.StartGame();
         packet.minigameType = selectedGame.name();
@@ -387,12 +383,13 @@ public class LobbyScreen implements Screen {
         packet.totalRounds = flowManager.getTotalRounds();
         NetworkManager.getInstance().broadcastFromHost(packet);
 
-        // Host transitions to appropriate screen
         int localPlayerId = NetworkManager.getInstance().getMyId();
         if (spectators.contains(localPlayerId)) {
-            game.setScreen(new SpectatorScreen(game, selectedGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
+            game.setScreen(new SpectatorScreen(game, selectedGame, flowManager.getCurrentRound(),
+                    flowManager.getTotalRounds()));
         } else {
-            game.setScreen(new GameScreen(game, selectedGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
+            game.setScreen(
+                    new GameScreen(game, selectedGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         }
         dispose();
     }
@@ -488,7 +485,6 @@ public class LobbyScreen implements Screen {
 
     /**
      * Manejador de paquetes para configuración de sala.
-     * Recibido tanto por host como clientes.
      */
     private final class RoomConfigClientHandler implements ClientPacketHandler {
         @Override
@@ -506,13 +502,14 @@ public class LobbyScreen implements Screen {
                     spectators.addAll(roomConfig.spectatorIds);
                     updatePlayersList();
                 }
-                Gdx.app.log("LobbyScreen", "Room configured with " + rounds + " rounds and " + spectators.size() + " spectators");
+                Gdx.app.log("LobbyScreen",
+                        "Room configured with " + rounds + " rounds and " + spectators.size() + " spectators");
             }
         }
     }
 
     /**
-     * Manejador de paquetes para iniciar el juego (clientes).
+     * Manejador de paquetes para iniciar el juego para los clientes.
      */
     private final class StartGameClientHandler implements ClientPacketHandler {
         @Override
@@ -535,7 +532,8 @@ public class LobbyScreen implements Screen {
 
         @Override
         public List<Class<? extends NetworkPacket>> receivablePackets() {
-            return List.of(Packets.PlayerJoinRequest.class, ServerEvents.ClientDisconnected.class, Packets.SpectatorStatus.class);
+            return List.of(Packets.PlayerJoinRequest.class, ServerEvents.ClientDisconnected.class,
+                    Packets.SpectatorStatus.class);
         }
 
         @Override
@@ -545,7 +543,6 @@ public class LobbyScreen implements Screen {
             } else if (packet instanceof ServerEvents.ClientDisconnected disconnected) {
                 handleDisconnect(context, disconnected);
             } else if (packet instanceof Packets.SpectatorStatus spectatorStatus) {
-                // Relay spectator status to all clients
                 context.broadcast(spectatorStatus);
             }
         }

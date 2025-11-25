@@ -17,20 +17,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Clase base para objetos cuyos campos deben sincronizarse a través de la red.
+ * <p>
  * Esta clase asigna un identificador único {@code objectId} a cada instancia
- * para
- * identificarla en mensajes {@link Packets.SyncUpdate}.
+ * para identificarla en mensajes {@link Packets.SyncUpdate}.
  */
 public class SyncedObject {
-    private static final Map<UUID, SyncedObject> syncedObjects = new ConcurrentHashMap<>(); // !< Registro de todos los
+    private static final Map<UUID, SyncedObject> syncedObjects = new ConcurrentHashMap<>(); //!< Registro de todos los
                                                                                             // objetos sincronizados por
                                                                                             // id
-    private static ClientPacketHandler clientHandler; // !< handler global del lado del cliente
-    private static ServerPacketHandler serverHandler; // !< handler global del lado del servidor
+    private static ClientPacketHandler clientHandler; //!< handler global del lado del cliente
+    private static ServerPacketHandler serverHandler; //!< handler global del lado del servidor
 
-    private final UUID objectId; // !< Id único para este objeto sincronizado
-    private final Map<String, Object> lastKnownValues; // !< Últimos valores conocidos de los campos sincronizados
-    private boolean isLocallyOwned; // !< true si esta instancia debe enviar actualizaciones
+    private final UUID objectId; //!< Id único para este objeto sincronizado
+    private final Map<String, Object> lastKnownValues; //!< Últimos valores conocidos de los campos sincronizados
+    private boolean isLocallyOwned; //!< true si esta instancia debe enviar actualizaciones
 
     /**
      * Crea un nuevo objeto sincronizado.
@@ -81,6 +81,7 @@ public class SyncedObject {
 
     /**
      * Manejador estático global para todos los paquetes SyncUpdate.
+     * <p>
      * Envía al objeto SyncedObject correcto.
      * 
      * @param packet el paquete de actualización de sincronización
@@ -94,8 +95,7 @@ public class SyncedObject {
 
     /**
      * Ejecuta un ciclo de actualización, comprobando cambios en los campos
-     * sincronizados
-     * y enviando actualizaciones si es necesario.
+     * sincronizados y enviando actualizaciones si es necesario.
      */
     public void update() {
         if (!isLocallyOwned) {

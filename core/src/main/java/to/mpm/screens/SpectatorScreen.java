@@ -21,35 +21,33 @@ import to.mpm.ui.UISkinProvider;
 
 /**
  * Pantalla de espectador para observar el juego sin participar.
+ * <p>
  * Muestra el minijuego en curso sin permitir interacción.
  */
 public class SpectatorScreen implements Screen {
-    private final Main game;
-    private final MinigameType minigameType;
-    private final int currentRound;
-    private final int totalRounds;
-    
-    private Minigame currentMinigame;
-    private SpriteBatch batch;
-    private ShapeRenderer shapeRenderer;
-    private Stage uiStage;
-    private Skin skin;
-    private Label timerLabel;
-    private Label roundLabel;
-    private float gameTimer = 10f;
-
-    // Packet handlers
-    private ClientPacketHandler showScoreboardHandler;
-    private ClientPacketHandler showResultsHandler;
-    private ClientPacketHandler startNextRoundHandler;
+    private final Main game; //!< instancia del juego principal
+    private final MinigameType minigameType; //!< tipo de minijuego que se está jugando
+    private final int currentRound; //!< ronda actual
+    private final int totalRounds; //!< total de rondas
+    private Minigame currentMinigame; //!< instancia del minijuego en curso
+    private SpriteBatch batch; //!< sprite batch para renderizado
+    private ShapeRenderer shapeRenderer; //!< shape renderer para renderizado
+    private Stage uiStage; //!< stage para la UI overlay
+    private Skin skin; //!< skin para estilizar componentes de UI
+    private Label timerLabel; //!< etiqueta para mostrar el temporizador
+    private Label roundLabel; //!< etiqueta para mostrar la ronda actual
+    private float gameTimer = 10f; //!< temporizador del juego
+    private ClientPacketHandler showScoreboardHandler; //!< manejador de paquete para mostrar el marcador
+    private ClientPacketHandler showResultsHandler; //!< manejador de paquete para mostrar resultados
+    private ClientPacketHandler startNextRoundHandler; //!< manejador de paquete para iniciar la siguiente ronda
 
     /**
      * Construye una nueva pantalla de espectador.
      *
-     * @param game instancia del juego principal
+     * @param game         instancia del juego principal
      * @param minigameType tipo de minijuego que se está jugando
      * @param currentRound ronda actual
-     * @param totalRounds total de rondas
+     * @param totalRounds  total de rondas
      */
     public SpectatorScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds) {
         this.game = game;
@@ -75,7 +73,6 @@ public class SpectatorScreen implements Screen {
         uiRoot.top();
         uiStage.addActor(uiRoot);
 
-        // Spectator indicator and game info at top
         Table topContainer = new Table();
         topContainer.pad(UIStyles.Spacing.MEDIUM);
 
@@ -91,7 +88,6 @@ public class SpectatorScreen implements Screen {
             topContainer.add(roundLabel).padBottom(UIStyles.Spacing.TINY).row();
         }
 
-        // Timer (unless finale)
         boolean isFinale = minigameType == MinigameType.THE_FINALE;
         if (!isFinale) {
             timerLabel = new Label("Time: 60", skin);
@@ -102,13 +98,11 @@ public class SpectatorScreen implements Screen {
 
         uiRoot.add(topContainer).expandX().center().row();
 
-        // Initialize minigame in spectator mode (no local player creation)
-        currentMinigame = MinigameFactory.createMinigame(minigameType, -1); // Use -1 as sentinel for spectator
+        currentMinigame = MinigameFactory.createMinigame(minigameType, -1);
         currentMinigame.initialize();
 
-        // Register packet handlers for screen transitions
         NetworkManager networkManager = NetworkManager.getInstance();
-        
+
         showScoreboardHandler = new ShowScoreboardPacketHandler();
         networkManager.registerClientHandler(showScoreboardHandler);
 
@@ -128,10 +122,8 @@ public class SpectatorScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        // Update minigame (but don't handle input)
         currentMinigame.update(delta);
 
-        // Update timer (unless finale)
         boolean isFinale = minigameType == MinigameType.THE_FINALE;
         if (!isFinale && timerLabel != null) {
             gameTimer -= delta;
@@ -142,10 +134,8 @@ public class SpectatorScreen implements Screen {
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Render minigame (spectators see the game but don't control it)
         currentMinigame.render(batch, shapeRenderer);
 
-        // Render UI overlay
         uiStage.act(delta);
         uiStage.draw();
     }
@@ -190,7 +180,6 @@ public class SpectatorScreen implements Screen {
      */
     @Override
     public void dispose() {
-        // Unregister packet handlers
         if (showScoreboardHandler != null) {
             NetworkManager.getInstance().unregisterClientHandler(showScoreboardHandler);
         }
@@ -213,7 +202,8 @@ public class SpectatorScreen implements Screen {
     }
 
     /**
-     * Handler for ShowScoreboard packets - transitions spectators to scoreboard screen.
+     * Manejador para paquetes ShowScoreboard, transiciona a los espectadores a la
+     * pantalla de marcador.
      */
     private final class ShowScoreboardPacketHandler implements ClientPacketHandler {
         @Override
@@ -228,14 +218,15 @@ public class SpectatorScreen implements Screen {
                 int localPlayerId = NetworkManager.getInstance().getMyId();
                 Gdx.app.postRunnable(() -> {
                     game.setScreen(new ScoreboardScreen(game, showScoreboard.allPlayerScores,
-                        showScoreboard.currentRound, showScoreboard.totalRounds, localPlayerId));
+                            showScoreboard.currentRound, showScoreboard.totalRounds, localPlayerId));
                 });
             }
         }
     }
 
     /**
-     * Handler for ShowResults packets - transitions spectators to results screen.
+     * Manejador para paquetes ShowResults, transiciona a los espectadores a la
+     * pantalla de resultados.
      */
     private final class ShowResultsPacketHandler implements ClientPacketHandler {
         @Override
@@ -255,7 +246,8 @@ public class SpectatorScreen implements Screen {
     }
 
     /**
-     * Handler for StartNextRound packets - routes spectators back to SpectatorScreen.
+     * Manejador para paquetes StartNextRound, transiciona a los espectadores a la
+     * siguiente ronda o minijuego.
      */
     private final class StartNextRoundPacketHandler implements ClientPacketHandler {
         @Override
@@ -270,20 +262,16 @@ public class SpectatorScreen implements Screen {
                 Gdx.app.postRunnable(() -> {
                     MinigameType nextMinigameType = MinigameType.valueOf(startNextRound.minigameType);
                     int myId = NetworkManager.getInstance().getMyId();
-                    
-                    // If participatingPlayerIds is set (finale), check if we're included
-                    // If null (normal round), spectators remain spectators
-                    boolean shouldParticipate = startNextRound.participatingPlayerIds != null && 
-                                                startNextRound.participatingPlayerIds.contains(myId);
-                    
+
+                    boolean shouldParticipate = startNextRound.participatingPlayerIds != null &&
+                            startNextRound.participatingPlayerIds.contains(myId);
+
                     if (shouldParticipate) {
-                        // Spectator is now participating (only happens in finale edge cases)
                         game.setScreen(new GameScreen(game, nextMinigameType,
-                            startNextRound.roundNumber, totalRounds));
+                                startNextRound.roundNumber, totalRounds));
                     } else {
-                        // Remain as spectator
                         game.setScreen(new SpectatorScreen(game, nextMinigameType,
-                            startNextRound.roundNumber, totalRounds));
+                                startNextRound.roundNumber, totalRounds));
                     }
                     dispose();
                 });

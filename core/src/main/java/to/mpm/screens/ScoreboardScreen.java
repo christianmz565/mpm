@@ -27,44 +27,45 @@ import java.util.Set;
 
 /**
  * Pantalla de marcador mostrando los puntajes acumulados después de cada ronda.
+ * <p>
  * Los jugadores se ordenan por puntaje de forma descendente.
+ * <p>
  * Avanza automáticamente a la siguiente ronda después de 5 segundos.
  */
 public class ScoreboardScreen implements Screen {
-    private final Main game;
-    private final int currentRound;
-    private final int totalRounds;
-    private final int localPlayerId;
-    
-    private Stage stage;
-    private Skin skin;
-    private ScrollPane scoresScroll;
-    private Table scoresContainer;
-    private Label countdownLabel;
-    private Label roundLabel;
-    
-    private float countdownTimer = 5.0f;
-    private List<PlayerData> sortedPlayers;
-    private StartNextRoundHandler startNextRoundHandler;
-    private ShowResultsHandler showResultsHandler;
+    private final Main game; //!< referencia a la instancia principal del juego
+    private final int currentRound; //!< ronda actual que acaba de terminar
+    private final int totalRounds; //!< total de rondas en el juego
+    private final int localPlayerId; //!< ID del jugador local
+
+    private Stage stage; //!< stage para renderizar componentes de UI
+    private Skin skin; //!< skin para estilizar componentes
+    private ScrollPane scoresScroll; //!< scroll para la lista de puntajes
+    private Table scoresContainer; //!< contenedor para la lista de puntajes
+    private Label countdownLabel; //!< etiqueta para mostrar la cuenta regresiva
+    private Label roundLabel; //!< etiqueta para mostrar la ronda actual
+
+    private float countdownTimer = 5.0f; //!< temporizador de cuenta regresiva en segundos
+    private List<PlayerData> sortedPlayers; //!< lista de jugadores ordenados por puntaje
+    private StartNextRoundHandler startNextRoundHandler; //!< manejador de paquete para iniciar la siguiente ronda
+    private ShowResultsHandler showResultsHandler; //!< manejador de paquete para mostrar resultados
 
     /**
      * Constructor de la pantalla de marcador.
      *
-     * @param game referencia a la instancia principal del juego
-     * @param scores mapa de playerId a puntaje acumulado
-     * @param currentRound ronda actual que acaba de terminar (1-based)
-     * @param totalRounds total de rondas en el juego
+     * @param game          referencia a la instancia principal del juego
+     * @param scores        mapa de playerId a puntaje acumulado
+     * @param currentRound  ronda actual que acaba de terminar (1-based)
+     * @param totalRounds   total de rondas en el juego
      * @param localPlayerId ID del jugador local
      */
-    public ScoreboardScreen(Main game, Map<Integer, Integer> scores, int currentRound, int totalRounds, int localPlayerId) {
+    public ScoreboardScreen(Main game, Map<Integer, Integer> scores, int currentRound, int totalRounds,
+            int localPlayerId) {
         this.game = game;
         this.currentRound = currentRound;
         this.totalRounds = totalRounds;
         this.localPlayerId = localPlayerId;
-        
-        // Convert scores to PlayerData list, ensuring zero-score players are included
-        // Filter out spectators from scoreboard display
+
         sortedPlayers = new ArrayList<>();
         Map<Integer, String> playerNames = NetworkManager.getInstance().getConnectedPlayers();
         Set<Integer> processedPlayers = new HashSet<>();
@@ -72,9 +73,9 @@ public class ScoreboardScreen implements Screen {
 
         for (Map.Entry<Integer, Integer> entry : scores.entrySet()) {
             int playerId = entry.getKey();
-            // Skip spectators
-            if (flowManager.isSpectator(playerId)) continue;
-            
+            if (flowManager.isSpectator(playerId))
+                continue;
+
             String playerName = playerNames.getOrDefault(playerId, "Player " + playerId);
             sortedPlayers.add(new PlayerData(playerId, playerName, entry.getValue()));
             processedPlayers.add(playerId);
@@ -82,15 +83,15 @@ public class ScoreboardScreen implements Screen {
 
         for (Map.Entry<Integer, String> entry : playerNames.entrySet()) {
             int playerId = entry.getKey();
-            // Skip spectators
-            if (flowManager.isSpectator(playerId)) continue;
-            
+            if (flowManager.isSpectator(playerId))
+                continue;
+
             if (!processedPlayers.contains(playerId)) {
                 sortedPlayers.add(new PlayerData(playerId, entry.getValue(), 0));
             }
         }
 
-        Collections.sort(sortedPlayers); // Sort by score descending
+        Collections.sort(sortedPlayers);
     }
 
     /**
@@ -109,7 +110,6 @@ public class ScoreboardScreen implements Screen {
         root.defaults().padBottom(UIStyles.Spacing.MEDIUM);
         stage.addActor(root);
 
-        // Round indicator
         roundLabel = new Label("Round " + currentRound + "/" + totalRounds + " Complete!", skin);
         roundLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
@@ -122,35 +122,32 @@ public class ScoreboardScreen implements Screen {
         titleLabel.setAlignment(Align.center);
         root.add(titleLabel).expandX().center().padBottom(UIStyles.Spacing.LARGE).row();
 
-        // Scores list
         scoresContainer = new Table();
         scoresScroll = new ScrollPane(scoresContainer, skin);
         scoresScroll.setFadeScrollBars(false);
 
         root.add(scoresScroll)
-            .width(UIStyles.Layout.PANEL_MAX_WIDTH)
-            .maxHeight(UIStyles.Layout.LIST_MAX_HEIGHT)
-            .expand()
-            .fill()
-            .padBottom(UIStyles.Spacing.LARGE)
-            .row();
+                .width(UIStyles.Layout.PANEL_MAX_WIDTH)
+                .maxHeight(UIStyles.Layout.LIST_MAX_HEIGHT)
+                .expand()
+                .fill()
+                .padBottom(UIStyles.Spacing.LARGE)
+                .row();
 
         updateScoresList();
 
-        // Countdown timer
         countdownLabel = new Label("Next round in: 5", skin);
         countdownLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
         countdownLabel.setColor(UIStyles.Colors.ACCENT);
         countdownLabel.setAlignment(Align.center);
         root.add(countdownLabel)
-            .width(UIStyles.Layout.PANEL_MAX_WIDTH)
-            .center()
-            .padTop(UIStyles.Spacing.LARGE);
+                .width(UIStyles.Layout.PANEL_MAX_WIDTH)
+                .center()
+                .padTop(UIStyles.Spacing.LARGE);
 
-        // Register packet handlers
         startNextRoundHandler = new StartNextRoundHandler();
         NetworkManager.getInstance().registerClientHandler(startNextRoundHandler);
-        
+
         showResultsHandler = new ShowResultsHandler();
         NetworkManager.getInstance().registerClientHandler(showResultsHandler);
 
@@ -177,11 +174,9 @@ public class ScoreboardScreen implements Screen {
             scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.LARGE).row();
         }
 
-        // Scroll to local player position (center if possible)
         stage.act(0);
         float localPlayerY = 0;
-        
-        // Calculate cumulative position considering LARGE padding
+
         for (int i = 0; i < sortedPlayers.size(); i++) {
             if (sortedPlayers.get(i).getPlayerId() == localPlayerId) {
                 break;
@@ -190,7 +185,7 @@ public class ScoreboardScreen implements Screen {
                 localPlayerY += scoresContainer.getChildren().get(i).getHeight() + UIStyles.Spacing.LARGE;
             }
         }
-        
+
         float scrollHeight = scoresScroll.getHeight();
         float contentHeight = scoresContainer.getHeight();
         float targetScroll = localPlayerY - scrollHeight / 2;
@@ -205,14 +200,12 @@ public class ScoreboardScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        // Update countdown
         countdownTimer -= delta;
         if (countdownLabel != null) {
             int seconds = Math.max(0, (int) Math.ceil(countdownTimer));
             countdownLabel.setText("Next round in: " + seconds);
         }
 
-        // Host determines next action when timer expires
         if (countdownTimer <= 0 && NetworkManager.getInstance().isHost()) {
             advanceToNextRound();
         }
@@ -226,8 +219,9 @@ public class ScoreboardScreen implements Screen {
     }
 
     /**
-     * Host: Advances to the next round or shows results.
-     * Determines the next minigame and broadcasts StartNextRound packet.
+     * Avanza a la siguiente ronda o a la pantalla de resultados si es la final.
+     * <p>
+     * El host selecciona el siguiente minijuego y notifica a los clientes.
      */
     private void advanceToNextRound() {
         to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
@@ -237,43 +231,38 @@ public class ScoreboardScreen implements Screen {
         List<Integer> participatingPlayers = null;
 
         if (flowManager.shouldPlayFinale()) {
-            // Last round: play finale with top players
             nextGame = MinigameType.THE_FINALE;
             participatingPlayers = flowManager.getFinalePlayerIds();
-            
-            // Edge case: only 1 player remaining
+
             if (participatingPlayers.size() == 1) {
                 Gdx.app.log("ScoreboardScreen", "Only 1 player remaining, skipping finale");
-                to.mpm.minigames.manager.ManagerPackets.ShowResults resultsPacket = 
-                    new to.mpm.minigames.manager.ManagerPackets.ShowResults(flowManager.getTotalScores());
+                to.mpm.minigames.manager.ManagerPackets.ShowResults resultsPacket = new to.mpm.minigames.manager.ManagerPackets.ShowResults(
+                        flowManager.getTotalScores());
                 NetworkManager.getInstance().broadcastFromHost(resultsPacket);
                 game.setScreen(new ResultsScreen(game, flowManager.getTotalScores()));
                 dispose();
                 return;
             }
-            
+
             Gdx.app.log("ScoreboardScreen", "Starting finale with " + participatingPlayers.size() + " players");
         } else {
-            // Normal round: select random game (exclude spectators)
             int activePlayerCount = flowManager.getActivePlayerCount();
             nextGame = to.mpm.minigames.selection.RandomGameSelection.selectGame(activePlayerCount);
-            Gdx.app.log("ScoreboardScreen", "Selected next game: " + nextGame.getDisplayName() + " for " + activePlayerCount + " players");
+            Gdx.app.log("ScoreboardScreen",
+                    "Selected next game: " + nextGame.getDisplayName() + " for " + activePlayerCount + " players");
         }
 
-        // Broadcast next round info
-        to.mpm.minigames.manager.ManagerPackets.StartNextRound packet = 
-            new to.mpm.minigames.manager.ManagerPackets.StartNextRound(
+        to.mpm.minigames.manager.ManagerPackets.StartNextRound packet = new to.mpm.minigames.manager.ManagerPackets.StartNextRound(
                 flowManager.getCurrentRound(),
                 nextGame.name(),
-                participatingPlayers
-            );
+                participatingPlayers);
         NetworkManager.getInstance().broadcastFromHost(packet);
 
-        // Transition to game screen or spectator screen
         if (participatingPlayers == null || participatingPlayers.contains(localPlayerId)) {
             game.setScreen(new GameScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         } else {
-            game.setScreen(new SpectatorScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
+            game.setScreen(
+                    new SpectatorScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         }
         dispose();
     }
@@ -342,20 +331,17 @@ public class ScoreboardScreen implements Screen {
         public void handle(ClientPacketContext context, NetworkPacket packet) {
             if (packet instanceof to.mpm.minigames.manager.ManagerPackets.StartNextRound startNextRound) {
                 Gdx.app.log("ScoreboardScreen", "Received StartNextRound: " + startNextRound.minigameType);
-                
+
                 MinigameType minigameType = MinigameType.valueOf(startNextRound.minigameType);
-                
-                // Check if local player is a spectator (permanent spectators from lobby)
-                to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+
+                to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager
+                        .getInstance();
                 if (flowManager.isSpectator(localPlayerId)) {
-                    // Permanent spectator - always go to SpectatorScreen
                     game.setScreen(new SpectatorScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
-                } else if (startNextRound.participatingPlayerIds == null || 
-                           startNextRound.participatingPlayerIds.contains(localPlayerId)) {
-                    // Active player participating
+                } else if (startNextRound.participatingPlayerIds == null ||
+                        startNextRound.participatingPlayerIds.contains(localPlayerId)) {
                     game.setScreen(new GameScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 } else {
-                    // Eliminated from finale (temporary spectator)
                     game.setScreen(new SpectatorScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 }
                 dispose();

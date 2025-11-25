@@ -7,6 +7,7 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de marcador de posición para la ilustración del pato.
+ * <p>
  * Será reemplazado con renderizado de sprites una vez que los recursos estén
  * listos.
  */
@@ -60,12 +61,12 @@ public class DuckPlaceholder {
         placeholderLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         placeholderLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
 
-    float contentWidth = size - (UIStyles.Spacing.MEDIUM * 2f);
-    container.add(placeholderLabel)
-        .width(contentWidth)
-        .center()
-        .expand()
-        .pad(UIStyles.Spacing.MEDIUM);
+        float contentWidth = size - (UIStyles.Spacing.MEDIUM * 2f);
+        container.add(placeholderLabel)
+                .width(contentWidth)
+                .center()
+                .expand()
+                .pad(UIStyles.Spacing.MEDIUM);
 
         return container;
     }

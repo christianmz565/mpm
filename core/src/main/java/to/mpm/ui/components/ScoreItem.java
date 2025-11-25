@@ -8,6 +8,7 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de elementos de visualización de puntuación.
+ * <p>
  * Muestra posición del jugador, nombre y puntuación en una fila formateada.
  */
 public class ScoreItem {

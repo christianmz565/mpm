@@ -12,7 +12,9 @@ import to.mpm.ui.components.SettingsOverlay;
 
 /**
  * Controlador responsable de gestionar la superposición de ajustes.
- * Mantiene su propio stage y un InputMultiplexer para integrarse con la pantalla activa.
+ * <p>
+ * Mantiene su propio stage y un InputMultiplexer para integrarse con la
+ * pantalla activa.
  */
 public class SettingsOverlayManager {
     private static final Color OVERLAY_COLOR = new Color(0f, 0f, 0f, 0.7f); //!< color de la capa de oscurecimiento
@@ -77,7 +79,7 @@ public class SettingsOverlayManager {
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         dimRenderer.begin(ShapeRenderer.ShapeType.Filled);
-    dimRenderer.setColor(OVERLAY_COLOR);
+        dimRenderer.setColor(OVERLAY_COLOR);
         dimRenderer.rect(0f, 0f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         dimRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
@@ -122,6 +124,9 @@ public class SettingsOverlayManager {
         return overlay.isVisible();
     }
 
+    /**
+     * Reconstruye la configuración del InputMultiplexer.
+     */
     private void rebuildInputPipeline() {
         inputMultiplexer.clear();
         inputMultiplexer.addProcessor(overlayStage);

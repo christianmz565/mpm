@@ -13,6 +13,9 @@ import java.util.UUID;
  * objetos.
  */
 public final class KryoClassRegistrar {
+    /**
+     * Constructor por defecto privado para evitar instanciación.
+     */
     private KryoClassRegistrar() {
     }
 

@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 
 /**
  * Constantes centralizadas para estilos de UI.
+ * <p>
  * Define colores, tipografía, espaciado y tamaños de componentes.
  */
 public class UIStyles {

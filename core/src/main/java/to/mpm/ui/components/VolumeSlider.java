@@ -11,7 +11,6 @@ import to.mpm.ui.UIStyles;
 /**
  * Constructor de controles deslizantes de volumen con etiqueta y visualización
  * de porcentaje.
- * Proporciona una interfaz consistente para ajustar valores de volumen.
  */
 public class VolumeSlider {
     private final Skin skin; //!< skin para renderizar componentes UI
@@ -97,7 +96,6 @@ public class VolumeSlider {
 
     /**
      * Construye y devuelve una tabla con el deslizador de volumen completo.
-     * Incluye etiqueta de título, deslizador y visualización de porcentaje.
      *
      * @return tabla contenedora con todos los componentes configurados
      */

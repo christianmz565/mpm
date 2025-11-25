@@ -20,21 +20,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Placeholder for The Finale minigame.
- * This is the final round played by the top 30% of players.
- * Currently copies BallMovementMinigame mechanics with a 10-second timer.
+ * Placeholder
  */
 public class TheFinaleMinigame implements Minigame {
     private static final float PLAYER_RADIUS = 20f;
     private static final float MOVE_SPEED = 200f;
-    private static final float FINALE_DURATION = 10f; // 10 seconds
+    private static final float FINALE_DURATION = 10f;
     private static final float[][] PLAYER_COLORS = {
-            {1f, 0f, 0f}, // 0 - Red
-            {0f, 0f, 1f}, // 1 - Blue
-            {0f, 1f, 0f}, // 2 - Green
-            {1f, 1f, 0f}, // 3 - Yellow
-            {1f, 0f, 1f}, // 4 - Magenta
-            {0f, 1f, 1f}, // 5 - Cyan
+            { 1f, 0f, 0f },
+            { 0f, 0f, 1f },
+            { 0f, 1f, 0f },
+            { 1f, 1f, 0f },
+            { 1f, 0f, 1f },
+            { 0f, 1f, 1f },
     };
 
     private final int localPlayerId;
@@ -53,9 +51,8 @@ public class TheFinaleMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Skip creating local player for spectators (playerId == -1)
         if (localPlayerId != -1) {
-            // Create local player with a color based on id
+
             float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
             localPlayer = new Player(true,
                     localPlayerId == 0 ? 100 : 540,
@@ -74,22 +71,27 @@ public class TheFinaleMinigame implements Minigame {
     }
 
     private void onPlayerJoined(Packets.PlayerJoined packet) {
-        if (packet.playerId == localPlayerId) return;
-        if (players.containsKey(packet.playerId)) return;
-        
+        if (packet.playerId == localPlayerId)
+            return;
+        if (players.containsKey(packet.playerId))
+            return;
+
         float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
         Player remote = new Player(false, 320, 240, color[0], color[1], color[2]);
         players.put(packet.playerId, remote);
     }
 
     private void onPlayerLeft(Packets.PlayerLeft packet) {
-        if (packet.playerId == localPlayerId) return;
+        if (packet.playerId == localPlayerId)
+            return;
         Player p = players.remove(packet.playerId);
-        if (p != null) p.dispose();
+        if (p != null)
+            p.dispose();
     }
 
     private void onPlayerPosition(Packets.PlayerPosition packet) {
-        if (packet.playerId == localPlayerId) return;
+        if (packet.playerId == localPlayerId)
+            return;
 
         Player remote = players.get(packet.playerId);
         if (remote == null) {
@@ -107,8 +109,7 @@ public class TheFinaleMinigame implements Minigame {
         if (timer <= 0) {
             finished = true;
         }
-        
-        // Spectators (localPlayer == null) don't update or send position
+
         if (localPlayer != null) {
             localPlayer.update();
             sendPlayerPosition();
@@ -119,7 +120,6 @@ public class TheFinaleMinigame implements Minigame {
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Draw all players
         for (IntMap.Entry<Player> entry : players) {
             Player p = entry.value;
             shapeRenderer.setColor(p.r, p.g, p.b, 1f);
@@ -131,8 +131,9 @@ public class TheFinaleMinigame implements Minigame {
 
     @Override
     public void handleInput(float delta) {
-        // Spectators (localPlayer == null) don't handle input
-        if (localPlayer == null) return;
+
+        if (localPlayer == null)
+            return;
 
         float dx = 0, dy = 0;
 
@@ -152,7 +153,6 @@ public class TheFinaleMinigame implements Minigame {
         localPlayer.x += dx;
         localPlayer.y += dy;
 
-        // Keep inside bounds
         localPlayer.x = Math.max(PLAYER_RADIUS, Math.min(640 - PLAYER_RADIUS, localPlayer.x));
         localPlayer.y = Math.max(PLAYER_RADIUS, Math.min(480 - PLAYER_RADIUS, localPlayer.y));
     }
@@ -172,13 +172,13 @@ public class TheFinaleMinigame implements Minigame {
 
     @Override
     public Map<Integer, Integer> getScores() {
-        // Placeholder: no scores in this version
+
         return new HashMap<>();
     }
 
     @Override
     public int getWinnerId() {
-        return -1; // No winner in placeholder
+        return -1;
     }
 
     @Override
@@ -200,12 +200,14 @@ public class TheFinaleMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
-        // Not needed for this simple placeholder
+
     }
 
     private static class Player extends SyncedObject {
-        @Synchronized public float x;
-        @Synchronized public float y;
+        @Synchronized
+        public float x;
+        @Synchronized
+        public float y;
         public float r, g, b;
 
         public Player(boolean isLocallyOwned, float x, float y, float r, float g, float b) {
@@ -229,8 +231,7 @@ public class TheFinaleMinigame implements Minigame {
             return java.util.List.of(
                     Packets.PlayerPosition.class,
                     Packets.PlayerJoined.class,
-                    Packets.PlayerLeft.class
-            );
+                    Packets.PlayerLeft.class);
         }
 
         @Override

@@ -18,16 +18,17 @@ import java.io.IOException;
 
 /**
  * Pantalla para unirse a una sala de juego existente.
+ * <p>
  * Muestra campos de entrada para IP, Puerto y Nombre del jugador.
  */
 public class JoinLobbyScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
-    private TextField nameField; //!< campo de entrada para el nombre del jugador
-    private TextField ipField; //!< campo de entrada para la IP del servidor
-    private TextField portField; //!< campo de entrada para el puerto del servidor
-    private Label statusLabel; //!< etiqueta para mostrar mensajes de estado
+    private final Main game; // !< instancia del juego principal
+    private Stage stage; // !< stage para renderizar componentes de UI
+    private Skin skin; // !< skin para estilizar componentes
+    private TextField nameField; // !< campo de entrada para el nombre del jugador
+    private TextField ipField; // !< campo de entrada para la IP del servidor
+    private TextField portField; // !< campo de entrada para el puerto del servidor
+    private Label statusLabel; // !< etiqueta para mostrar mensajes de estado
 
     /**
      * Construye una nueva pantalla de unión a sala.
@@ -126,6 +127,7 @@ public class JoinLobbyScreen implements Screen {
 
     /**
      * Maneja la conexión a una sala de juego existente.
+     * <p>
      * Valida los campos de entrada e intenta conectar al servidor.
      */
     private void joinGame() {
@@ -149,18 +151,16 @@ public class JoinLobbyScreen implements Screen {
 
         try {
             NetworkManager.getInstance().joinGame(host, port, playerName);
-            
-            // Register packet classes for serialization
+
             NetworkManager.getInstance().registerAdditionalClasses(
-                to.mpm.minigames.manager.ManagerPackets.RoomConfig.class,
-                to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class,
-                to.mpm.minigames.manager.ManagerPackets.StartNextRound.class,
-                to.mpm.minigames.manager.ManagerPackets.ShowResults.class,
-                to.mpm.minigames.manager.ManagerPackets.ReturnToLobby.class,
-                java.util.HashMap.class,
-                java.util.ArrayList.class
-            );
-            
+                    to.mpm.minigames.manager.ManagerPackets.RoomConfig.class,
+                    to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class,
+                    to.mpm.minigames.manager.ManagerPackets.StartNextRound.class,
+                    to.mpm.minigames.manager.ManagerPackets.ShowResults.class,
+                    to.mpm.minigames.manager.ManagerPackets.ReturnToLobby.class,
+                    java.util.HashMap.class,
+                    java.util.ArrayList.class);
+
             statusLabel.setText("Connected!");
 
             game.setScreen(new LobbyScreen(game, false, host, port));

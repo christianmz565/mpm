@@ -16,20 +16,18 @@ import java.util.List;
 
 /**
  * Pantalla de resultados mostrando el ranking final del juego.
- * Soporta múltiples modos de vista:
- * - VIEW_TOP3: Muestra podio con los 3 primeros jugadores (posiciones 2°, 1°,
- * 3°)
- * - VIEW_FULL_LIST: Muestra todos los jugadores ordenados por puntaje con
- * scroll
- * - VIEW_WINNER_SPOTLIGHT: Muestra el nombre del ganador en el centro con
- * sprites de patos alrededor
- * 
- * Plays automatic animation sequence:
- * 1. SCROLLING: Scrolls full list from bottom to top (2-3 seconds)
- * 2. PODIUM: Shows podium view (3 seconds)
- * 3. FADE: Fades to black (0.5 seconds)
- * 4. WINNER: Shows winner spotlight (3 seconds)
- * 5. RETURN: Returns everyone to lobby
+ * <p>
+ * Sigue la siguiente animación:
+ * <p>
+ * 1. SCROLLING: Desplaza la lista completa de abajo hacia arriba (2-3 segundos)
+ * <p>
+ * 2. PODIUM: Muestra la vista de podio (3 segundos)
+ * <p>
+ * 3. FADE: Se desvanece a negro (0.5 segundos)
+ * <p>
+ * 4. WINNER: Muestra el foco en el ganador (3 segundos)
+ * <p>
+ * 5. RETURN: Devuelve a todos al lobby
  */
 public class ResultsScreen implements Screen {
     /**
@@ -45,12 +43,12 @@ public class ResultsScreen implements Screen {
      * Animation states for automatic sequence.
      */
     private enum AnimationState {
-        SCROLLING,
-        PODIUM,
-        FADE,
-        WINNER,
-        RETURN,
-        COMPLETE
+        SCROLLING, //!< Desplazamiento de la lista completa
+        PODIUM, //!< Vista de podio
+        FADE, //!< Desvanecimiento a negro
+        WINNER, //!< Ganador en el centro de la pantalla
+        RETURN, //!< Regresa todos al lobby
+        COMPLETE //!< Animación completa
     }
 
     private final Main game; //!< Referencia a la instancia principal del juego
@@ -69,58 +67,22 @@ public class ResultsScreen implements Screen {
     /**
      * Constructor de la pantalla de resultados con scores map.
      *
-     * @param game referencia a la instancia principal del juego
+     * @param game        referencia a la instancia principal del juego
      * @param finalScores mapa de playerId a puntaje final
      */
     public ResultsScreen(Main game, java.util.Map<Integer, Integer> finalScores) {
         this.game = game;
         this.results = new ArrayList<>();
 
-        // Convert scores to PlayerData list
         java.util.Map<Integer, String> playerNames = to.mpm.network.NetworkManager.getInstance().getConnectedPlayers();
         for (java.util.Map.Entry<Integer, Integer> entry : finalScores.entrySet()) {
             int playerId = entry.getKey();
             String playerName = playerNames.getOrDefault(playerId, "Player " + playerId);
             results.add(new to.mpm.utils.PlayerData(playerId, playerName, entry.getValue()));
         }
-        java.util.Collections.sort(results); // Sort by score descending
+        java.util.Collections.sort(results);
 
         Gdx.app.log("ResultsScreen", "Initialized with " + results.size() + " players");
-    }
-
-    /**
-     * Constructor de la pantalla de resultados con vista por defecto.
-     * @deprecated Use constructor with scores map instead
-     *
-     * @param game referencia a la instancia principal del juego
-     */
-    @Deprecated
-    public ResultsScreen(Main game) {
-        this(game, ViewMode.VIEW_TOP3);
-    }
-
-    /**
-     * Constructor de la pantalla de resultados con modo de vista específico.
-     * @deprecated Use constructor with scores map instead
-     *
-     * @param game     referencia a la instancia principal del juego
-     * @param viewMode modo de vista inicial
-     */
-    @Deprecated
-    public ResultsScreen(Main game, ViewMode viewMode) {
-        this.game = game;
-        this.currentView = viewMode;
-        this.results = new ArrayList<>();
-
-        // Dummy data for testing
-        results.add(new to.mpm.utils.PlayerData(1, "Nombre", 123000));
-        results.add(new to.mpm.utils.PlayerData(2, "Nombre", 123000));
-        results.add(new to.mpm.utils.PlayerData(3, "Nombre", 123000));
-        results.add(new to.mpm.utils.PlayerData(4, "Nombre", 123000));
-        results.add(new to.mpm.utils.PlayerData(5, "Nombre", 123000));
-        results.add(new to.mpm.utils.PlayerData(6, "Nombre", 123000));
-
-        java.util.Collections.sort(results);
     }
 
     /**
@@ -139,26 +101,21 @@ public class ResultsScreen implements Screen {
         contentContainer = new Table();
         root.add(contentContainer).expand().fill();
 
-        // Determine initial state based on player count
         if (results.size() <= 3) {
-            // Skip directly to winner spotlight
             animationState = AnimationState.WINNER;
             currentView = ViewMode.VIEW_WINNER_SPOTLIGHT;
             Gdx.app.log("ResultsScreen", "Skipping animations, going directly to winner (≤3 players)");
         } else if (results.size() == 4) {
-            // Skip scrolling list, go to podium
             animationState = AnimationState.PODIUM;
             currentView = ViewMode.VIEW_TOP3;
             Gdx.app.log("ResultsScreen", "Skipping scrolling list, starting at podium (4 players)");
         } else {
-            // Start with full list view for scrolling animation
             animationState = AnimationState.SCROLLING;
             currentView = ViewMode.VIEW_FULL_LIST;
             Gdx.app.log("ResultsScreen", "Starting full animation sequence (5+ players)");
         }
         renderCurrentView();
 
-        // Register ReturnToLobby packet handler
         returnToLobbyHandler = new ReturnToLobbyHandler();
         to.mpm.network.NetworkManager.getInstance().registerClientHandler(returnToLobbyHandler);
 
@@ -186,6 +143,7 @@ public class ResultsScreen implements Screen {
 
     /**
      * Renderiza la vista de podio mostrando los jugadores 2-4.
+     * <p>
      * Disposición: 3° puesto | 2° puesto (más alto) | 4° puesto
      */
     private void renderPodiumView() {
@@ -260,17 +218,11 @@ public class ResultsScreen implements Screen {
 
     /**
      * Renderiza la vista de lista completa con jugadores desde el 4° lugar.
-     * Incluye una flecha hacia arriba indicando scroll.
      */
     private void renderFullListView() {
         Table listTable = new Table();
 
-        Label arrow = new Label("↑", skin);
-        arrow.setFontScale(UIStyles.Typography.TITLE_SCALE);
-        listTable.add(arrow).padBottom(UIStyles.Spacing.MEDIUM).row();
-
         Table scoresContainer = new Table();
-        // Start from index 3 (4th place) onwards
         for (int i = 3; i < results.size(); i++) {
             to.mpm.utils.PlayerData pr = results.get(i);
             Table scoreItem = new ScoreItem(skin)
@@ -292,8 +244,8 @@ public class ResultsScreen implements Screen {
     }
 
     /**
-     * Renderiza la vista de foco en el ganador con sprites de patos organizados en
-     * círculo.
+     * Renderiza la vista de foco en el ganador con sprites de patos.
+     * <p>
      * Muestra el nombre y puntaje del ganador en el centro.
      */
     private void renderWinnerSpotlightView() {
@@ -340,13 +292,11 @@ public class ResultsScreen implements Screen {
     public void render(float delta) {
         stateTimer += delta;
 
-        // Update animation state machine
         switch (animationState) {
             case SCROLLING:
                 updateScrollingState();
                 if (stateTimer >= 2.5f) {
                     stateTimer = 0f;
-                    // Skip to winner if 3 or fewer players
                     if (results.size() <= 3) {
                         animationState = AnimationState.FADE;
                         to.mpm.ui.transitions.ScreenTransition.fadeOut(stage, () -> {
@@ -383,7 +333,6 @@ public class ResultsScreen implements Screen {
                 break;
 
             case FADE:
-                // Wait for fade transition to complete
                 break;
 
             case WINNER:
@@ -396,7 +345,6 @@ public class ResultsScreen implements Screen {
 
             case RETURN:
             case COMPLETE:
-                // Waiting for transition or already done
                 break;
         }
 
@@ -409,8 +357,7 @@ public class ResultsScreen implements Screen {
     }
 
     /**
-     * Updates the scrolling animation state.
-     * Smoothly scrolls from bottom to top of the player list.
+     * Actualiza el estado de desplazamiento de la lista completa.
      */
     private void updateScrollingState() {
         if (fullListScrollPane != null) {
@@ -421,21 +368,20 @@ public class ResultsScreen implements Screen {
     }
 
     /**
-     * Host: Returns everyone to the lobby.
-     * Broadcasts ReturnToLobby packet and resets GameFlowManager.
+     * Devuelve a todos los jugadores al lobby.
+     * <p>
+     * Solo el host envía el paquete para iniciar la transición.
      */
     private void returnToLobby() {
         if (to.mpm.network.NetworkManager.getInstance().isHost()) {
             Gdx.app.log("ResultsScreen", "Host returning everyone to lobby");
-            to.mpm.minigames.manager.ManagerPackets.ReturnToLobby packet = 
-                new to.mpm.minigames.manager.ManagerPackets.ReturnToLobby();
+            to.mpm.minigames.manager.ManagerPackets.ReturnToLobby packet = new to.mpm.minigames.manager.ManagerPackets.ReturnToLobby();
             to.mpm.network.NetworkManager.getInstance().broadcastFromHost(packet);
-            
+
             to.mpm.minigames.manager.GameFlowManager.getInstance().reset();
             game.setScreen(new LobbyScreen(game, true));
             dispose();
         }
-        // Clients will transition when they receive the packet
     }
 
     /**
@@ -485,7 +431,7 @@ public class ResultsScreen implements Screen {
     }
 
     /**
-     * Handler for ReturnToLobby packet.
+     * Manejador de paquetes para volver al lobby.
      */
     private final class ReturnToLobbyHandler implements to.mpm.network.handlers.ClientPacketHandler {
         @Override
