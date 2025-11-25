@@ -52,7 +52,8 @@ public class SumoMinigame implements Minigame {
             SumoPackets.GameEnd.class
         );
 
-        spawnPlayer(localPlayerId);
+        if (localPlayerId != -1)
+            spawnPlayer(localPlayerId);
 
         clientHandler = new SumoClientHandler();
         nm.registerClientHandler(clientHandler);
@@ -84,13 +85,15 @@ public class SumoMinigame implements Minigame {
             checkWinCondition();
         }
 
-        SumoPlayer me = players.get(localPlayerId);
-        if (me != null && me.isAlive) {
-            Packets.PlayerPosition p = new Packets.PlayerPosition();
-            p.playerId = localPlayerId;
-            p.x = me.position.x;
-            p.y = me.position.y;
-            NetworkManager.getInstance().sendPacket(p);
+        if (localPlayerId != -1) {
+            SumoPlayer me = players.get(localPlayerId);
+            if (me != null && me.isAlive) {
+                Packets.PlayerPosition p = new Packets.PlayerPosition();
+                p.playerId = localPlayerId;
+                p.x = me.position.x;
+                p.y = me.position.y;
+                NetworkManager.getInstance().sendPacket(p);
+            }
         }
     }
 
