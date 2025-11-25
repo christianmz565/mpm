@@ -166,7 +166,7 @@ public class ScoreboardScreen implements Screen {
                     .highlighted(isLocalPlayer)
                     .build();
 
-            scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.SMALL).row();
+            scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.LARGE).row();
         }
 
         // Scroll to local player position (center if possible)
@@ -247,9 +247,8 @@ public class ScoreboardScreen implements Screen {
             Gdx.app.log("ScoreboardScreen", "Starting finale with " + participatingPlayers.size() + " players");
         } else {
             // Normal round: select random game
-            to.mpm.minigames.selection.GameSelectionStrategy strategy = new to.mpm.minigames.selection.RandomGameSelection();
             int playerCount = NetworkManager.getInstance().getPlayerCount();
-            nextGame = strategy.selectGame(playerCount);
+            nextGame = to.mpm.minigames.selection.RandomGameSelection.selectGame(playerCount);
             Gdx.app.log("ScoreboardScreen", "Selected next game: " + nextGame.getDisplayName());
         }
 
@@ -266,7 +265,7 @@ public class ScoreboardScreen implements Screen {
         if (participatingPlayers == null || participatingPlayers.contains(localPlayerId)) {
             game.setScreen(new GameScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         } else {
-            game.setScreen(new SpectatorScreen(game));
+            game.setScreen(new SpectatorScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         }
         dispose();
     }
@@ -344,7 +343,7 @@ public class ScoreboardScreen implements Screen {
                     game.setScreen(new GameScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 } else {
                     // Eliminated from finale
-                    game.setScreen(new SpectatorScreen(game));
+                    game.setScreen(new SpectatorScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 }
                 dispose();
             }

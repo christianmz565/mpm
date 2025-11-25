@@ -265,7 +265,7 @@ public class ResultsScreen implements Screen {
                     .highlighted(i == 0)
                     .build();
 
-            scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.SMALL).row();
+            scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.LARGE).row();
         }
 
         fullListScrollPane = new ScrollPane(scoresContainer, skin);

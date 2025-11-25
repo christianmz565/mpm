@@ -295,12 +295,10 @@ public class LobbyScreen implements Screen {
         flowManager.startRound();
 
         // Select first minigame randomly
-        to.mpm.minigames.selection.GameSelectionStrategy selectionStrategy = new to.mpm.minigames.selection.RandomGameSelection();
         int playerCount = NetworkManager.getInstance().getPlayerCount();
-        MinigameType selectedGame = selectionStrategy.selectGame(playerCount);
+        MinigameType selectedGame = to.mpm.minigames.selection.RandomGameSelection.selectGame(playerCount);
 
-        Gdx.app.log("LobbyScreen", "Selected game: " + selectedGame.getDisplayName() +
-                " using " + selectionStrategy.getStrategyName());
+        Gdx.app.log("LobbyScreen", "Selected game: " + selectedGame.getDisplayName() + " for " + playerCount + " players");
 
         Packets.StartGame packet = new Packets.StartGame();
         packet.minigameType = selectedGame.name();
