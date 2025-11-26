@@ -143,6 +143,9 @@ public class GameScreen implements Screen {
 
         Table scoreContainer = new Table(skin);
         scoreContainer.pad(UIStyles.Spacing.MEDIUM);
+        
+        // Add semi-transparent background for better readability
+        scoreContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.6f));
 
         Table scoreContent = new Table();
         scoreLabel = new Label("0 pts", skin);
