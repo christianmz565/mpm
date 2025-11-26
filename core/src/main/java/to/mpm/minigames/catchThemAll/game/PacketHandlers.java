@@ -13,6 +13,10 @@ import to.mpm.network.handlers.ServerPacketHandler;
  * Network packet handlers for Catch Them All minigame.
  */
 public class PacketHandlers {
+    // Collision detection thresholds
+    private static final float SIGNIFICANT_VELOCITY_THRESHOLD = 5f;
+    private static final float NEAR_ZERO_VELOCITY_THRESHOLD = 1f;
+    private static final float COLLISION_BLOCK_DURATION = 0.1f;
     
     /**
      * Client-side packet handler.
@@ -73,9 +77,9 @@ public class PacketHandlers {
             } else {
                 // Detect collision rejection to prevent input vibration
                 if (packet.playerId == state.getLocalPlayerId() && 
-                    Math.abs(player.lastVelocityX) > 5f && 
-                    Math.abs(packet.lastVelocityX) < 1f) {
-                    player.blockedTimer = 0.1f;
+                    Math.abs(player.lastVelocityX) > SIGNIFICANT_VELOCITY_THRESHOLD && 
+                    Math.abs(packet.lastVelocityX) < NEAR_ZERO_VELOCITY_THRESHOLD) {
+                    player.blockedTimer = COLLISION_BLOCK_DURATION;
                 }
                 
                 // Apply server authority state

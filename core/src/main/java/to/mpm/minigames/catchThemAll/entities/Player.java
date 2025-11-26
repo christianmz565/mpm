@@ -72,9 +72,9 @@ public class Player {
                 y = GROUND_Y;
                 velocityY = 0;
                 isGrounded = true;
-            } else {
-                isGrounded = false;
             }
+            // Note: isGrounded may be set to true by CollisionHandler when standing on another player
+            // Only reset to false if we're clearly in the air (will be overridden by collision resolution)
         }
         
         updateBounds();

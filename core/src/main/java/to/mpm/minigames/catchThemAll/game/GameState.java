@@ -56,6 +56,7 @@ public class GameState {
 
     public void removePlayer(int playerId) {
         players.remove(playerId);
+        scores.remove(playerId);
     }
 
     public void addDuck(Duck duck) {
@@ -83,6 +84,7 @@ public class GameState {
         players.clear();
         ducks.clear();
         scores.clear();
+        localPlayer = null;
         if (duckSpawner != null) {
             duckSpawner.reset();
         }

@@ -97,9 +97,11 @@ public class CatchThemAllMinigame implements Minigame {
         NetworkManager nm = NetworkManager.getInstance();
         if (clientHandler != null) {
             nm.unregisterClientHandler(clientHandler);
+            clientHandler = null;
         }
         if (serverRelay != null) {
             nm.unregisterServerHandler(serverRelay);
+            serverRelay = null;
         }
         
         state.reset();

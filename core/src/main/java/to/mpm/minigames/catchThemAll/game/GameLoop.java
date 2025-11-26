@@ -48,12 +48,14 @@ public class GameLoop {
             playersMap.put(entry.key, entry.value);
         }
         
+        // Save list of ducks before catch detection (for network notifications)
         List<Duck> ducksBeforeCatch = new ArrayList<>(state.getDucks());
+        
         Map<Integer, Integer> pointsEarned = CatchDetector.detectCatches(state.getDucks(), playersMap);
         
-        // Remove caught ducks
+        // Send removal notifications for caught ducks (those that were removed)
         for (Duck duck : ducksBeforeCatch) {
-            if (duck.isCaught() && !state.getDucks().contains(duck)) {
+            if (!state.getDucks().contains(duck)) {
                 NetworkHandler.sendDuckRemoved(duck);
             }
         }
@@ -66,16 +68,19 @@ public class GameLoop {
             NetworkHandler.sendScoreUpdate(playerId, state.getScores().get(playerId));
         }
         
-        // Remove grounded ducks
-        List<Duck> ducksBeforeGroundRemoval = new ArrayList<>(state.getDucks());
-        int removed = CatchDetector.removeGroundedDucks(state.getDucks());
-        
-        if (removed > 0) {
-            for (Duck duck : ducksBeforeGroundRemoval) {
-                if (!state.getDucks().contains(duck)) {
-                    NetworkHandler.sendDuckRemoved(duck);
-                }
+        // Remove grounded ducks (track before removal for notifications)
+        List<Duck> groundedDucks = new ArrayList<>();
+        for (Duck duck : state.getDucks()) {
+            if (duck.shouldRemove()) {
+                groundedDucks.add(duck);
             }
+        }
+        
+        CatchDetector.removeGroundedDucks(state.getDucks());
+        
+        // Send removal notifications for grounded ducks
+        for (Duck duck : groundedDucks) {
+            NetworkHandler.sendDuckRemoved(duck);
         }
         
         // Broadcast updates
