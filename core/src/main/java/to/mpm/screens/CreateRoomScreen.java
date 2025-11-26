@@ -18,16 +18,17 @@ import java.io.IOException;
 
 /**
  * Pantalla para crear una nueva sala de juego.
+ * <p>
  * Muestra campos de entrada para Puerto, Rondas y Nombre de sala.
  */
 public class CreateRoomScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
-    private TextField portField; //!< campo de entrada para el puerto
-    private TextField roundsField; //!< campo de entrada para el número de rondas
-    private TextField nameField; //!< campo de entrada para el nombre del jugador
-    private Label statusLabel; //!< etiqueta para mostrar mensajes de estado
+    private final Main game; // !< instancia del juego principal
+    private Stage stage; // !< stage para renderizar componentes de UI
+    private Skin skin; // !< skin para estilizar componentes
+    private TextField portField; // !< campo de entrada para el puerto
+    private TextField roundsField; // !< campo de entrada para el número de rondas
+    private TextField nameField; // !< campo de entrada para el nombre del jugador
+    private Label statusLabel; // !< etiqueta para mostrar mensajes de estado
 
     /**
      * Construye una nueva pantalla de creación de sala.
@@ -128,14 +129,19 @@ public class CreateRoomScreen implements Screen {
 
     /**
      * Maneja la creación de una nueva sala de juego.
+     * <p>
      * Valida los campos de entrada e inicia el servidor.
      */
     private void createRoom() {
         try {
             int port = Integer.parseInt(portField.getText());
-            @SuppressWarnings("unused")
             int rounds = Integer.parseInt(roundsField.getText());
             String playerName = nameField.getText().trim();
+
+            if (rounds < 2) {
+                statusLabel.setText("Las rondas deben ser al menos 2");
+                return;
+            }
 
             if (playerName.isEmpty()) {
                 playerName = "Host";
@@ -146,7 +152,20 @@ public class CreateRoomScreen implements Screen {
             NetworkManager.getInstance().hostGame(playerName, port);
             FirewallHelper.requestFirewallPermission(port);
 
-            game.setScreen(new LobbyScreen(game, true));
+            NetworkManager.getInstance().registerAdditionalClasses(
+                    to.mpm.minigames.manager.ManagerPackets.RoomConfig.class,
+                    to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class,
+                    to.mpm.minigames.manager.ManagerPackets.StartNextRound.class,
+                    to.mpm.minigames.manager.ManagerPackets.ShowResults.class,
+                    to.mpm.minigames.manager.ManagerPackets.ReturnToLobby.class,
+                    java.util.HashMap.class,
+                    java.util.ArrayList.class);
+
+            to.mpm.minigames.manager.ManagerPackets.RoomConfig roomConfig = new to.mpm.minigames.manager.ManagerPackets.RoomConfig(
+                    rounds);
+            NetworkManager.getInstance().broadcastFromHost(roomConfig);
+
+            game.setScreen(new LobbyScreen(game, true, rounds));
             dispose();
 
         } catch (NumberFormatException e) {

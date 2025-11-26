@@ -8,6 +8,7 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de elementos de visualización de puntuación.
+ * <p>
  * Muestra posición del jugador, nombre y puntuación en una fila formateada.
  */
 public class ScoreItem {
@@ -83,30 +84,36 @@ public class ScoreItem {
         }
 
         Label rankLabel = new Label(getRankText(rank != null ? rank : 0), skin);
-        rankLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+        rankLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         rankLabel.setAlignment(Align.center);
         container.add(rankLabel)
-                .width(60f)
-                .padLeft(UIStyles.Spacing.MEDIUM)
+                .width(80f)
+                .padLeft(UIStyles.Spacing.LARGE)
+                .padTop(UIStyles.Spacing.MEDIUM)
+                .padBottom(UIStyles.Spacing.MEDIUM)
                 .center();
 
         Label nameLabel = new Label(playerName != null ? playerName : "Player", skin);
-        nameLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        nameLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
         nameLabel.setAlignment(Align.center);
         container.add(nameLabel)
                 .expand()
                 .fill()
                 .center()
-                .padLeft(UIStyles.Spacing.MEDIUM);
+                .padLeft(UIStyles.Spacing.LARGE)
+                .padTop(UIStyles.Spacing.MEDIUM)
+                .padBottom(UIStyles.Spacing.MEDIUM);
 
         Label scoreLabel = new Label(String.format("%d", score), skin);
-        scoreLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+        scoreLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         scoreLabel.setAlignment(Align.center);
         container.add(scoreLabel)
-                .width(120f)
+                .width(150f)
                 .center()
-                .padLeft(UIStyles.Spacing.MEDIUM)
-                .padRight(UIStyles.Spacing.MEDIUM);
+                .padLeft(UIStyles.Spacing.LARGE)
+                .padRight(UIStyles.Spacing.LARGE)
+                .padTop(UIStyles.Spacing.MEDIUM)
+                .padBottom(UIStyles.Spacing.MEDIUM);
 
         container.setFillParent(false);
 

@@ -61,7 +61,7 @@ public class CatchThemAllMinigame implements Minigame {
     public void update(float delta) {
         if (NetworkManager.getInstance().isHost()) {
             GameLoop.updateHost(delta, state);
-        } else {
+        } else if (state.getLocalPlayer() != null) {
             GameLoop.updateClient(state);
         }
     }
@@ -74,7 +74,10 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void handleInput(float delta) {
-        InputHandler.handleInput(state.getLocalPlayer(), delta);
+        // Spectators (localPlayer == null) don't handle input
+        if (state.getLocalPlayer() != null) {
+            InputHandler.handleInput(state.getLocalPlayer(), delta);
+        }
     }
 
     @Override
