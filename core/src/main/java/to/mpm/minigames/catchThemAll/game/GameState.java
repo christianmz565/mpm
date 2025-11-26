@@ -37,11 +37,13 @@ public class GameState {
     }
 
     public void createLocalPlayer() {
-        float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        float startX = 100 + (localPlayerId * 80);
-        localPlayer = new Player(true, startX, Player.GROUND_Y, color[0], color[1], color[2]);
-        players.put(localPlayerId, localPlayer);
-        scores.put(localPlayerId, 0);
+        if (localPlayerId != -1) {
+            float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
+            float startX = 100 + (localPlayerId * 80);
+            localPlayer = new Player(true, startX, Player.GROUND_Y, color[0], color[1], color[2]);
+            players.put(localPlayerId, localPlayer);
+            scores.put(localPlayerId, 0);
+        }
     }
 
     public void createRemotePlayer(int playerId) {
