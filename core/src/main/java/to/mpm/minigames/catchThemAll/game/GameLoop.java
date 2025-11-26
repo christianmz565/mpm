@@ -89,8 +89,12 @@ public class GameLoop {
     }
     
     public static void updateClient(GameState state) {
-        // Client: apply local physics and send position
-        state.getLocalPlayer().update();
+        // Update all players (local physics + animations for all)
+        for (IntMap.Entry<Player> entry : state.getPlayers()) {
+            entry.value.update();
+        }
+        
+        // Send local player position to server
         NetworkHandler.sendPlayerPosition(state.getLocalPlayerId(), state.getLocalPlayer());
     }
 }
