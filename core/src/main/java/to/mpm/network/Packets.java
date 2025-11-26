@@ -67,9 +67,12 @@ public class Packets {
      * Actualización de posición del jugador.
      */
     public static class PlayerPosition extends NetworkPacket {
-        public int playerId; // !< id del jugador
-        public float x; // !< nueva posición x
-        public float y; // !< nueva posición y
+        public int playerId; //!< id del jugador
+        public float x; //!< nueva posición x
+        public float y; //!< nueva posición y
+        public float velocityY; //!< velocidad vertical (para sincronizar gravedad)
+        public float lastVelocityX; //!< velocidad horizontal (para sincronizar colisiones)
+        public boolean isGrounded; //!< si está en el suelo o sobre otro jugador
 
         public PlayerPosition() {
             preferTransport(Transports.UDP);
