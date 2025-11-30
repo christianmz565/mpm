@@ -1,9 +1,15 @@
 package to.mpm.ui;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 /**
  * Constantes centralizadas para estilos de UI.
+ * <p>
  * Define colores, tipografía, espaciado y tamaños de componentes.
  */
 public class UIStyles {
@@ -88,5 +94,23 @@ public class UIStyles {
         public static final float MENU_MAX_WIDTH = 600f;
         public static final float PANEL_MAX_WIDTH = 500f;
         public static final float LIST_MAX_HEIGHT = 400f;
+    }
+    
+    /**
+     * Create a semi-transparent background drawable.
+     * 
+     * @param r Red component (0-1)
+     * @param g Green component (0-1)
+     * @param b Blue component (0-1)
+     * @param a Alpha component (0-1), 0 is transparent, 1 is opaque
+     * @return Drawable with the specified color and transparency
+     */
+    public static Drawable createSemiTransparentBackground(float r, float g, float b, float a) {
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(r, g, b, a);
+        pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return new TextureRegionDrawable(new TextureRegion(texture));
     }
 }

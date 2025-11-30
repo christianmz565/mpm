@@ -6,6 +6,7 @@ import java.util.Collection;
 
 /**
  * Interfaz para el manejo de paquetes de red.
+ * <p>
  * Sus implementaciones declaran los paquetes en los que están interesados.
  * 
  * @param <C> el tipo de contexto de paquete manejado

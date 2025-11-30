@@ -8,6 +8,7 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Capa de ajustes que puede mostrarse sobre cualquier pantalla.
+ * <p>
  * Proporciona control de volumen y otras configuraciones del juego.
  */
 public class SettingsOverlay {

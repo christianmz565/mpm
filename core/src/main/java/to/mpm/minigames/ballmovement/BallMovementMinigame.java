@@ -27,12 +27,12 @@ public class BallMovementMinigame implements Minigame {
     private static final float PLAYER_RADIUS = 20f;
     private static final float MOVE_SPEED = 200f;
     private static final float[][] PLAYER_COLORS = {
-            {1f, 0f, 0f}, // 0 - Red
-            {0f, 0f, 1f}, // 1 - Blue
-            {0f, 1f, 0f}, // 2 - Green
-            {1f, 1f, 0f}, // 3 - Yellow
-            {1f, 0f, 1f}, // 4 - Magenta
-            {0f, 1f, 1f}, // 5 - Cyan
+            { 1f, 0f, 0f }, // 0 - Red
+            { 0f, 0f, 1f }, // 1 - Blue
+            { 0f, 1f, 0f }, // 2 - Green
+            { 1f, 1f, 0f }, // 3 - Yellow
+            { 1f, 0f, 1f }, // 4 - Magenta
+            { 0f, 1f, 1f }, // 5 - Cyan
     };
 
     private final int localPlayerId;
@@ -50,13 +50,16 @@ public class BallMovementMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Create local player with a color based on id
-        float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        localPlayer = new Player(true,
-                localPlayerId == 0 ? 100 : 540,
-                240,
-                color[0], color[1], color[2]);
-        players.put(localPlayerId, localPlayer);
+        // Skip creating local player for spectators (playerId == -1)
+        if (localPlayerId != -1) {
+            // Create local player with a color based on id
+            float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
+            localPlayer = new Player(true,
+                    localPlayerId == 0 ? 100 : 540,
+                    240,
+                    color[0], color[1], color[2]);
+            players.put(localPlayerId, localPlayer);
+        }
 
         clientHandler = new BallMovementClientHandler();
         nm.registerClientHandler(clientHandler);
@@ -68,22 +71,27 @@ public class BallMovementMinigame implements Minigame {
     }
 
     private void onPlayerJoined(Packets.PlayerJoined packet) {
-        if (packet.playerId == localPlayerId) return;
-        if (players.containsKey(packet.playerId)) return;
-        
+        if (packet.playerId == localPlayerId)
+            return;
+        if (players.containsKey(packet.playerId))
+            return;
+
         float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
         Player remote = new Player(false, 320, 240, color[0], color[1], color[2]);
         players.put(packet.playerId, remote);
     }
 
     private void onPlayerLeft(Packets.PlayerLeft packet) {
-        if (packet.playerId == localPlayerId) return;
+        if (packet.playerId == localPlayerId)
+            return;
         Player p = players.remove(packet.playerId);
-        if (p != null) p.dispose();
+        if (p != null)
+            p.dispose();
     }
 
     private void onPlayerPosition(Packets.PlayerPosition packet) {
-        if (packet.playerId == localPlayerId) return;
+        if (packet.playerId == localPlayerId)
+            return;
 
         Player remote = players.get(packet.playerId);
         if (remote == null) {
@@ -97,8 +105,11 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void update(float delta) {
-        localPlayer.update();
-        sendPlayerPosition();
+        // Spectators (localPlayer == null) don't update or send position
+        if (localPlayer != null) {
+            localPlayer.update();
+            sendPlayerPosition();
+        }
     }
 
     @Override
@@ -117,6 +128,10 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void handleInput(float delta) {
+        // Spectators (localPlayer == null) don't handle input
+        if (localPlayer == null)
+            return;
+
         float dx = 0, dy = 0;
 
         if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
@@ -187,8 +202,10 @@ public class BallMovementMinigame implements Minigame {
     }
 
     private static class Player extends SyncedObject {
-        @Synchronized public float x;
-        @Synchronized public float y;
+        @Synchronized
+        public float x;
+        @Synchronized
+        public float y;
         public float r, g, b;
 
         public Player(boolean isLocallyOwned, float x, float y, float r, float g, float b) {
@@ -212,8 +229,7 @@ public class BallMovementMinigame implements Minigame {
             return java.util.List.of(
                     Packets.PlayerPosition.class,
                     Packets.PlayerJoined.class,
-                    Packets.PlayerLeft.class
-            );
+                    Packets.PlayerLeft.class);
         }
 
         @Override

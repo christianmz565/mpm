@@ -16,12 +16,13 @@ import to.mpm.ui.components.StyledButton;
 
 /**
  * Pantalla del menú principal de MicroPatosMania.
+ * <p>
  * Muestra título, botones de crear/unirse/ajustes y la ilustración del pato.
  */
 public class MainMenuScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
+    private final Main game; // !< instancia del juego principal
+    private Stage stage; // !< stage para renderizar componentes de UI
+    private Skin skin; // !< skin para estilizar componentes
 
     /**
      * Construye una nueva pantalla de menú principal.

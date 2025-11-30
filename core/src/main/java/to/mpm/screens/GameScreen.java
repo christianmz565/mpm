@@ -21,6 +21,8 @@ import to.mpm.network.handlers.ClientPacketContext;
 import to.mpm.network.handlers.ClientPacketHandler;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
@@ -34,8 +36,45 @@ public class GameScreen implements Screen {
     private Stage uiStage; // !< stage para la superposición de UI
     private Skin skin; // !< skin para estilizar componentes de UI
     private Label scoreLabel; // !< etiqueta que muestra la puntuación del jugador
+    private Table incrementsContainer; // !< contenedor para los incrementos de puntuación
+    private Label timerLabel; // !< etiqueta que muestra el temporizador
+    private Label roundLabel; // !< etiqueta que muestra la ronda actual
+    private float gameTimer = 10f; // !< temporizador del juego en segundos
+    private boolean gameEnded = false; // !< indica si el juego ha terminado
+    private final int currentRound; // !< ronda en curso (1-based)
+    private final int totalRounds; // !< total de rondas configuradas
+    private int previousScore = 0; // !< puntuación anterior para detectar cambios
+    private final List<ScorePopup> scorePopups = new ArrayList<>(); // !< lista de popups activos
 
-    private StartGamePacketHandler startGameHandler;
+    private StartGamePacketHandler startGameHandler; // !< manejador de paquete para iniciar el juego
+    private ShowScoreboardPacketHandler showScoreboardHandler; // !< manejador de paquete para mostrar el marcador
+    private ShowResultsPacketHandler showResultsHandler; // !< manejador de paquete para mostrar resultados
+
+    /**
+     * Clase interna para representar un popup de puntuación.
+     */
+    private static class ScorePopup {
+        Label label;
+        float age;
+        float fadeTime;
+
+        ScorePopup(Label label, float fadeTime) {
+            this.label = label;
+            this.age = 0f;
+            this.fadeTime = fadeTime;
+        }
+
+        boolean update(float delta) {
+            age += delta;
+            if (age >= fadeTime) {
+                return true; // Fully faded
+            }
+            // Update alpha based on age
+            float alpha = 1f - (age / fadeTime);
+            label.getColor().a = alpha;
+            return false;
+        }
+    }
 
     /**
      * Construye una nueva pantalla de juego.
@@ -44,8 +83,17 @@ public class GameScreen implements Screen {
      * @param minigameType tipo de minijuego a ejecutar
      */
     public GameScreen(Main game, MinigameType minigameType) {
+        this(game, minigameType, 0, 0);
+    }
+
+    /**
+     * Construye una nueva pantalla de juego con contexto de ronda.
+     */
+    public GameScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds) {
         this.game = game;
         this.minigameType = minigameType;
+        this.currentRound = currentRound;
+        this.totalRounds = totalRounds;
     }
 
     /**
@@ -62,11 +110,42 @@ public class GameScreen implements Screen {
 
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
-        uiRoot.top().right();
+        uiRoot.top();
         uiStage.addActor(uiRoot);
+
+        Table topCenterContainer = new Table();
+        topCenterContainer.pad(UIStyles.Spacing.MEDIUM);
+
+        int roundToDisplay = this.currentRound;
+        int totalRoundsToDisplay = this.totalRounds;
+        to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+        if ((roundToDisplay <= 0 || totalRoundsToDisplay <= 0) && flowManager.isInitialized()) {
+            roundToDisplay = flowManager.getCurrentRound();
+            totalRoundsToDisplay = flowManager.getTotalRounds();
+        }
+
+        if (roundToDisplay > 0 && totalRoundsToDisplay > 0) {
+            roundLabel = new Label("Round " + roundToDisplay + "/" + totalRoundsToDisplay, skin);
+            roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+            roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+            topCenterContainer.add(roundLabel).padBottom(UIStyles.Spacing.TINY).row();
+        }
+
+        boolean isFinale = minigameType == MinigameType.THE_FINALE;
+        if (!isFinale) {
+            timerLabel = new Label("Time: 60", skin);
+            timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+            timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
+            topCenterContainer.add(timerLabel).row();
+        }
+
+        uiRoot.add(topCenterContainer).expandX().row();
 
         Table scoreContainer = new Table(skin);
         scoreContainer.pad(UIStyles.Spacing.MEDIUM);
+
+        // Add semi-transparent background for better readability
+        scoreContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.6f));
 
         Table scoreContent = new Table();
         scoreLabel = new Label("0 pts", skin);
@@ -74,21 +153,30 @@ public class GameScreen implements Screen {
         scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         scoreContent.add(scoreLabel).row();
 
-        Label incrementLabel = new Label("+0\n+0\n+0\n+0", skin);
-        incrementLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
-        incrementLabel.setColor(UIStyles.Colors.SECONDARY);
-        incrementLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
-        scoreContent.add(incrementLabel).padTop(UIStyles.Spacing.TINY).right();
+        incrementsContainer = new Table();
+        incrementsContainer.top();
+        scoreContent.add(incrementsContainer).padTop(UIStyles.Spacing.TINY).right().row();
 
         scoreContainer.add(scoreContent);
-        uiRoot.add(scoreContainer).pad(UIStyles.Spacing.MEDIUM);
+
+        Table rightContainer = new Table();
+        rightContainer.top().right();
+        rightContainer.add(scoreContainer).pad(UIStyles.Spacing.MEDIUM);
+        uiRoot.add(rightContainer).expand().top().right();
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
         currentMinigame.initialize();
 
+        NetworkManager networkManager = NetworkManager.getInstance();
         startGameHandler = new StartGamePacketHandler();
-        NetworkManager.getInstance().registerClientHandler(startGameHandler);
+        networkManager.registerClientHandler(startGameHandler);
+
+        showScoreboardHandler = new ShowScoreboardPacketHandler();
+        networkManager.registerClientHandler(showScoreboardHandler);
+
+        showResultsHandler = new ShowResultsPacketHandler();
+        networkManager.registerClientHandler(showResultsHandler);
 
         Gdx.app.log("GameScreen", "Started minigame: " + minigameType.getDisplayName());
     }
@@ -100,18 +188,54 @@ public class GameScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        currentMinigame.handleInput(delta);
+        if (gameEnded) {
+            Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            uiStage.act(delta);
+            uiStage.draw();
+            return;
+        }
 
+        currentMinigame.handleInput(delta);
         currentMinigame.update(delta);
+
+        boolean isFinale = minigameType == MinigameType.THE_FINALE;
+        if (!isFinale) {
+            gameTimer -= delta;
+            if (timerLabel != null) {
+                int seconds = Math.max(0, (int) Math.ceil(gameTimer));
+                timerLabel.setText("Time: " + seconds);
+            }
+        }
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
         scoreLabel.setText(currentScore + " pts");
 
-        if (currentMinigame.isFinished()) {
-            // Ir a la pantalla de resultados con los scores del minijuego
-            game.setScreen(new ResultsScreen(game, ResultsScreen.ViewMode.VIEW_TOP3, currentMinigame.getScores()));
-            dispose();
+        if (currentScore != previousScore) {
+            int increment = currentScore - previousScore;
+            Label popupLabel = new Label("+" + increment, skin);
+            popupLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
+            popupLabel.setColor(UIStyles.Colors.SECONDARY);
+            popupLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
+
+            ScorePopup popup = new ScorePopup(popupLabel, 2.0f);
+            scorePopups.add(popup);
+            previousScore = currentScore;
+        }
+
+        scorePopups.removeIf(popup -> popup.update(delta));
+
+        incrementsContainer.clear();
+        for (ScorePopup popup : scorePopups) {
+            incrementsContainer.add(popup.label).right().row();
+        }
+
+        boolean timeUp = !isFinale && gameTimer <= 0;
+        boolean minigameFinished = currentMinigame.isFinished();
+
+        if (timeUp || minigameFinished) {
+            endGame();
             return;
         }
 
@@ -122,6 +246,48 @@ public class GameScreen implements Screen {
 
         uiStage.act(delta);
         uiStage.draw();
+    }
+
+    /**
+     * Termina el juego actual y maneja la transición a la siguiente pantalla.
+     * <p>
+     * Solo el host maneja la lógica de flujo del juego y envía los paquetes
+     * correspondientes.
+     */
+    private void endGame() {
+        if (gameEnded) {
+            return;
+        }
+        gameEnded = true;
+
+        java.util.Map<Integer, Integer> roundScores = currentMinigame.getScores();
+        to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+
+        if (NetworkManager.getInstance().isHost()) {
+            flowManager.endRound(roundScores);
+
+            if (flowManager.isGameComplete()) {
+                to.mpm.minigames.manager.ManagerPackets.ShowResults resultsPacket = new to.mpm.minigames.manager.ManagerPackets.ShowResults(
+                        flowManager.getTotalScores());
+                NetworkManager.getInstance().broadcastFromHost(resultsPacket);
+
+                game.setScreen(new ResultsScreen(game, flowManager.getTotalScores()));
+            } else {
+                to.mpm.minigames.manager.ManagerPackets.ShowScoreboard scoreboardPacket = new to.mpm.minigames.manager.ManagerPackets.ShowScoreboard(
+                        flowManager.getCurrentRound(),
+                        flowManager.getTotalRounds(),
+                        flowManager.getTotalScores());
+                NetworkManager.getInstance().broadcastFromHost(scoreboardPacket);
+
+                int localPlayerId = NetworkManager.getInstance().getMyId();
+                game.setScreen(new ScoreboardScreen(game, flowManager.getTotalScores(),
+                        flowManager.getCurrentRound(), flowManager.getTotalRounds(), localPlayerId));
+            }
+
+            dispose();
+        } else {
+            Gdx.app.log("GameScreen", "Game ended, waiting for host instructions");
+        }
     }
 
     /**
@@ -176,8 +342,56 @@ public class GameScreen implements Screen {
             NetworkManager.getInstance().unregisterClientHandler(startGameHandler);
             startGameHandler = null;
         }
+        if (showScoreboardHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(showScoreboardHandler);
+            showScoreboardHandler = null;
+        }
+        if (showResultsHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(showResultsHandler);
+            showResultsHandler = null;
+        }
         if (uiStage != null) {
             uiStage.dispose();
+        }
+    }
+
+    /**
+     * Cambia a la pantalla de marcador cuando el host lo solicita.
+     */
+    private final class ShowScoreboardPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ShowScoreboard showScoreboard) {
+                Gdx.app.log("GameScreen", "Received ShowScoreboard for round " + showScoreboard.currentRound);
+                int localPlayerId = NetworkManager.getInstance().getMyId();
+                game.setScreen(new ScoreboardScreen(game, showScoreboard.allPlayerScores,
+                        showScoreboard.currentRound, showScoreboard.totalRounds, localPlayerId));
+                dispose();
+            }
+        }
+    }
+
+    /**
+     * Cambia a la pantalla de resultados cuando finaliza la partida.
+     */
+    private final class ShowResultsPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ShowResults.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ShowResults showResults) {
+                Gdx.app.log("GameScreen", "Received ShowResults packet");
+                game.setScreen(new ResultsScreen(game, showResults.finalScores));
+                dispose();
+            }
         }
     }
 
@@ -193,7 +407,10 @@ public class GameScreen implements Screen {
         @Override
         public void handle(ClientPacketContext context, NetworkPacket packet) {
             if (packet instanceof Packets.StartGame startGame) {
-                game.setScreen(new GameScreen(game, MinigameType.valueOf(startGame.minigameType)));
+                int roundNumber = startGame.currentRound > 0 ? startGame.currentRound : 1;
+                int roundsTotal = startGame.totalRounds > 0 ? startGame.totalRounds : 1;
+                game.setScreen(
+                        new GameScreen(game, MinigameType.valueOf(startGame.minigameType), roundNumber, roundsTotal));
             }
         }
     }

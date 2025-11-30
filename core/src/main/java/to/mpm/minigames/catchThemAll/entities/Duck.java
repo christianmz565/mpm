@@ -2,6 +2,8 @@ package to.mpm.minigames.catchThemAll.entities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Rectangle;
+import to.mpm.minigames.catchThemAll.rendering.AnimatedSprite;
+import to.mpm.minigames.catchThemAll.rendering.SpriteManager;
 
 /**
  * Duck entity that falls from the sky.
@@ -27,12 +29,15 @@ public class Duck {
     }
     
     // Duck dimensions
-    public static final float DUCK_WIDTH = 20f;
-    public static final float DUCK_HEIGHT = 20f;
+    public static final float DUCK_WIDTH = 30f;
+    public static final float DUCK_HEIGHT = 30f;
     
     // Physics constants
     private static final float FALL_SPEED = 120f;  // Pixels per second
     private static final float GROUND_Y = 60f;
+    
+    // Animation constants
+    private static final float DUCK_ANIMATION_FRAME_DURATION = 0.2f; // 200ms per frame
     
     public int id;  // Unique duck ID for network sync
     public float x;
@@ -43,6 +48,7 @@ public class Duck {
     
     private final Rectangle bounds;
     private boolean reachedGround;
+    private AnimatedSprite animation;
 
     public Duck(int id, float x, float y, DuckType type) {
         this.id = id;
@@ -54,17 +60,44 @@ public class Duck {
         this.reachedGround = false;
         
         this.bounds = new Rectangle(x, y, DUCK_WIDTH, DUCK_HEIGHT);
+        
+        // Initialize animation
+        initializeAnimation();
+    }
+    
+    /**
+     * Initialize duck animation based on type.
+     */
+    private void initializeAnimation() {
+        SpriteManager spriteManager = SpriteManager.getInstance();
+        if (spriteManager.isLoaded()) {
+            animation = new AnimatedSprite(
+                new com.badlogic.gdx.graphics.Texture[] {
+                    spriteManager.getDuckFrame(type, 0),
+                    spriteManager.getDuckFrame(type, 1)
+                },
+                DUCK_ANIMATION_FRAME_DURATION
+            );
+        }
     }
 
     public void update() {
+        float deltaTime = Gdx.graphics.getDeltaTime();
         
-        // Don't update if already caught or reached ground
+        // Update animation always (even when caught or grounded)
+        if (animation != null) {
+            animation.update(deltaTime);
+        } else {
+            initializeAnimation();
+        }
+        
+        // Don't update physics if already caught or reached ground
         if (caught || reachedGround) {
             return;
         }
         
         // Fall down
-        y -= FALL_SPEED * Gdx.graphics.getDeltaTime();
+        y -= FALL_SPEED * deltaTime;
         
         // Check if reached ground
         if (y <= GROUND_Y) {
@@ -109,5 +142,12 @@ public class Duck {
      */
     public boolean shouldRemove() {
         return caught || reachedGround;
+    }
+    
+    /**
+     * Get the duck animation.
+     */
+    public AnimatedSprite getAnimation() {
+        return animation;
     }
 }
