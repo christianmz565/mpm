@@ -5,7 +5,6 @@ import com.badlogic.gdx.Gdx;
 import to.mpm.minigames.ballmovement.BallMovementMinigame;
 import to.mpm.minigames.catchThemAll.CatchThemAllMinigame;
 import to.mpm.minigames.theFinale.TheFinaleMinigame;
-import to.mpm.minigames.duckshooter.DuckShooterMinigame;
 
 /**
  * Factory para crear instancias de minijuegos.
@@ -26,8 +25,6 @@ public class MinigameFactory {
                 return new CatchThemAllMinigame(localPlayerId);
             case THE_FINALE:
                 return new TheFinaleMinigame(localPlayerId);
-            case DUCK_SHOOTER:
-                return new DuckShooterMinigame(localPlayerId);
             default:
                 Gdx.app.error("MinigameFactory", "Tipo de minijuego desconocido: " + type);
                 return null;

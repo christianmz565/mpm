@@ -12,10 +12,6 @@ public enum MinigameType {
             "Catch Them All",
             "Catch falling ducks with your basket! Avoid bad ducks!",
             2, 6),
-    DUCK_SHOOTER(
-            "Duck Shooter",
-            "Shoot quacks at other ducks! Each duck has 3 hits before being eliminated.",
-            2, 6),
     THE_FINALE(
             "The Finale",
             "Final showdown! Only the best compete!",
