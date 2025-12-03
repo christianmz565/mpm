@@ -4,10 +4,6 @@ package to.mpm.minigames;
  * Enumeración de todos los minijuegos disponibles.
  */
 public enum MinigameType {
-    BALL_MOVEMENT(
-            "Ball Movement",
-            "Move your ball around! Simple movement test.",
-            2, 6),
     CATCH_THEM_ALL(
             "Catch Them All",
             "Catch falling ducks with your basket! Avoid bad ducks!",

@@ -3,11 +3,14 @@ package to.mpm.minigames.sumo;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.IntMap;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import to.mpm.minigames.GameConstants;
 import to.mpm.minigames.Minigame;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.NetworkPacket;
@@ -24,35 +27,42 @@ import java.util.Map;
 import java.util.ArrayList;
 
 public class SumoMinigame implements Minigame {
-    private static final float MAP_CENTER_X = 320f;
-    private static final float MAP_CENTER_Y = 240f;
-    private static final float MAP_RADIUS = 200f; 
+    private static final float MAP_CENTER_X = GameConstants.Sumo.MAP_CENTER_X;
+    private static final float MAP_CENTER_Y = GameConstants.Sumo.MAP_CENTER_Y;
+    private static final float MAP_RADIUS = GameConstants.Sumo.MAP_RADIUS; 
+    private static final float VIRTUAL_WIDTH = GameConstants.Screen.WIDTH;
+    private static final float VIRTUAL_HEIGHT = GameConstants.Screen.HEIGHT;
     
-    // 5000 puntos por kill
-    private static final int POINTS_REWARD = 50000;
+    private static final int POINTS_REWARD = GameConstants.Sumo.POINTS_PER_KILL;
 
     private final int localPlayerId;
+    private final boolean isSpectator;
     private final IntMap<SumoPlayer> players = new IntMap<>();
     private final Map<Integer, Integer> scores = new HashMap<>();
 
+    private OrthographicCamera camera;
+    private Viewport viewport;
     private boolean finished = false;
     private int winnerId = -1;
-
-    private static final Color[] COLORS = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.ORANGE};
-    private BitmapFont font; 
 
     private SumoClientHandler clientHandler;
     private SumoServerHandler serverHandler;
 
     public SumoMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
-        this.font = new BitmapFont(); 
-        this.font.getData().setScale(1.5f);
+        this.isSpectator = (localPlayerId == GameConstants.SPECTATOR_ID);
     }
 
     @Override
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
+
+        // Set up camera and viewport for scaling
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
+        viewport.apply();
+        camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
+        camera.update();
 
         nm.registerAdditionalClasses(
             SumoPackets.PlayerKnockback.class,
@@ -62,10 +72,14 @@ public class SumoMinigame implements Minigame {
             SumoPackets.RoundReset.class
         );
 
-        scores.put(localPlayerId, 0);
-
-        if (localPlayerId != -1)
+        // Only create local player if not a spectator
+        if (!isSpectator) {
+            scores.put(localPlayerId, 0);
             spawnPlayer(localPlayerId);
+            Gdx.app.log("Sumo", "Game started as player " + localPlayerId);
+        } else {
+            Gdx.app.log("Sumo", "Game started as SPECTATOR");
+        }
 
         clientHandler = new SumoClientHandler();
         nm.registerClientHandler(clientHandler);
@@ -74,14 +88,12 @@ public class SumoMinigame implements Minigame {
             serverHandler = new SumoServerHandler();
             nm.registerServerHandler(serverHandler);
         }
-        
-        Gdx.app.log("Sumo", "Juego iniciado.");
     }
 
     private void spawnPlayer(int id) {
         float x = MAP_CENTER_X + (float)Math.cos(id) * 50;
         float y = MAP_CENTER_Y + (float)Math.sin(id) * 50;
-        Color c = COLORS[id % COLORS.length];
+        Color c = GameConstants.Player.COLORS[id % GameConstants.Player.COLORS.length];
         players.put(id, new SumoPlayer(id, x, y, c));
         if (!scores.containsKey(id)) {
             scores.put(id, 0);
@@ -100,7 +112,8 @@ public class SumoMinigame implements Minigame {
             checkRoundReset(); 
         }
 
-        if (localPlayerId != -1) {
+        // Only send position updates if not a spectator
+        if (!isSpectator) {
             SumoPlayer me = players.get(localPlayerId);
             if (me != null && me.isAlive) {
                 Packets.PlayerPosition p = new Packets.PlayerPosition();
@@ -199,13 +212,21 @@ public class SumoMinigame implements Minigame {
 
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
+        // Apply viewport and camera
+        viewport.apply();
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        batch.setProjectionMatrix(camera.combined);
+
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        // Draw water background
         shapeRenderer.setColor(0, 0.5f, 1, 1); 
-        shapeRenderer.rect(0, 0, 640, 480);
+        shapeRenderer.rect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
         
+        // Draw platform
         shapeRenderer.setColor(new Color(0.96f, 0.87f, 0.70f, 1f));
         shapeRenderer.circle(MAP_CENTER_X, MAP_CENTER_Y, MAP_RADIUS);
         
+        // Draw players
         for (IntMap.Entry<SumoPlayer> entry : players) {
             SumoPlayer p = entry.value;
             if (p.isAlive) {
@@ -217,22 +238,18 @@ public class SumoMinigame implements Minigame {
         }
         shapeRenderer.end();
 
-        // UI básica de puntos
-        batch.begin();
-        Integer myScore = scores.get(localPlayerId);
-        if (myScore != null) {
-            font.setColor(Color.WHITE);
-            font.draw(batch, "SCORE: " + myScore, 20, 460);
-        }
-        batch.end();
+        // No custom UI - GameScreen overlay handles score display
     }
 
     @Override
     public void handleInput(float delta) {
+        // Spectators don't handle input
+        if (isSpectator) return;
+        
         SumoPlayer me = players.get(localPlayerId);
         if (me == null || !me.isAlive) return;
 
-        float speed = 200f * delta;
+        float speed = GameConstants.Player.DEFAULT_MOVE_SPEED * delta;
         if (Gdx.input.isKeyPressed(Input.Keys.W)) me.position.y += speed;
         if (Gdx.input.isKeyPressed(Input.Keys.S)) me.position.y -= speed;
         if (Gdx.input.isKeyPressed(Input.Keys.A)) me.position.x -= speed;
@@ -250,14 +267,17 @@ public class SumoMinigame implements Minigame {
     @Override
     public int getWinnerId() { return winnerId; }
     @Override
-    public void resize(int w, int h) {}
+    public void resize(int w, int h) {
+        viewport.update(w, h, true);
+        camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
+        camera.update();
+    }
 
     @Override
     public void dispose() {
         NetworkManager nm = NetworkManager.getInstance();
         if (clientHandler != null) nm.unregisterClientHandler(clientHandler);
         if (serverHandler != null) nm.unregisterServerHandler(serverHandler);
-        if (font != null) font.dispose();
     }
 
     private class SumoClientHandler implements ClientPacketHandler {
