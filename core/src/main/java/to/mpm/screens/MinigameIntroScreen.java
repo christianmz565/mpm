@@ -2,17 +2,12 @@ package to.mpm.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.badlogic.gdx.video.VideoPlayer;
-import com.badlogic.gdx.video.VideoPlayerCreator;
 import to.mpm.Main;
 import to.mpm.minigames.GameConstants;
 import to.mpm.minigames.MinigameType;
@@ -36,8 +31,7 @@ public class MinigameIntroScreen implements Screen {
     private float timer;
     private Label timerLabel;
     private Texture previewTexture;
-    private VideoPlayer videoPlayer;
-    private Image videoImage;
+    private Image previewImage;
 
     public MinigameIntroScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds) {
         this(game, minigameType, currentRound, totalRounds, false);
@@ -119,11 +113,11 @@ public class MinigameIntroScreen implements Screen {
         controlsLabel.setWrap(true);
         leftSide.add(controlsLabel).width(descriptionWidth).left().row();
 
-        // Right side - Preview placeholder
+        // Right side - Preview image
         Table rightSide = new Table();
         rightSide.center();
         
-        // Create video preview container with responsive size
+        // Create preview container with static image
         Table previewContainer = createPreviewContainer(videoWidth, videoHeight);
         rightSide.add(previewContainer).size(videoWidth, videoHeight);
 
@@ -143,34 +137,26 @@ public class MinigameIntroScreen implements Screen {
         mainContainer.row();
         mainContainer.add(bottomContainer).padBottom(UIStyles.Spacing.LARGE).bottom();
 
-        // Initialize video player
-        initializeVideoPlayer();
+        // Load preview image
+        loadPreviewImage();
 
         Gdx.app.log("MinigameIntroScreen", "Showing intro for: " + minigameType.getDisplayName());
     }
 
-    private void initializeVideoPlayer() {
+    private void loadPreviewImage() {
         try {
-            videoPlayer = VideoPlayerCreator.createVideoPlayer();
-            videoPlayer.setOnVideoSizeListener((width, height) -> {
-                Gdx.app.log("MinigameIntroScreen", "Video size: " + width + "x" + height);
-            });
-            
-            // Try to load minigame-specific video first, fall back to placeholder
-            FileHandle videoFile = Gdx.files.internal("videos/guides/" + minigameType.name().toLowerCase() + ".mkv");
-            if (!videoFile.exists()) {
-                videoFile = Gdx.files.internal("videos/guides/placeholder.mkv");
+            // Try to load minigame-specific image first, fall back to placeholder
+            String imagePath = "images/guides/" + minigameType.name().toLowerCase() + ".png";
+            if (!Gdx.files.internal(imagePath).exists()) {
+                imagePath = "images/guides/placeholder.png";
             }
             
-            if (videoFile.exists()) {
-                videoPlayer.load(videoFile);
-                videoPlayer.play();
-                videoPlayer.setLooping(true);
-                Gdx.app.log("MinigameIntroScreen", "Playing video: " + videoFile.path());
-            }
+            previewTexture = new Texture(Gdx.files.internal(imagePath));
+            previewImage.setDrawable(new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(
+                    new com.badlogic.gdx.graphics.g2d.TextureRegion(previewTexture)));
+            Gdx.app.log("MinigameIntroScreen", "Loaded preview image: " + imagePath);
         } catch (Exception e) {
-            Gdx.app.error("MinigameIntroScreen", "Error initializing video player", e);
-            videoPlayer = null;
+            Gdx.app.error("MinigameIntroScreen", "Error loading preview image", e);
         }
     }
 
@@ -178,9 +164,9 @@ public class MinigameIntroScreen implements Screen {
         Table placeholder = new Table();
         placeholder.setBackground(UIStyles.createSemiTransparentBackground(0.1f, 0.1f, 0.15f, 1f));
         
-        // Create an image widget that will be updated with video frames
-        videoImage = new Image();
-        placeholder.add(videoImage).size(width, height);
+        // Create an image widget for the preview
+        previewImage = new Image();
+        placeholder.add(previewImage).size(width, height);
         
         return placeholder;
     }
@@ -213,15 +199,6 @@ public class MinigameIntroScreen implements Screen {
             timerLabel.setText("Starting in " + Math.max(1, (int) Math.ceil(timer)) + "...");
         }
 
-        // Update video player and display current frame
-        if (videoPlayer != null) {
-            videoPlayer.update();
-            Texture videoTexture = videoPlayer.getTexture();
-            if (videoTexture != null && videoImage != null) {
-                videoImage.setDrawable(new TextureRegionDrawable(new TextureRegion(videoTexture)));
-            }
-        }
-
         if (timer <= 0) {
             // Transition to game or spectator screen based on role
             if (isSpectator) {
@@ -246,16 +223,10 @@ public class MinigameIntroScreen implements Screen {
 
     @Override
     public void pause() {
-        if (videoPlayer != null) {
-            videoPlayer.pause();
-        }
     }
 
     @Override
     public void resume() {
-        if (videoPlayer != null) {
-            videoPlayer.play();
-        }
     }
 
     @Override
@@ -264,10 +235,6 @@ public class MinigameIntroScreen implements Screen {
 
     @Override
     public void dispose() {
-        if (videoPlayer != null) {
-            videoPlayer.dispose();
-            videoPlayer = null;
-        }
         if (previewTexture != null) {
             previewTexture.dispose();
         }
