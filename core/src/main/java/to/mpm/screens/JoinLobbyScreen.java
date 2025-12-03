@@ -56,61 +56,71 @@ public class JoinLobbyScreen implements Screen {
         formTable.top().left();
 
         Table headerTable = new Table();
-        TextButton backButton = new TextButton("<-", skin);
-        backButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-            @Override
-            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
-                game.setScreen(new MainMenuScreen(game));
-                dispose();
-            }
-        });
+        TextButton backButton = new StyledButton(skin)
+                .text("< Volver")
+                .width(120f)
+                .height(45f)
+                .onClick(() -> {
+                    game.setScreen(new MainMenuScreen(game));
+                    dispose();
+                })
+                .build();
         headerTable.add(backButton).padRight(UIStyles.Spacing.MEDIUM);
 
-        Label titleLabel = new Label("MicroPatosMania\nUnirse a sala", skin);
-        titleLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
+        Label titleLabel = new Label("Unirse a sala", skin);
+        titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         headerTable.add(titleLabel).left();
 
-        formTable.add(headerTable).left().padBottom(UIStyles.Spacing.LARGE).row();
+        formTable.add(headerTable).left().padBottom(UIStyles.Spacing.XLARGE).row();
+
+        // Form fields with consistent label width for alignment
+        float labelWidth = 100f;
+        float fieldWidth = 175f;
 
         Table ipRow = new Table();
         Label ipLabel = new Label("IP", skin);
-        ipRow.add(ipLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
+        ipLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        ipRow.add(ipLabel).width(labelWidth).left();
         ipField = new InputField(skin)
                 .defaultValue("localhost")
                 .messageText("...")
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .buildField();
-        ipRow.add(ipField);
+        ipRow.add(ipField).width(fieldWidth);
         formTable.add(ipRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table portRow = new Table();
         Label portLabel = new Label("Puerto", skin);
-        portRow.add(portLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
+        portLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        portRow.add(portLabel).width(labelWidth).left();
         portField = new InputField(skin)
                 .defaultValue(String.valueOf(NetworkConfig.DEFAULT_PORT))
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .filter(new TextField.TextFieldFilter.DigitsOnlyFilter())
                 .maxLength(5)
                 .buildField();
-        portRow.add(portField);
+        portRow.add(portField).width(fieldWidth);
         formTable.add(portRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table nameRow = new Table();
         Label nameLabel = new Label("Nombre", skin);
-        nameRow.add(nameLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
+        nameLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        nameRow.add(nameLabel).width(labelWidth).left();
         nameField = new InputField(skin)
                 .defaultValue("")
                 .messageText("...")
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .maxLength(20)
                 .buildField();
-        nameRow.add(nameField);
-        formTable.add(nameRow).left().padBottom(UIStyles.Spacing.LARGE).row();
+        nameRow.add(nameField).width(fieldWidth);
+        formTable.add(nameRow).left().padBottom(UIStyles.Spacing.XLARGE).row();
 
         formTable.add(
                 new StyledButton(skin)
                         .text("Unirse")
+                        .width(250f)
+                        .height(60f)
                         .onClick(this::joinGame)
                         .build())
                 .left().padBottom(UIStyles.Spacing.MEDIUM).row();

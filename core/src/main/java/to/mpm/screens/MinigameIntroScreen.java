@@ -22,12 +22,14 @@ import to.mpm.ui.UISkinProvider;
 /**
  * Intro screen shown before each minigame.
  * Displays a description of the minigame and a video preview.
+ * Supports both players and spectators.
  */
 public class MinigameIntroScreen implements Screen {
     private final Main game;
     private final MinigameType minigameType;
     private final int currentRound;
     private final int totalRounds;
+    private final boolean isSpectator;
     
     private Stage stage;
     private Skin skin;
@@ -38,10 +40,15 @@ public class MinigameIntroScreen implements Screen {
     private Image videoImage;
 
     public MinigameIntroScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds) {
+        this(game, minigameType, currentRound, totalRounds, false);
+    }
+
+    public MinigameIntroScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds, boolean isSpectator) {
         this.game = game;
         this.minigameType = minigameType;
         this.currentRound = currentRound;
         this.totalRounds = totalRounds;
+        this.isSpectator = isSpectator;
         this.timer = GameConstants.Timing.INTRO_SCREEN_DURATION;
     }
 
@@ -84,7 +91,15 @@ public class MinigameIntroScreen implements Screen {
             Label roundLabel = new Label("Round " + currentRound + " of " + totalRounds, skin);
             roundLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
             roundLabel.setColor(UIStyles.Colors.SECONDARY);
-            leftSide.add(roundLabel).left().padBottom(UIStyles.Spacing.LARGE).row();
+            leftSide.add(roundLabel).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+        }
+        
+        // Spectator badge if spectating
+        if (isSpectator) {
+            Label spectatorLabel = new Label("ESPECTANDO", skin);
+            spectatorLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+            spectatorLabel.setColor(UIStyles.Colors.ACCENT);
+            leftSide.add(spectatorLabel).left().padBottom(UIStyles.Spacing.LARGE).row();
         }
         
         // Description
@@ -208,8 +223,12 @@ public class MinigameIntroScreen implements Screen {
         }
 
         if (timer <= 0) {
-            // Transition to game screen
-            game.setScreen(new GameScreen(game, minigameType, currentRound, totalRounds));
+            // Transition to game or spectator screen based on role
+            if (isSpectator) {
+                game.setScreen(new SpectatorScreen(game, minigameType, currentRound, totalRounds));
+            } else {
+                game.setScreen(new GameScreen(game, minigameType, currentRound, totalRounds));
+            }
             return;
         }
 

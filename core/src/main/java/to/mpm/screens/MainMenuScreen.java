@@ -57,6 +57,8 @@ public class MainMenuScreen implements Screen {
         menuTable.add(
                 new StyledButton(skin)
                         .text("Crear")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             game.setScreen(new CreateRoomScreen(game));
                             dispose();
@@ -67,6 +69,8 @@ public class MainMenuScreen implements Screen {
         menuTable.add(
                 new StyledButton(skin)
                         .text("Unirse")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             game.setScreen(new JoinLobbyScreen(game));
                             dispose();
@@ -77,6 +81,8 @@ public class MainMenuScreen implements Screen {
         menuTable.add(
                 new StyledButton(skin)
                         .text("Salir")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             Gdx.app.exit();
                         })

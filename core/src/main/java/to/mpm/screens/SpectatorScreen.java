@@ -68,35 +68,68 @@ public class SpectatorScreen implements Screen {
         skin = UISkinProvider.obtain();
         game.getSettingsOverlayManager().attachStage(uiStage);
 
+        // Main UI layout table - matches GameScreen style
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
-        uiRoot.top();
         uiStage.addActor(uiRoot);
 
-        Table topContainer = new Table();
-        topContainer.pad(UIStyles.Spacing.MEDIUM);
+        // Create top bar with three sections: left (spectator badge), center (time/round), right (empty for balance)
+        Table topBar = new Table();
+        topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
+        topBar.pad(UIStyles.Spacing.SMALL);
 
-        Label spectatorLabel = new Label("SPECTATING", skin);
+        // === TOP LEFT: Spectator badge ===
+        Table topLeftContainer = new Table();
+        topLeftContainer.left();
+        
+        Table spectatorBadge = new Table();
+        spectatorBadge.setBackground(UIStyles.createSemiTransparentBackground(0.9f, 0.3f, 0.3f, 0.3f));
+        spectatorBadge.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
+        
+        Label spectatorLabel = new Label("ESPECTANDO", skin);
         spectatorLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
         spectatorLabel.setColor(UIStyles.Colors.ACCENT);
-        topContainer.add(spectatorLabel).padBottom(UIStyles.Spacing.SMALL).row();
+        spectatorBadge.add(spectatorLabel);
+        
+        topLeftContainer.add(spectatorBadge);
+        topBar.add(topLeftContainer).width(150).left();
 
-        if (currentRound > 0 && totalRounds > 0) {
-            roundLabel = new Label("Round " + currentRound + "/" + totalRounds, skin);
-            roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-            roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-            topContainer.add(roundLabel).padBottom(UIStyles.Spacing.TINY).row();
-        }
+        // === TOP CENTER: Time and Round ===
+        Table topCenterContainer = new Table();
+        topCenterContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
+        topCenterContainer.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
 
         boolean isFinale = minigameType == MinigameType.THE_FINALE;
+        
         if (!isFinale) {
+            if (currentRound > 0 && totalRounds > 0) {
+                roundLabel = new Label("Round " + currentRound + "/" + totalRounds, skin);
+                roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+                roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+                topCenterContainer.add(roundLabel).padRight(UIStyles.Spacing.MEDIUM);
+            }
+
             timerLabel = new Label("Time: 60", skin);
             timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
             timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-            topContainer.add(timerLabel).row();
+            topCenterContainer.add(timerLabel);
+        } else {
+            // Finale: just show "THE FINALE" title
+            Label finaleLabel = new Label("THE FINALE", skin);
+            finaleLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+            finaleLabel.setColor(UIStyles.Colors.SECONDARY);
+            topCenterContainer.add(finaleLabel);
         }
 
-        uiRoot.add(topContainer).expandX().center().row();
+        topBar.add(topCenterContainer).expandX().center();
+
+        // === TOP RIGHT: Empty for balance ===
+        Table topRightContainer = new Table();
+        topRightContainer.right();
+        topBar.add(topRightContainer).width(150).right();
+
+        uiRoot.add(topBar).expandX().fillX().top().row();
+        uiRoot.add().expand(); // Spacer to push top bar to top
 
         currentMinigame = MinigameFactory.createMinigame(minigameType, -1);
         currentMinigame.initialize();
@@ -271,8 +304,9 @@ public class SpectatorScreen implements Screen {
                         game.setScreen(new MinigameIntroScreen(game, nextMinigameType,
                                 startNextRound.roundNumber, totalRounds));
                     } else {
-                        game.setScreen(new SpectatorScreen(game, nextMinigameType,
-                                startNextRound.roundNumber, totalRounds));
+                        // Show intro screen before spectating
+                        game.setScreen(new MinigameIntroScreen(game, nextMinigameType,
+                                startNextRound.roundNumber, totalRounds, true));
                     }
                     dispose();
                 });

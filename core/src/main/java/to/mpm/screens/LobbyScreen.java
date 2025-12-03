@@ -103,28 +103,34 @@ public class LobbyScreen implements Screen {
 
         Table root = new Table();
         root.setFillParent(true);
+        root.top();
         stage.addActor(root);
 
-        Table topRow = new Table();
-        topRow.setFillParent(true);
+        // Top bar with back button (left), title (center), and IP+port (right)
+        Table topBar = new Table();
+        topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
+        topBar.pad(UIStyles.Spacing.MEDIUM);
 
-        Table leftHeader = new Table();
-        TextButton backButton = new TextButton("<-", skin);
-        backButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-            @Override
-            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
-                NetworkManager.getInstance().disconnect();
-                game.setScreen(new MainMenuScreen(game));
-                dispose();
-            }
-        });
-        leftHeader.add(backButton).padRight(UIStyles.Spacing.MEDIUM);
+        // Left: Back button
+        TextButton backButton = new StyledButton(skin)
+                .text("< Volver")
+                .width(120f)
+                .height(45f)
+                .onClick(() -> {
+                    NetworkManager.getInstance().disconnect();
+                    game.setScreen(new MainMenuScreen(game));
+                    dispose();
+                })
+                .build();
+        topBar.add(backButton).left().width(150f);
 
-        Label titleLabel = new Label("MicroPatosMania\nSala", skin);
-        titleLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
+        // Center: Title
+        Label titleLabel = new Label("Sala", skin);
+        titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-        leftHeader.add(titleLabel).left();
+        topBar.add(titleLabel).expandX().center();
 
+        // Right: IP and Port
         Table rightHeader = new Table();
         if (isHost) {
             try {
@@ -138,13 +144,13 @@ public class LobbyScreen implements Screen {
             ipLabel = new Label("IP: " + serverIp, skin);
             portLabel = new Label("Puerto: " + serverPort, skin);
         }
-        rightHeader.add(ipLabel).padBottom(UIStyles.Spacing.TINY).row();
-        rightHeader.add(portLabel).row();
+        ipLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        portLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        rightHeader.add(ipLabel).right().row();
+        rightHeader.add(portLabel).right().row();
+        topBar.add(rightHeader).right().width(150f);
 
-        topRow.add(leftHeader).left().expand().pad(UIStyles.Spacing.LARGE);
-        topRow.add(rightHeader).right().pad(UIStyles.Spacing.LARGE);
-
-        root.add(topRow).top().fillX().row();
+        root.add(topBar).expandX().fillX().row();
 
         playersContainer = new Table();
         playersContainer.top();
@@ -154,16 +160,21 @@ public class LobbyScreen implements Screen {
         root.add(playersScroll).expand().fill().pad(UIStyles.Spacing.LARGE).row();
 
         Table bottomRow = new Table();
+        bottomRow.pad(UIStyles.Spacing.MEDIUM);
 
         spectatorButton = new StyledButton(skin)
                 .text("Modo Espectador")
+                .width(220f)
+                .height(55f)
                 .onClick(this::toggleSpectator)
                 .build();
-        bottomRow.add(spectatorButton).padRight(UIStyles.Spacing.MEDIUM);
+        bottomRow.add(spectatorButton).padRight(UIStyles.Spacing.LARGE);
 
         if (isHost) {
             startButton = new StyledButton(skin)
                     .text("Iniciar Juego")
+                    .width(220f)
+                    .height(55f)
                     .disabled(true)
                     .onClick(this::startGame)
                     .build();
@@ -174,6 +185,7 @@ public class LobbyScreen implements Screen {
             root.add(bottomRow).bottom().pad(UIStyles.Spacing.LARGE).row();
 
             Label statusLabel = new Label("Esperando a que el anfitrión inicie el juego...", skin);
+            statusLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
             statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
             root.add(statusLabel).bottom().padBottom(UIStyles.Spacing.MEDIUM).row();
         }
@@ -303,7 +315,8 @@ public class LobbyScreen implements Screen {
 
                 int localPlayerId = NetworkManager.getInstance().getMyId();
                 if (spectators.contains(localPlayerId)) {
-                    game.setScreen(new SpectatorScreen(game, type, roundNumber, configuredRounds));
+                    // Show intro screen before spectating
+                    game.setScreen(new MinigameIntroScreen(game, type, roundNumber, configuredRounds, true));
                 } else {
                     // Show intro screen before the game
                     game.setScreen(new MinigameIntroScreen(game, type, roundNumber, configuredRounds));
@@ -386,8 +399,9 @@ public class LobbyScreen implements Screen {
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         if (spectators.contains(localPlayerId)) {
-            game.setScreen(new SpectatorScreen(game, selectedGame, flowManager.getCurrentRound(),
-                    flowManager.getTotalRounds()));
+            // Show intro screen before spectating
+            game.setScreen(new MinigameIntroScreen(game, selectedGame, flowManager.getCurrentRound(),
+                    flowManager.getTotalRounds(), true));
         } else {
             // Show intro screen before the game
             game.setScreen(new MinigameIntroScreen(game, selectedGame, flowManager.getCurrentRound(),
