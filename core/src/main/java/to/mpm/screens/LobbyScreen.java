@@ -122,7 +122,7 @@ public class LobbyScreen implements Screen {
                     dispose();
                 })
                 .build();
-        topBar.add(backButton).left().width(150f);
+        topBar.add(backButton).size(120f, 45f).left().width(150f);
 
         // Center: Title
         Label titleLabel = new Label("Sala", skin);
@@ -164,21 +164,21 @@ public class LobbyScreen implements Screen {
 
         spectatorButton = new StyledButton(skin)
                 .text("Modo Espectador")
-                .width(220f)
-                .height(55f)
+                .width(250f)
+                .height(60f)
                 .onClick(this::toggleSpectator)
                 .build();
-        bottomRow.add(spectatorButton).padRight(UIStyles.Spacing.LARGE);
+        bottomRow.add(spectatorButton).size(250f, 60f).padRight(UIStyles.Spacing.LARGE);
 
         if (isHost) {
             startButton = new StyledButton(skin)
                     .text("Iniciar Juego")
-                    .width(220f)
-                    .height(55f)
+                    .width(250f)
+                    .height(60f)
                     .disabled(true)
                     .onClick(this::startGame)
                     .build();
-            bottomRow.add(startButton);
+            bottomRow.add(startButton).size(250f, 60f);
 
             root.add(bottomRow).bottom().pad(UIStyles.Spacing.LARGE).row();
         } else {

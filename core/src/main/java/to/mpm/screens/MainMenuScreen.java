@@ -64,7 +64,7 @@ public class MainMenuScreen implements Screen {
                             dispose();
                         })
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         menuTable.add(
                 new StyledButton(skin)
@@ -76,7 +76,7 @@ public class MainMenuScreen implements Screen {
                             dispose();
                         })
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         menuTable.add(
                 new StyledButton(skin)
@@ -87,7 +87,7 @@ public class MainMenuScreen implements Screen {
                             Gdx.app.exit();
                         })
                         .build())
-                .left().row();
+                .size(250f, 60f).left().row();
 
         Table duckTable = new DuckPlaceholder(skin).build();
 

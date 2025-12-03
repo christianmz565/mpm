@@ -65,7 +65,7 @@ public class CreateRoomScreen implements Screen {
                     dispose();
                 })
                 .build();
-        headerTable.add(backButton).padRight(UIStyles.Spacing.MEDIUM);
+        headerTable.add(backButton).size(120f, 45f).padRight(UIStyles.Spacing.MEDIUM);
 
         Label titleLabel = new Label("Crear sala", skin);
         titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
@@ -124,7 +124,7 @@ public class CreateRoomScreen implements Screen {
                         .height(60f)
                         .onClick(this::createRoom)
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         statusLabel = new Label("", skin);
         statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);

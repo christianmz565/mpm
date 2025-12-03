@@ -26,12 +26,14 @@ public class SettingsOverlayManager {
 
     /**
      * Construye el administrador de la superposición utilizando el skin compartido.
+     *
+     * @param game referencia al juego principal
      */
-    public SettingsOverlayManager() {
+    public SettingsOverlayManager(to.mpm.Main game) {
         Skin skin = UISkinProvider.obtain();
         overlayStage = new Stage(new ScreenViewport());
         dimRenderer = new ShapeRenderer();
-        overlay = new SettingsOverlay(overlayStage, skin);
+        overlay = new SettingsOverlay(game, overlayStage, skin);
         inputMultiplexer = new InputMultiplexer();
         inputMultiplexer.addProcessor(overlayStage);
     }

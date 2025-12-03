@@ -5,7 +5,6 @@ dependencies {
   api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
-  api "com.badlogicgames.gdx-video:gdx-video:$gdxVideoVersion"
   
   // KryoNet for P2P networking (latest version available on Maven Central)
   api "com.github.crykn:kryonet:2.22.1"

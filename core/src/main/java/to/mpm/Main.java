@@ -20,7 +20,7 @@ public class Main extends Game {
     public void create() {
         batch = new SpriteBatch();
         debugKeybinds = new DebugKeybinds(this);
-        settingsOverlayManager = new SettingsOverlayManager();
+        settingsOverlayManager = new SettingsOverlayManager(this);
         
         setScreen(new MainMenuScreen(this));
         
