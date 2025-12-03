@@ -7,7 +7,7 @@ import to.mpm.network.Transports;
  * Paquetes de red específicos del minijuego Duck Shooter.
  */
 public class DuckShooterPackets {
-    
+
     /**
      * Paquete para sincronizar la posición y estado del pato.
      */
@@ -16,12 +16,12 @@ public class DuckShooterPackets {
         public float x;
         public float y;
         public int hits;
-        
+
         public DuckState() {
             preferTransport(Transports.UDP);
         }
     }
-    
+
     /**
      * Paquete para notificar que un pato disparó un quack.
      */
@@ -31,12 +31,12 @@ public class DuckShooterPackets {
         public float y;
         public float dirX;
         public float dirY;
-        
+
         public ShootQuack() {
             preferTransport(Transports.UDP);
         }
     }
-    
+
     /**
      * Paquete para notificar que un quack impactó a un pato.
      */
@@ -45,7 +45,7 @@ public class DuckShooterPackets {
         public int targetId;
         public int remainingHits;
     }
-    
+
     /**
      * Paquete para notificar que un pato fue eliminado.
      */
@@ -53,11 +53,29 @@ public class DuckShooterPackets {
         public int playerId;
         public int killerId;
     }
-    
+
     /**
      * Paquete para notificar que el juego ha terminado.
      */
     public static class GameEnd extends NetworkPacket {
         public int winnerId;
+    }
+
+    /**
+     * Paquete para sincronizar la aparición de un botiquín de curación.
+     */
+    public static class HealthPackSpawned extends NetworkPacket {
+        public int healthPackId;
+        public float x;
+        public float y;
+    }
+
+    /**
+     * Paquete para notificar que un jugador recogió un botiquín.
+     */
+    public static class HealthPackPickup extends NetworkPacket {
+        public int healthPackId;
+        public int playerId;
+        public int newHits; // Nuevo total de vida del jugador
     }
 }

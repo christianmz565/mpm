@@ -49,6 +49,8 @@ public final class KryoClassRegistrar {
         kryo.register(DuckShooterPackets.QuackHit.class);
         kryo.register(DuckShooterPackets.DuckEliminated.class);
         kryo.register(DuckShooterPackets.GameEnd.class);
+        kryo.register(DuckShooterPackets.HealthPackSpawned.class);
+        kryo.register(DuckShooterPackets.HealthPackPickup.class);
     }
 
     /**

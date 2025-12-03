@@ -10,6 +10,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.IntMap;
 import to.mpm.minigames.Minigame;
 import to.mpm.minigames.duckshooter.entities.Duck;
+import to.mpm.minigames.duckshooter.entities.HealthPack;
 import to.mpm.minigames.duckshooter.entities.Quack;
 import to.mpm.minigames.duckshooter.network.DuckShooterPackets;
 import to.mpm.network.NetworkManager;
@@ -29,6 +30,8 @@ import java.util.*;
 public class TheFinaleMinigame implements Minigame {
     private static final float SHOOT_COOLDOWN = 0.5f;
     private static final float GAME_DURATION = 180f; // 3 minutos para el evento final
+    private static final float HEALTH_PACK_SPAWN_MIN = 10f; // Mínimo tiempo entre spawns
+    private static final float HEALTH_PACK_SPAWN_MAX = 15f; // Máximo tiempo entre spawns
     private static final Color[] DUCK_COLORS = {
             Color.RED, Color.BLUE, Color.GREEN,
             Color.YELLOW, Color.MAGENTA, Color.CYAN
@@ -38,10 +41,14 @@ public class TheFinaleMinigame implements Minigame {
     private final IntMap<Duck> ducks = new IntMap<>();
     private final List<Quack> quacks = new ArrayList<>();
     private final Map<Integer, Integer> scores = new HashMap<>();
+    private final IntMap<to.mpm.minigames.duckshooter.entities.HealthPack> healthPacks = new IntMap<>();
+    private final Random random = new Random();
 
     private Duck localDuck;
     private float shootCooldown;
     private float gameTimer;
+    private float healthPackSpawnTimer;
+    private int nextHealthPackId;
     private boolean finished;
     private int winnerId = -1;
 
@@ -53,6 +60,9 @@ public class TheFinaleMinigame implements Minigame {
         this.localPlayerId = localPlayerId;
         this.gameTimer = GAME_DURATION;
         this.shootCooldown = 0f;
+        this.healthPackSpawnTimer = random.nextFloat() * (HEALTH_PACK_SPAWN_MAX - HEALTH_PACK_SPAWN_MIN)
+                + HEALTH_PACK_SPAWN_MIN;
+        this.nextHealthPackId = 0;
     }
 
     @Override
@@ -125,6 +135,34 @@ public class TheFinaleMinigame implements Minigame {
             }
         }
 
+        // Actualizar botiquines
+        Iterator<IntMap.Entry<HealthPack>> hpIt = healthPacks.iterator();
+        while (hpIt.hasNext()) {
+            IntMap.Entry<HealthPack> entry = hpIt.next();
+            HealthPack hp = entry.value;
+            hp.update(delta);
+
+            if (!hp.isActive()) {
+                hpIt.remove();
+                continue;
+            }
+
+            // Verificar colisiones con patos (solo el host)
+            if (NetworkManager.getInstance().isHost()) {
+                checkHealthPackCollisions(hp);
+            }
+        }
+
+        // Spawn de botiquines (solo el host)
+        if (NetworkManager.getInstance().isHost()) {
+            healthPackSpawnTimer -= delta;
+            if (healthPackSpawnTimer <= 0) {
+                spawnHealthPack();
+                healthPackSpawnTimer = random.nextFloat() * (HEALTH_PACK_SPAWN_MAX - HEALTH_PACK_SPAWN_MIN)
+                        + HEALTH_PACK_SPAWN_MIN;
+            }
+        }
+
         // Verificar si solo queda un pato vivo (victoria por eliminación)
         int aliveDucks = 0;
         int lastAliveId = -1;
@@ -166,12 +204,12 @@ public class TheFinaleMinigame implements Minigame {
                         scores.merge(quack.shooterId, 1, Integer::sum);
                     }
 
-                    // Enviar notificación de impacto a los clientes
+                    // Enviar notificación de impacto a todos (incluyendo host)
                     DuckShooterPackets.QuackHit hitPacket = new DuckShooterPackets.QuackHit();
                     hitPacket.shooterId = quack.shooterId;
                     hitPacket.targetId = duck.playerId;
                     hitPacket.remainingHits = duck.getHits();
-                    NetworkManager.getInstance().sendPacket(hitPacket);
+                    NetworkManager.getInstance().broadcastFromHost(hitPacket);
 
                     // Si el pato murió, enviar notificación de eliminación
                     if (!duck.isAlive()) {
@@ -223,6 +261,23 @@ public class TheFinaleMinigame implements Minigame {
             if (quack.isActive()) {
                 shapeRenderer.setColor(quack.color);
                 shapeRenderer.circle(quack.position.x, quack.position.y, quack.getRadius());
+            }
+        }
+
+        // Renderizar botiquines
+        for (IntMap.Entry<HealthPack> entry : healthPacks) {
+            HealthPack hp = entry.value;
+            if (hp.isActive()) {
+                shapeRenderer.setColor(hp.getRenderColor());
+                shapeRenderer.circle(hp.position.x, hp.position.y, hp.getRadius());
+
+                // Cruz en el centro del botiquín
+                shapeRenderer.setColor(Color.WHITE);
+                float crossSize = hp.getRadius() * 0.6f;
+                shapeRenderer.rectLine(hp.position.x - crossSize, hp.position.y,
+                        hp.position.x + crossSize, hp.position.y, 2f);
+                shapeRenderer.rectLine(hp.position.x, hp.position.y - crossSize,
+                        hp.position.x, hp.position.y + crossSize, 2f);
             }
         }
 
@@ -390,6 +445,50 @@ public class TheFinaleMinigame implements Minigame {
         NetworkManager.getInstance().sendPacket(packet);
     }
 
+    private void spawnHealthPack() {
+        // Generar posición aleatoria en el mapa
+        float x = 50 + random.nextFloat() * (640 - 100);
+        float y = 50 + random.nextFloat() * (480 - 100);
+
+        int id = nextHealthPackId++;
+        HealthPack hp = new HealthPack(id, x, y);
+        healthPacks.put(id, hp);
+
+        // Notificar a todos los clientes
+        DuckShooterPackets.HealthPackSpawned spawnPacket = new DuckShooterPackets.HealthPackSpawned();
+        spawnPacket.healthPackId = id;
+        spawnPacket.x = x;
+        spawnPacket.y = y;
+        NetworkManager.getInstance().broadcastFromHost(spawnPacket);
+
+        Gdx.app.log("TheFinale", "Spawned health pack " + id + " at (" + x + ", " + y + ")");
+    }
+
+    private void checkHealthPackCollisions(HealthPack hp) {
+        for (IntMap.Entry<Duck> entry : ducks) {
+            Duck duck = entry.value;
+
+            if (hp.checkCollision(duck)) {
+                // Intentar curar al pato
+                if (duck.heal()) {
+                    hp.pickup();
+
+                    Gdx.app.log("TheFinale", "Player " + duck.playerId + " picked up health pack " + hp.id
+                            + ". New health: " + duck.getHits());
+
+                    // Notificar a todos los clientes
+                    DuckShooterPackets.HealthPackPickup pickupPacket = new DuckShooterPackets.HealthPackPickup();
+                    pickupPacket.healthPackId = hp.id;
+                    pickupPacket.playerId = duck.playerId;
+                    pickupPacket.newHits = duck.getHits();
+                    NetworkManager.getInstance().broadcastFromHost(pickupPacket);
+
+                    break;
+                }
+            }
+        }
+    }
+
     private void endGame() {
         if (finished)
             return;
@@ -487,7 +586,9 @@ public class TheFinaleMinigame implements Minigame {
                     DuckShooterPackets.ShootQuack.class,
                     DuckShooterPackets.QuackHit.class,
                     DuckShooterPackets.DuckEliminated.class,
-                    DuckShooterPackets.GameEnd.class);
+                    DuckShooterPackets.GameEnd.class,
+                    DuckShooterPackets.HealthPackSpawned.class,
+                    DuckShooterPackets.HealthPackPickup.class);
         }
 
         @Override
@@ -502,6 +603,10 @@ public class TheFinaleMinigame implements Minigame {
                 handleDuckEliminated(elim);
             } else if (packet instanceof DuckShooterPackets.GameEnd gameEnd) {
                 handleGameEnd(gameEnd);
+            } else if (packet instanceof DuckShooterPackets.HealthPackSpawned spawned) {
+                handleHealthPackSpawned(spawned);
+            } else if (packet instanceof DuckShooterPackets.HealthPackPickup pickup) {
+                handleHealthPackPickup(pickup);
             }
         }
     }
@@ -536,10 +641,12 @@ public class TheFinaleMinigame implements Minigame {
 
         duck.setPosition(state.x, state.y);
 
-        // Solo el host ignora los hits de DuckState (porque él es la autoridad)
-        // Los clientes sí deben actualizar hits de DuckState para tener la vista
-        // correcta
-        if (!NetworkManager.getInstance().isHost()) {
+        // Actualizar vida:
+        // - Solo actualizar si la vida reportada es menor o igual a la actual
+        // - Esto permite que las curaciones se sincronicen pero evita que se ignore el
+        // daño
+        // - El host tiene autoridad sobre el daño (a través de QuackHit)
+        if (state.hits <= duck.getHits()) {
             duck.setHits(state.hits);
         }
     }
@@ -604,5 +711,29 @@ public class TheFinaleMinigame implements Minigame {
         Gdx.app.log("TheFinale", "Received GameEnd! Winner: " + gameEnd.winnerId);
         winnerId = gameEnd.winnerId;
         finished = true;
+    }
+
+    private void handleHealthPackSpawned(DuckShooterPackets.HealthPackSpawned spawned) {
+        HealthPack hp = new HealthPack(spawned.healthPackId, spawned.x, spawned.y);
+        healthPacks.put(spawned.healthPackId, hp);
+        Gdx.app.log("TheFinale",
+                "Health pack " + spawned.healthPackId + " spawned at (" + spawned.x + ", " + spawned.y + ")");
+    }
+
+    private void handleHealthPackPickup(DuckShooterPackets.HealthPackPickup pickup) {
+        // Remover el botiquín
+        healthPacks.remove(pickup.healthPackId);
+
+        // Actualizar la vida del pato
+        Duck duck = ducks.get(pickup.playerId);
+        if (duck != null) {
+            duck.setHits(pickup.newHits);
+
+            // Si somos nosotros, actualizar nuestro localDuck también
+            if (pickup.playerId == localPlayerId) {
+                localDuck.setHits(pickup.newHits);
+                Gdx.app.log("TheFinale", "We picked up health pack! New health: " + pickup.newHits);
+            }
+        }
     }
 }
