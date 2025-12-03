@@ -11,11 +11,18 @@ public enum MinigameType {
     CATCH_THEM_ALL(
             "Catch Them All",
             "Catch falling ducks with your basket! Avoid bad ducks!",
-            2, 6),
+            2, 6
+    ),
+    SUMO(
+            "Pond Push",
+            "Push other ducks off the platform! Last duck standing wins.",
+            2, 6
+    ),
     THE_FINALE(
             "The Finale",
             "Final showdown! Only the best compete!",
-            2, 99);
+            2, 99
+    );
 
     private final String displayName; // Nombre del minijuego
     private final String description; // Descripción del minijuego

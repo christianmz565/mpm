@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 
 import to.mpm.minigames.ballmovement.BallMovementMinigame;
 import to.mpm.minigames.catchThemAll.CatchThemAllMinigame;
+import to.mpm.minigames.sumo.SumoMinigame; 
 import to.mpm.minigames.theFinale.TheFinaleMinigame;
 
 /**
@@ -23,6 +24,8 @@ public class MinigameFactory {
                 return new BallMovementMinigame(localPlayerId);
             case CATCH_THEM_ALL:
                 return new CatchThemAllMinigame(localPlayerId);
+            case SUMO:
+                return new SumoMinigame(localPlayerId);
             case THE_FINALE:
                 return new TheFinaleMinigame(localPlayerId);
             default:
