@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
@@ -44,6 +45,9 @@ public class SumoMinigame implements Minigame {
     private Viewport viewport;
     private boolean finished = false;
     private int winnerId = -1;
+    
+    private Texture backgroundTexture;
+    private Texture islandTexture;
 
     private SumoClientHandler clientHandler;
     private SumoServerHandler serverHandler;
@@ -63,6 +67,10 @@ public class SumoMinigame implements Minigame {
         viewport.apply();
         camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
         camera.update();
+        
+        // Load background and island textures
+        backgroundTexture = new Texture(Gdx.files.internal("sprites/sumo/pond-bg.png"));
+        islandTexture = new Texture(Gdx.files.internal("sprites/sumo/pond-island.png"));
 
         nm.registerAdditionalClasses(
             SumoPackets.PlayerKnockback.class,
@@ -217,16 +225,20 @@ public class SumoMinigame implements Minigame {
         shapeRenderer.setProjectionMatrix(camera.combined);
         batch.setProjectionMatrix(camera.combined);
 
+        // Draw background and island using sprites
+        batch.begin();
+        // Draw background to fill the screen
+        batch.draw(backgroundTexture, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+        
+        // Draw island centered - calculate position so island is centered at MAP_CENTER
+        float islandSize = MAP_RADIUS * 2.2f; // Slightly larger than the collision radius
+        float islandX = MAP_CENTER_X - islandSize / 2;
+        float islandY = MAP_CENTER_Y - islandSize / 2;
+        batch.draw(islandTexture, islandX, islandY, islandSize, islandSize);
+        batch.end();
+        
+        // Draw players using shape renderer
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        // Draw water background
-        shapeRenderer.setColor(0, 0.5f, 1, 1); 
-        shapeRenderer.rect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-        
-        // Draw platform
-        shapeRenderer.setColor(new Color(0.96f, 0.87f, 0.70f, 1f));
-        shapeRenderer.circle(MAP_CENTER_X, MAP_CENTER_Y, MAP_RADIUS);
-        
-        // Draw players
         for (IntMap.Entry<SumoPlayer> entry : players) {
             SumoPlayer p = entry.value;
             if (p.isAlive) {
@@ -278,6 +290,8 @@ public class SumoMinigame implements Minigame {
         NetworkManager nm = NetworkManager.getInstance();
         if (clientHandler != null) nm.unregisterClientHandler(clientHandler);
         if (serverHandler != null) nm.unregisterServerHandler(serverHandler);
+        if (backgroundTexture != null) backgroundTexture.dispose();
+        if (islandTexture != null) islandTexture.dispose();
     }
 
     private class SumoClientHandler implements ClientPacketHandler {
