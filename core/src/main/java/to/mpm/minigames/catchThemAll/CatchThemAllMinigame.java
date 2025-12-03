@@ -32,17 +32,16 @@ public class CatchThemAllMinigame implements Minigame {
     @Override
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
-        
+
         GameRenderer.initialize();
         state.createLocalPlayer();
 
         nm.registerAdditionalClasses(
-            Duck.DuckType.class,
-            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class,
-            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class,
-            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class,
-            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class
-        );
+                Duck.DuckType.class,
+                to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class,
+                to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class,
+                to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class,
+                to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class);
 
         if (nm.isHost()) {
             state.initializeDuckSpawner();
@@ -68,8 +67,8 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
-        GameRenderer.render(batch, shapeRenderer, state.getPlayers(), state.getDucks(), 
-                           state.getScores(), GameState.PLAYER_COLORS, state.getLocalPlayerId());
+        GameRenderer.render(batch, shapeRenderer, state.getPlayers(), state.getDucks(),
+                state.getScores(), GameState.PLAYER_COLORS, state.getLocalPlayerId());
     }
 
     @Override
@@ -106,7 +105,7 @@ public class CatchThemAllMinigame implements Minigame {
             nm.unregisterServerHandler(serverRelay);
             serverRelay = null;
         }
-        
+
         state.reset();
         GameRenderer.dispose();
     }

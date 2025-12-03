@@ -34,35 +34,35 @@ public class ResultsScreen implements Screen {
      * Enumeración de modos de vista disponibles.
      */
     public enum ViewMode {
-        VIEW_TOP3, //!< Vista de podio
-        VIEW_FULL_LIST, //!< Vista de lista completa
-        VIEW_WINNER_SPOTLIGHT //!< Vista de foco en el ganador
+        VIEW_TOP3, // !< Vista de podio
+        VIEW_FULL_LIST, // !< Vista de lista completa
+        VIEW_WINNER_SPOTLIGHT // !< Vista de foco en el ganador
     }
 
     /**
      * Animation states for automatic sequence.
      */
     private enum AnimationState {
-        SCROLLING, //!< Desplazamiento de la lista completa
-        PODIUM, //!< Vista de podio
-        FADE, //!< Desvanecimiento a negro
-        WINNER, //!< Ganador en el centro de la pantalla
-        RETURN, //!< Regresa todos al lobby
-        COMPLETE //!< Animación completa
+        SCROLLING, // !< Desplazamiento de la lista completa
+        PODIUM, // !< Vista de podio
+        FADE, // !< Desvanecimiento a negro
+        WINNER, // !< Ganador en el centro de la pantalla
+        RETURN, // !< Regresa todos al lobby
+        COMPLETE // !< Animación completa
     }
 
-    private final Main game; //!< Referencia a la instancia principal del juego
-    private Stage stage; //!< Escenario para elementos de UI
-    private Skin skin; //!< Skin para los componentes de UI
+    private final Main game; // !< Referencia a la instancia principal del juego
+    private Stage stage; // !< Escenario para elementos de UI
+    private Skin skin; // !< Skin para los componentes de UI
 
-    private ViewMode currentView = ViewMode.VIEW_TOP3; //!< Modo de vista actual
-    private Table contentContainer; //!< Contenedor del contenido que cambia según el modo
-    private ScrollPane fullListScrollPane; //!< ScrollPane para la lista completa
+    private ViewMode currentView = ViewMode.VIEW_TOP3; // !< Modo de vista actual
+    private Table contentContainer; // !< Contenedor del contenido que cambia según el modo
+    private ScrollPane fullListScrollPane; // !< ScrollPane para la lista completa
 
-    private List<to.mpm.utils.PlayerData> results; //!< Lista de resultados de jugadores
-    private AnimationState animationState = AnimationState.SCROLLING; //!< Estado actual de la animación
-    private float stateTimer = 0f; //!< Temporizador para el estado actual
-    private to.mpm.network.handlers.ClientPacketHandler returnToLobbyHandler; //!< Handler para volver al lobby
+    private List<to.mpm.utils.PlayerData> results; // !< Lista de resultados de jugadores
+    private AnimationState animationState = AnimationState.SCROLLING; // !< Estado actual de la animación
+    private float stateTimer = 0f; // !< Temporizador para el estado actual
+    private to.mpm.network.handlers.ClientPacketHandler returnToLobbyHandler; // !< Handler para volver al lobby
 
     /**
      * Constructor de la pantalla de resultados con scores map.

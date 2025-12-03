@@ -28,27 +28,27 @@ import java.util.List;
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
  */
 public class GameScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private final MinigameType minigameType; //!< tipo de minijuego a ejecutar
-    private Minigame currentMinigame; //!< instancia del minijuego actual
-    private SpriteBatch batch; //!< lote de sprites para renderizado
-    private ShapeRenderer shapeRenderer; //!< renderizador de formas
-    private Stage uiStage; //!< stage para la superposición de UI
-    private Skin skin; //!< skin para estilizar componentes de UI
-    private Label scoreLabel; //!< etiqueta que muestra la puntuación del jugador
-    private Table incrementsContainer; //!< contenedor para los incrementos de puntuación
-    private Label timerLabel; //!< etiqueta que muestra el temporizador
-    private Label roundLabel; //!< etiqueta que muestra la ronda actual
-    private float gameTimer = 10f; //!< temporizador del juego en segundos
-    private boolean gameEnded = false; //!< indica si el juego ha terminado
-    private final int currentRound; //!< ronda en curso (1-based)
-    private final int totalRounds; //!< total de rondas configuradas
-    private int previousScore = 0; //!< puntuación anterior para detectar cambios
-    private final List<ScorePopup> scorePopups = new ArrayList<>(); //!< lista de popups activos
+    private final Main game; // !< instancia del juego principal
+    private final MinigameType minigameType; // !< tipo de minijuego a ejecutar
+    private Minigame currentMinigame; // !< instancia del minijuego actual
+    private SpriteBatch batch; // !< lote de sprites para renderizado
+    private ShapeRenderer shapeRenderer; // !< renderizador de formas
+    private Stage uiStage; // !< stage para la superposición de UI
+    private Skin skin; // !< skin para estilizar componentes de UI
+    private Label scoreLabel; // !< etiqueta que muestra la puntuación del jugador
+    private Table incrementsContainer; // !< contenedor para los incrementos de puntuación
+    private Label timerLabel; // !< etiqueta que muestra el temporizador
+    private Label roundLabel; // !< etiqueta que muestra la ronda actual
+    private float gameTimer = 10f; // !< temporizador del juego en segundos
+    private boolean gameEnded = false; // !< indica si el juego ha terminado
+    private final int currentRound; // !< ronda en curso (1-based)
+    private final int totalRounds; // !< total de rondas configuradas
+    private int previousScore = 0; // !< puntuación anterior para detectar cambios
+    private final List<ScorePopup> scorePopups = new ArrayList<>(); // !< lista de popups activos
 
-    private StartGamePacketHandler startGameHandler; //!< manejador de paquete para iniciar el juego
-    private ShowScoreboardPacketHandler showScoreboardHandler; //!< manejador de paquete para mostrar el marcador
-    private ShowResultsPacketHandler showResultsHandler; //!< manejador de paquete para mostrar resultados
+    private StartGamePacketHandler startGameHandler; // !< manejador de paquete para iniciar el juego
+    private ShowScoreboardPacketHandler showScoreboardHandler; // !< manejador de paquete para mostrar el marcador
+    private ShowResultsPacketHandler showResultsHandler; // !< manejador de paquete para mostrar resultados
 
     /**
      * Clase interna para representar un popup de puntuación.
@@ -143,7 +143,7 @@ public class GameScreen implements Screen {
 
         Table scoreContainer = new Table(skin);
         scoreContainer.pad(UIStyles.Spacing.MEDIUM);
-        
+
         // Add semi-transparent background for better readability
         scoreContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.6f));
 

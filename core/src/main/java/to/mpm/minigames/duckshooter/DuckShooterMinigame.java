@@ -1,4 +1,4 @@
-package to.mpm.minigames.theFinale;
+package to.mpm.minigames.duckshooter;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -22,13 +22,14 @@ import to.mpm.network.handlers.ServerPacketHandler;
 import java.util.*;
 
 /**
- * Minijuego final tipo "Last Duck Standing Wins" - el último pato que sobreviva
- * gana.
- * Es el evento final del torneo, usa la misma mecánica del Duck Shooter.
+ * Minijuego tipo shooter "Last Duck Standing Wins".
+ * Los patos se disparan quacks entre sí. Cada pato tiene 3 hits antes de ser
+ * eliminado.
+ * El último pato que quede vivo gana el juego.
  */
-public class TheFinaleMinigame implements Minigame {
+public class DuckShooterMinigame implements Minigame {
     private static final float SHOOT_COOLDOWN = 0.5f;
-    private static final float GAME_DURATION = 180f; // 3 minutos para el evento final
+    private static final float GAME_DURATION = 180f; // 3 minutos (más tiempo para batalla royale)
     private static final Color[] DUCK_COLORS = {
             Color.RED, Color.BLUE, Color.GREEN,
             Color.YELLOW, Color.MAGENTA, Color.CYAN
@@ -45,11 +46,11 @@ public class TheFinaleMinigame implements Minigame {
     private boolean finished;
     private int winnerId = -1;
 
-    private FinaleClientHandler clientHandler;
-    private FinaleServerHandler serverHandler;
+    private DuckShooterClientHandler clientHandler;
+    private DuckShooterServerHandler serverHandler;
     private BitmapFont font;
 
-    public TheFinaleMinigame(int localPlayerId) {
+    public DuckShooterMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
         this.gameTimer = GAME_DURATION;
         this.shootCooldown = 0f;
@@ -68,15 +69,15 @@ public class TheFinaleMinigame implements Minigame {
         ducks.put(localPlayerId, localDuck);
         scores.put(localPlayerId, 0);
 
-        Gdx.app.log("TheFinale",
+        Gdx.app.log("DuckShooter",
                 "Initialized local player " + localPlayerId + " as " + (nm.isHost() ? "HOST" : "CLIENT"));
 
         // Configurar red
-        clientHandler = new FinaleClientHandler();
+        clientHandler = new DuckShooterClientHandler();
         nm.registerClientHandler(clientHandler);
 
         if (nm.isHost()) {
-            serverHandler = new FinaleServerHandler();
+            serverHandler = new DuckShooterServerHandler();
             nm.registerServerHandler(serverHandler);
         }
 
@@ -158,7 +159,7 @@ public class TheFinaleMinigame implements Minigame {
                 if (damaged) {
                     quack.deactivate();
 
-                    Gdx.app.log("TheFinale", "HIT! Shooter=" + quack.shooterId + " Target=" + duck.playerId
+                    Gdx.app.log("DuckShooter", "HIT! Shooter=" + quack.shooterId + " Target=" + duck.playerId
                             + " Remaining=" + duck.getHits());
 
                     // Actualizar scores localmente (para el host)
@@ -231,18 +232,11 @@ public class TheFinaleMinigame implements Minigame {
         // Renderizar UI
         batch.begin();
 
-        // Título del evento final
-        font.setColor(Color.GOLD);
-        font.getData().setScale(2f);
-        font.draw(batch, "THE FINALE", 230, 470);
-        font.setColor(Color.WHITE);
-        font.getData().setScale(1.5f);
-
         // Temporizador
         int minutes = (int) gameTimer / 60;
         int seconds = (int) gameTimer % 60;
         String timeText = String.format("Time: %d:%02d", minutes, seconds);
-        font.draw(batch, timeText, 10, 440);
+        font.draw(batch, timeText, 10, 470);
 
         // Información del jugador
         String status = localDuck.isAlive() ? "ALIVE" : "ELIMINATED";
@@ -251,16 +245,16 @@ public class TheFinaleMinigame implements Minigame {
                 localDuck.getHits(),
                 scores.getOrDefault(localPlayerId, 0),
                 status);
-        font.draw(batch, playerInfo, 10, 410);
+        font.draw(batch, playerInfo, 10, 440);
 
         // Cooldown de disparo
         if (shootCooldown > 0) {
             font.setColor(Color.RED);
-            font.draw(batch, "Reloading...", 10, 380);
+            font.draw(batch, "Reloading...", 10, 410);
             font.setColor(Color.WHITE);
         } else if (localDuck.isAlive()) {
             font.setColor(Color.GREEN);
-            font.draw(batch, "[SPACE] to Shoot", 10, 380);
+            font.draw(batch, "[SPACE] to Shoot", 10, 410);
             font.setColor(Color.WHITE);
         }
 
@@ -272,7 +266,7 @@ public class TheFinaleMinigame implements Minigame {
         font.getData().setScale(1.5f);
 
         // Tabla de jugadores (ordenar por vivos primero, luego por kills)
-        int y = 350;
+        int y = 380;
         font.draw(batch, "Players:", 450, y);
         y -= 25;
 
@@ -369,7 +363,7 @@ public class TheFinaleMinigame implements Minigame {
                 localDuck.color);
         quacks.add(quack);
 
-        Gdx.app.log("TheFinale", "Player " + localPlayerId + " shot!");
+        Gdx.app.log("DuckShooter", "Player " + localPlayerId + " shot! Total ducks in map: " + ducks.size);
 
         // Enviar paquete de disparo a otros jugadores
         DuckShooterPackets.ShootQuack packet = new DuckShooterPackets.ShootQuack();
@@ -430,7 +424,7 @@ public class TheFinaleMinigame implements Minigame {
             DuckShooterPackets.GameEnd gameEndPacket = new DuckShooterPackets.GameEnd();
             gameEndPacket.winnerId = winnerId;
             NetworkManager.getInstance().broadcastFromHost(gameEndPacket);
-            Gdx.app.log("TheFinale", "Host sent GameEnd! Winner: " + winnerId + " (Last Duck Standing)");
+            Gdx.app.log("DuckShooter", "Host sent GameEnd! Winner: " + winnerId + " (Last Duck Standing)");
         }
     }
 
@@ -479,7 +473,7 @@ public class TheFinaleMinigame implements Minigame {
 
     // ==================== Handlers de red ====================
 
-    private class FinaleClientHandler implements ClientPacketHandler {
+    private class DuckShooterClientHandler implements ClientPacketHandler {
         @Override
         public Collection<Class<? extends NetworkPacket>> receivablePackets() {
             return Arrays.asList(
@@ -506,7 +500,7 @@ public class TheFinaleMinigame implements Minigame {
         }
     }
 
-    private class FinaleServerHandler implements ServerPacketHandler {
+    private class DuckShooterServerHandler implements ServerPacketHandler {
         @Override
         public Collection<Class<? extends NetworkPacket>> receivablePackets() {
             return Arrays.asList(
@@ -531,7 +525,7 @@ public class TheFinaleMinigame implements Minigame {
             duck = new Duck(state.playerId, state.x, state.y, color);
             ducks.put(state.playerId, duck);
             scores.putIfAbsent(state.playerId, 0);
-            Gdx.app.log("TheFinale", "Created remote duck for player " + state.playerId);
+            Gdx.app.log("DuckShooter", "Created remote duck for player " + state.playerId);
         }
 
         duck.setPosition(state.x, state.y);
@@ -552,7 +546,7 @@ public class TheFinaleMinigame implements Minigame {
 
         Duck shooter = ducks.get(shoot.shooterId);
         if (shooter == null) {
-            Gdx.app.log("TheFinale", "WARNING: Received ShootQuack from unknown player " + shoot.shooterId);
+            Gdx.app.log("DuckShooter", "WARNING: Received ShootQuack from unknown player " + shoot.shooterId);
             return;
         }
 
@@ -564,7 +558,7 @@ public class TheFinaleMinigame implements Minigame {
                 shoot.dirY,
                 shooter.color);
         quacks.add(quack);
-        Gdx.app.log("TheFinale", "Remote player " + shoot.shooterId + " shot a quack");
+        Gdx.app.log("DuckShooter", "Remote player " + shoot.shooterId + " shot a quack");
     }
 
     private void handleQuackHit(DuckShooterPackets.QuackHit hit) {
@@ -575,7 +569,7 @@ public class TheFinaleMinigame implements Minigame {
             // Si somos nosotros, actualizar nuestro localDuck también
             if (hit.targetId == localPlayerId) {
                 localDuck.setHits(hit.remainingHits);
-                Gdx.app.log("TheFinale", "We got hit! Remaining hits: " + hit.remainingHits);
+                Gdx.app.log("DuckShooter", "We got hit! Remaining hits: " + hit.remainingHits);
             }
         }
 
@@ -593,7 +587,7 @@ public class TheFinaleMinigame implements Minigame {
             // Si somos nosotros, actualizar nuestro localDuck también
             if (elim.playerId == localPlayerId) {
                 localDuck.setHits(0);
-                Gdx.app.log("TheFinale", "We were eliminated!");
+                Gdx.app.log("DuckShooter", "We were eliminated!");
             }
         }
 
@@ -601,7 +595,7 @@ public class TheFinaleMinigame implements Minigame {
     }
 
     private void handleGameEnd(DuckShooterPackets.GameEnd gameEnd) {
-        Gdx.app.log("TheFinale", "Received GameEnd! Winner: " + gameEnd.winnerId);
+        Gdx.app.log("DuckShooter", "Received GameEnd! Winner: " + gameEnd.winnerId);
         winnerId = gameEnd.winnerId;
         finished = true;
     }
