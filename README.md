@@ -14,6 +14,10 @@ todo
 - NOA CAMINO, Yenaro Joel
 - VALDIVIA SEGOVIA, Ryan Fabian
 
+## Video de presentación, segundo avance
+
+- [Presentación](https://drive.google.com/file/d/1gVrajtwt88dHXRcPIsAJDocWJn-eexTq/view?usp=sharing)
+
 ## Dependencias
 - [Java JDK 21+](https://adoptium.net/)
 - [Gradle](https://gradle.org/) 
