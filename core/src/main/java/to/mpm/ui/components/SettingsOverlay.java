@@ -4,6 +4,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.graphics.Color;
+import to.mpm.Main;
+import to.mpm.network.NetworkManager;
+import to.mpm.screens.MainMenuScreen;
 import to.mpm.ui.UIStyles;
 
 /**
@@ -12,6 +15,7 @@ import to.mpm.ui.UIStyles;
  * Proporciona control de volumen y otras configuraciones del juego.
  */
 public class SettingsOverlay {
+    private final Main game; //!< referencia al juego principal
     private final Stage stage; //!< stage donde se renderiza la capa
     private final Skin skin; //!< skin para renderizar componentes UI
     private final Table overlay; //!< tabla contenedora de la capa
@@ -21,10 +25,12 @@ public class SettingsOverlay {
     /**
      * Construye una nueva capa de ajustes.
      *
+     * @param game  referencia al juego principal
      * @param stage stage donde se añadirá la capa
      * @param skin  skin de UI para renderizar componentes
      */
-    public SettingsOverlay(Stage stage, Skin skin) {
+    public SettingsOverlay(Main game, Stage stage, Skin skin) {
+        this.game = game;
         this.stage = stage;
         this.skin = skin;
         this.overlay = createOverlay();
@@ -60,8 +66,20 @@ public class SettingsOverlay {
         settingsPanel.add(
                 new StyledButton(skin)
                         .text("Cerrar")
+                        .width(250f)
+                        .height(60f)
                         .onClick(this::hide)
-                        .build());
+                        .build())
+                .size(250f, 60f).padBottom(UIStyles.Spacing.MEDIUM).row();
+
+        settingsPanel.add(
+                new StyledButton(skin)
+                        .text("Salir al Menú")
+                        .width(250f)
+                        .height(60f)
+                        .onClick(this::exitToMainMenu)
+                        .build())
+                .size(250f, 60f);
 
         background.add(settingsPanel);
 
@@ -77,6 +95,17 @@ public class SettingsOverlay {
     private void onVolumeChanged(float newVolume) {
         currentVolume = newVolume;
         Gdx.app.log("SettingsOverlay", "Volume changed to: " + (int) (newVolume * 100) + "%");
+    }
+
+    /**
+     * Sale al menú principal, desconectando de la partida actual.
+     */
+    private void exitToMainMenu() {
+        Gdx.app.log("SettingsOverlay", "Exiting to main menu");
+        NetworkManager.getInstance().disconnect();
+        to.mpm.minigames.manager.GameFlowManager.getInstance().reset();
+        hide();
+        game.setScreen(new MainMenuScreen(game));
     }
 
     /**

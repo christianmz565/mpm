@@ -259,10 +259,12 @@ public class ScoreboardScreen implements Screen {
         NetworkManager.getInstance().broadcastFromHost(packet);
 
         if (participatingPlayers == null || participatingPlayers.contains(localPlayerId)) {
-            game.setScreen(new GameScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
+            // Show intro screen before the game
+            game.setScreen(new MinigameIntroScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         } else {
+            // Show intro screen before spectating
             game.setScreen(
-                    new SpectatorScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
+                    new MinigameIntroScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds(), true));
         }
         dispose();
     }
@@ -337,12 +339,15 @@ public class ScoreboardScreen implements Screen {
                 to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager
                         .getInstance();
                 if (flowManager.isSpectator(localPlayerId)) {
-                    game.setScreen(new SpectatorScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
+                    // Show intro screen before spectating
+                    game.setScreen(new MinigameIntroScreen(game, minigameType, startNextRound.roundNumber, totalRounds, true));
                 } else if (startNextRound.participatingPlayerIds == null ||
                         startNextRound.participatingPlayerIds.contains(localPlayerId)) {
-                    game.setScreen(new GameScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
+                    // Show intro screen before the game
+                    game.setScreen(new MinigameIntroScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 } else {
-                    game.setScreen(new SpectatorScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
+                    // Show intro screen before spectating
+                    game.setScreen(new MinigameIntroScreen(game, minigameType, startNextRound.roundNumber, totalRounds, true));
                 }
                 dispose();
             }

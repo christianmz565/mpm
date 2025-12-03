@@ -11,6 +11,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
+import to.mpm.minigames.GameConstants;
 import to.mpm.minigames.Minigame;
 import to.mpm.minigames.MinigameFactory;
 import to.mpm.minigames.MinigameType;
@@ -30,16 +31,17 @@ import java.util.List;
 public class GameScreen implements Screen {
     private final Main game; // !< instancia del juego principal
     private final MinigameType minigameType; // !< tipo de minijuego a ejecutar
+    private final boolean isFinale; // !< whether this is the finale minigame
     private Minigame currentMinigame; // !< instancia del minijuego actual
     private SpriteBatch batch; // !< lote de sprites para renderizado
     private ShapeRenderer shapeRenderer; // !< renderizador de formas
     private Stage uiStage; // !< stage para la superposición de UI
     private Skin skin; // !< skin para estilizar componentes de UI
     private Label scoreLabel; // !< etiqueta que muestra la puntuación del jugador
-    private Table incrementsContainer; // !< contenedor para los incrementos de puntuación
+    private Table scoreContainer; // !< container for score display
     private Label timerLabel; // !< etiqueta que muestra el temporizador
     private Label roundLabel; // !< etiqueta que muestra la ronda actual
-    private float gameTimer = 10f; // !< temporizador del juego en segundos
+    private float gameTimer; // !< temporizador del juego en segundos
     private boolean gameEnded = false; // !< indica si el juego ha terminado
     private final int currentRound; // !< ronda en curso (1-based)
     private final int totalRounds; // !< total de rondas configuradas
@@ -94,6 +96,8 @@ public class GameScreen implements Screen {
         this.minigameType = minigameType;
         this.currentRound = currentRound;
         this.totalRounds = totalRounds;
+        this.isFinale = (minigameType == MinigameType.THE_FINALE);
+        this.gameTimer = isFinale ? GameConstants.TheFinale.GAME_DURATION : GameConstants.Timing.DEFAULT_GAME_DURATION;
     }
 
     /**
@@ -108,13 +112,26 @@ public class GameScreen implements Screen {
         skin = UISkinProvider.obtain();
         game.getSettingsOverlayManager().attachStage(uiStage);
 
+        // Main UI layout table
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
-        uiRoot.top();
         uiStage.addActor(uiRoot);
 
+        // Create top bar with three sections: left (game data), center (time/round), right (score)
+        Table topBar = new Table();
+        topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
+        topBar.pad(UIStyles.Spacing.SMALL);
+
+        // === TOP LEFT: Game-specific data (empty by default, minigames can add their own) ===
+        // Use fixed width to ensure center stays centered
+        Table topLeftContainer = new Table();
+        topLeftContainer.left();
+        topBar.add(topLeftContainer).width(150).left();
+
+        // === TOP CENTER: Time and Round ===
         Table topCenterContainer = new Table();
-        topCenterContainer.pad(UIStyles.Spacing.MEDIUM);
+        topCenterContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
+        topCenterContainer.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
 
         int roundToDisplay = this.currentRound;
         int totalRoundsToDisplay = this.totalRounds;
@@ -124,45 +141,50 @@ public class GameScreen implements Screen {
             totalRoundsToDisplay = flowManager.getTotalRounds();
         }
 
-        if (roundToDisplay > 0 && totalRoundsToDisplay > 0) {
-            roundLabel = new Label("Round " + roundToDisplay + "/" + totalRoundsToDisplay, skin);
-            roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-            roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-            topCenterContainer.add(roundLabel).padBottom(UIStyles.Spacing.TINY).row();
-        }
-
-        boolean isFinale = minigameType == MinigameType.THE_FINALE;
+        // Only show round and timer for non-finale games
         if (!isFinale) {
+            if (roundToDisplay > 0 && totalRoundsToDisplay > 0) {
+                roundLabel = new Label("Round " + roundToDisplay + "/" + totalRoundsToDisplay, skin);
+                roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+                roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+                topCenterContainer.add(roundLabel).padRight(UIStyles.Spacing.MEDIUM);
+            }
+
             timerLabel = new Label("Time: 60", skin);
             timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
             timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-            topCenterContainer.add(timerLabel).row();
+            topCenterContainer.add(timerLabel);
+        } else {
+            // Finale: just show "THE FINALE" title
+            Label finaleLabel = new Label("THE FINALE", skin);
+            finaleLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+            finaleLabel.setColor(UIStyles.Colors.SECONDARY);
+            topCenterContainer.add(finaleLabel);
         }
 
-        uiRoot.add(topCenterContainer).expandX().row();
+        topBar.add(topCenterContainer).expandX().center();
 
-        Table scoreContainer = new Table(skin);
-        scoreContainer.pad(UIStyles.Spacing.MEDIUM);
+        // === TOP RIGHT: Score display (hidden for finale) ===
+        // Use fixed width to ensure center stays centered
+        Table topRightContainer = new Table();
+        topRightContainer.right();
 
-        // Add semi-transparent background for better readability
-        scoreContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.6f));
+        if (!isFinale) {
+            scoreContainer = new Table(skin);
+            scoreContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
+            scoreContainer.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
 
-        Table scoreContent = new Table();
-        scoreLabel = new Label("0 pts", skin);
-        scoreLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-        scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-        scoreContent.add(scoreLabel).row();
+            scoreLabel = new Label("0 pts", skin);
+            scoreLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+            scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+            scoreContainer.add(scoreLabel);
+            topRightContainer.add(scoreContainer);
+        }
 
-        incrementsContainer = new Table();
-        incrementsContainer.top();
-        scoreContent.add(incrementsContainer).padTop(UIStyles.Spacing.TINY).right().row();
+        topBar.add(topRightContainer).width(150).right();
 
-        scoreContainer.add(scoreContent);
-
-        Table rightContainer = new Table();
-        rightContainer.top().right();
-        rightContainer.add(scoreContainer).pad(UIStyles.Spacing.MEDIUM);
-        uiRoot.add(rightContainer).expand().top().right();
+        uiRoot.add(topBar).expandX().fillX().top().row();
+        uiRoot.add().expand(); // Spacer to push top bar to top
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
@@ -199,7 +221,7 @@ public class GameScreen implements Screen {
         currentMinigame.handleInput(delta);
         currentMinigame.update(delta);
 
-        boolean isFinale = minigameType == MinigameType.THE_FINALE;
+        // Update timer (only for non-finale games)
         if (!isFinale) {
             gameTimer -= delta;
             if (timerLabel != null) {
@@ -208,29 +230,37 @@ public class GameScreen implements Screen {
             }
         }
 
-        int localPlayerId = NetworkManager.getInstance().getMyId();
-        int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
-        scoreLabel.setText(currentScore + " pts");
+        // Update score display (only for non-finale games)
+        if (!isFinale && scoreLabel != null) {
+            int localPlayerId = NetworkManager.getInstance().getMyId();
+            int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
+            
+            // Show score with increment animation if score changed
+            if (currentScore != previousScore) {
+                int increment = currentScore - previousScore;
+                String incrementText = increment >= 0 ? "+" + increment : String.valueOf(increment);
+                scoreLabel.setText(currentScore + " pts (" + incrementText + ")");
+                scoreLabel.setColor(increment >= 0 ? UIStyles.Colors.SECONDARY : UIStyles.Colors.ERROR);
+                
+                // Reset color after a delay (handled in scorePopups timing)
+                ScorePopup popup = new ScorePopup(scoreLabel, 1.5f);
+                scorePopups.clear();
+                scorePopups.add(popup);
+                previousScore = currentScore;
+            }
 
-        if (currentScore != previousScore) {
-            int increment = currentScore - previousScore;
-            Label popupLabel = new Label("+" + increment, skin);
-            popupLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
-            popupLabel.setColor(UIStyles.Colors.SECONDARY);
-            popupLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
-
-            ScorePopup popup = new ScorePopup(popupLabel, 2.0f);
-            scorePopups.add(popup);
-            previousScore = currentScore;
+            // Update popups and reset score label color when animation finishes
+            scorePopups.removeIf(popup -> {
+                boolean finished = popup.update(delta);
+                if (finished) {
+                    scoreLabel.setText(currentScore + " pts");
+                    scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+                }
+                return finished;
+            });
         }
 
-        scorePopups.removeIf(popup -> popup.update(delta));
-
-        incrementsContainer.clear();
-        for (ScorePopup popup : scorePopups) {
-            incrementsContainer.add(popup.label).right().row();
-        }
-
+        // Check for game end conditions
         boolean timeUp = !isFinale && gameTimer <= 0;
         boolean minigameFinished = currentMinigame.isFinished();
 
@@ -409,8 +439,9 @@ public class GameScreen implements Screen {
             if (packet instanceof Packets.StartGame startGame) {
                 int roundNumber = startGame.currentRound > 0 ? startGame.currentRound : 1;
                 int roundsTotal = startGame.totalRounds > 0 ? startGame.totalRounds : 1;
+                // Show intro screen before the game
                 game.setScreen(
-                        new GameScreen(game, MinigameType.valueOf(startGame.minigameType), roundNumber, roundsTotal));
+                        new MinigameIntroScreen(game, MinigameType.valueOf(startGame.minigameType), roundNumber, roundsTotal));
             }
         }
     }

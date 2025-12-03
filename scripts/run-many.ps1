@@ -1,29 +1,34 @@
 param(
-  [int]$Count = 1
+    [int]$Count = 1
 )
 
-$CoreDir = "core/src"
+$CoreDirs = @("core/src", "assets")
 $ChecksumFile = ".core_checksum"
 $JarPath = "lwjgl3/build/libs/MicroPatosMania-1.0.0.jar"
 
-$CurrentSum = Get-ChildItem -Path $CoreDir -Recurse -File |
-  Sort-Object FullName |
-  ForEach-Object {
-    Get-FileHash -Path $_.FullName -Algorithm SHA1
-  } |
-  ForEach-Object { $_.Hash } |
-  Out-String |
-  Get-FileHash -InputStream ([IO.MemoryStream]::new([Text.Encoding]::UTF8.GetBytes($_))) -Algorithm SHA1 |
-  Select-Object -ExpandProperty Hash
-
-if (!(Test-Path $ChecksumFile) -or ((Get-Content $ChecksumFile).Trim() -ne $CurrentSum)) {
-  Write-Host "Source changed - rebuilding..."
-  ./gradlew lwjgl3:build
-  $CurrentSum | Out-File -Encoding ASCII $ChecksumFile
-} else {
-  Write-Host "No changes in $CoreDir - skipping rebuild."
+try {
+    $Files = Get-ChildItem -Path $CoreDirs -Recurse -File -ErrorAction Stop
+    $FileHashes = $Files | Get-FileHash -Algorithm SHA1 | Sort-Object Hash
+    $Signature = ($FileHashes | ForEach-Object { $_.Hash }) -join ""
+    
+    $Utf8Obj = [System.Text.Encoding]::UTF8.GetBytes($Signature)
+    $Stream = [System.IO.MemoryStream]::new($Utf8Obj)
+    $CurrentSum = (Get-FileHash -InputStream $Stream -Algorithm SHA1).Hash
+} catch {
+    $CurrentSum = "ERROR_CALCULATING_SUM"
 }
 
-for ($i = 1; $i -le $Count; $i++) {
-  Start-Process -FilePath 'java' -ArgumentList '-jar', $JarPath
+$StoredSum = if (Test-Path $ChecksumFile) { (Get-Content $ChecksumFile).Trim() } else { "" }
+
+if (-not (Test-Path $ChecksumFile) -or $StoredSum -ne $CurrentSum) {
+    Write-Host "Source changed - rebuilding..."
+    .\gradlew.bat lwjgl3:build
+    $CurrentSum | Out-File $ChecksumFile -Encoding ascii -NoNewline
+} else {
+    Write-Host "No changes in $CoreDirs - skipping rebuild."
+}
+
+1..$Count | ForEach-Object {
+    $LogFile = "lastrun-$_.log"
+    Start-Process -FilePath "cmd" -ArgumentList "/c java -jar ""$JarPath"" > ""$LogFile"" 2>&1" -WindowStyle Hidden
 }
