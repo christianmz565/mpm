@@ -15,12 +15,18 @@ import to.mpm.ui.UIStyles;
  * Proporciona control de volumen y otras configuraciones del juego.
  */
 public class SettingsOverlay {
-    private final Main game; //!< referencia al juego principal
-    private final Stage stage; //!< stage donde se renderiza la capa
-    private final Skin skin; //!< skin para renderizar componentes UI
-    private final Table overlay; //!< tabla contenedora de la capa
-    private float currentVolume = 0.25f; //!< volumen actual (25% por defecto)
-    private boolean isVisible = false; //!< indica si la capa está visible
+    /** Referencia al juego principal. */
+    private final Main game;
+    /** Stage donde se renderiza la capa. */
+    private final Stage stage;
+    /** Skin para renderizar componentes UI. */
+    private final Skin skin;
+    /** Tabla contenedora de la capa. */
+    private final Table overlay;
+    /** Volumen actual (25% por defecto). */
+    private float currentVolume = 0.25f;
+    /** Indica si la capa está visible. */
+    private boolean isVisible = false;
 
     /**
      * Construye una nueva capa de ajustes.

@@ -40,7 +40,6 @@ public class AnimatedSprite {
         
         stateTime += deltaTime;
         
-        // Calculate current frame based on elapsed time
         int totalFrames = frames.length;
         currentFrameIndex = (int) ((stateTime / frameDuration) % totalFrames);
     }

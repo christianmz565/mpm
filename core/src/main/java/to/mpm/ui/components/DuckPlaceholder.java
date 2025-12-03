@@ -12,9 +12,12 @@ import to.mpm.ui.UIStyles;
  * listos.
  */
 public class DuckPlaceholder {
-    private final Skin skin; //!< skin para renderizar componentes UI
-    private float size = UIStyles.Sizes.DUCK_PLACEHOLDER_SIZE; //!< tamaño del marcador en píxeles
-    private String text = "cuac"; //!< texto a mostrar en el marcador
+    /** Skin para renderizar componentes UI. */
+    private final Skin skin;
+    /** Tamaño del marcador en píxeles. */
+    private float size = UIStyles.Sizes.DUCK_PLACEHOLDER_SIZE;
+    /** Texto a mostrar en el marcador. */
+    private String text = "cuac";
 
     /**
      * Construye un nuevo DuckPlaceholder con el skin especificado.

@@ -61,14 +61,12 @@ public class SumoMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Set up camera and viewport for scaling
         camera = new OrthographicCamera();
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
         viewport.apply();
         camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
         camera.update();
         
-        // Load background and island textures
         backgroundTexture = new Texture(Gdx.files.internal("sprites/sumo/pond-bg.png"));
         islandTexture = new Texture(Gdx.files.internal("sprites/sumo/pond-island.png"));
 
@@ -80,7 +78,6 @@ public class SumoMinigame implements Minigame {
             SumoPackets.RoundReset.class
         );
 
-        // Only create local player if not a spectator
         if (!isSpectator) {
             scores.put(localPlayerId, 0);
             spawnPlayer(localPlayerId);
@@ -120,7 +117,6 @@ public class SumoMinigame implements Minigame {
             checkRoundReset(); 
         }
 
-        // Only send position updates if not a spectator
         if (!isSpectator) {
             SumoPlayer me = players.get(localPlayerId);
             if (me != null && me.isAlive) {
@@ -171,7 +167,6 @@ public class SumoMinigame implements Minigame {
             if (distFromCenter > MAP_RADIUS) {
                 victim.isAlive = false;
 
-                // Dar 5000 puntos al empujador
                 if (victim.lastHitterId != -1 && victim.lastHitterId != victim.id) {
                     int killerId = victim.lastHitterId;
                     int newScore = scores.getOrDefault(killerId, 0) + POINTS_REWARD;
@@ -199,9 +194,7 @@ public class SumoMinigame implements Minigame {
             }
         }
         
-        // Si queda 1 o menos vivos (y hay más de 1 jugador en total)
         if (aliveCount <= 1 && players.size > 1) {
-            // Reiniciar Ronda inmediatamente para seguir jugando
             resetRoundLocally();
             NetworkManager.getInstance().broadcastFromHost(new SumoPackets.RoundReset());
         }
@@ -210,7 +203,6 @@ public class SumoMinigame implements Minigame {
     private void resetRoundLocally() {
         for (IntMap.Entry<SumoPlayer> entry : players) {
             int id = entry.key;
-            // Calcular posición inicial de nuevo
             float x = MAP_CENTER_X + (float)Math.cos(id) * 50;
             float y = MAP_CENTER_Y + (float)Math.sin(id) * 50;
             entry.value.reset(x, y);
@@ -220,24 +212,19 @@ public class SumoMinigame implements Minigame {
 
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
-        // Apply viewport and camera
         viewport.apply();
         shapeRenderer.setProjectionMatrix(camera.combined);
         batch.setProjectionMatrix(camera.combined);
 
-        // Draw background and island using sprites
         batch.begin();
-        // Draw background to fill the screen
         batch.draw(backgroundTexture, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
         
-        // Draw island centered - calculate position so island is centered at MAP_CENTER
         float islandSize = MAP_RADIUS * 2.2f; // Slightly larger than the collision radius
         float islandX = MAP_CENTER_X - islandSize / 2;
         float islandY = MAP_CENTER_Y - islandSize / 2;
         batch.draw(islandTexture, islandX, islandY, islandSize, islandSize);
         batch.end();
         
-        // Draw players using shape renderer
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         for (IntMap.Entry<SumoPlayer> entry : players) {
             SumoPlayer p = entry.value;
@@ -249,13 +236,10 @@ public class SumoMinigame implements Minigame {
             }
         }
         shapeRenderer.end();
-
-        // No custom UI - GameScreen overlay handles score display
     }
 
     @Override
     public void handleInput(float delta) {
-        // Spectators don't handle input
         if (isSpectator) return;
         
         SumoPlayer me = players.get(localPlayerId);

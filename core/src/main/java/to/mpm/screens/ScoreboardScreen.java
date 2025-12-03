@@ -33,22 +33,36 @@ import java.util.Set;
  * Avanza automáticamente a la siguiente ronda después de 5 segundos.
  */
 public class ScoreboardScreen implements Screen {
-    private final Main game; //!< referencia a la instancia principal del juego
-    private final int currentRound; //!< ronda actual que acaba de terminar
-    private final int totalRounds; //!< total de rondas en el juego
-    private final int localPlayerId; //!< ID del jugador local
+    /** Referencia a la instancia principal del juego. */
+    private final Main game;
+    /** Ronda actual que acaba de terminar. */
+    private final int currentRound;
+    /** Total de rondas en el juego. */
+    private final int totalRounds;
+    /** ID del jugador local. */
+    private final int localPlayerId;
 
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
-    private ScrollPane scoresScroll; //!< scroll para la lista de puntajes
-    private Table scoresContainer; //!< contenedor para la lista de puntajes
-    private Label countdownLabel; //!< etiqueta para mostrar la cuenta regresiva
-    private Label roundLabel; //!< etiqueta para mostrar la ronda actual
+    /** Stage para renderizar componentes de UI. */
+    private Stage stage;
+    /** Skin para estilizar componentes. */
+    private Skin skin;
+    /** Scroll para la lista de puntajes. */
+    private ScrollPane scoresScroll;
+    /** Contenedor para la lista de puntajes. */
+    private Table scoresContainer;
+    /** Etiqueta para mostrar la cuenta regresiva. */
+    private Label countdownLabel;
+    /** Etiqueta para mostrar la ronda actual. */
+    private Label roundLabel;
 
-    private float countdownTimer = 5.0f; //!< temporizador de cuenta regresiva en segundos
-    private List<PlayerData> sortedPlayers; //!< lista de jugadores ordenados por puntaje
-    private StartNextRoundHandler startNextRoundHandler; //!< manejador de paquete para iniciar la siguiente ronda
-    private ShowResultsHandler showResultsHandler; //!< manejador de paquete para mostrar resultados
+    /** Temporizador de cuenta regresiva en segundos. */
+    private float countdownTimer = 5.0f;
+    /** Lista de jugadores ordenados por puntaje. */
+    private List<PlayerData> sortedPlayers;
+    /** Manejador de paquete para iniciar la siguiente ronda. */
+    private StartNextRoundHandler startNextRoundHandler;
+    /** Manejador de paquete para mostrar resultados. */
+    private ShowResultsHandler showResultsHandler;
 
     /**
      * Constructor de la pantalla de marcador.
@@ -110,13 +124,13 @@ public class ScoreboardScreen implements Screen {
         root.defaults().padBottom(UIStyles.Spacing.MEDIUM);
         stage.addActor(root);
 
-        roundLabel = new Label("Round " + currentRound + "/" + totalRounds + " Complete!", skin);
+        roundLabel = new Label("¡Ronda " + currentRound + "/" + totalRounds + " Completada!", skin);
         roundLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         roundLabel.setAlignment(Align.center);
         root.add(roundLabel).expandX().center().row();
 
-        Label titleLabel = new Label("Scoreboard", skin);
+        Label titleLabel = new Label("Marcador", skin);
         titleLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
         titleLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
         titleLabel.setAlignment(Align.center);
@@ -136,7 +150,7 @@ public class ScoreboardScreen implements Screen {
 
         updateScoresList();
 
-        countdownLabel = new Label("Next round in: 5", skin);
+        countdownLabel = new Label("Siguiente ronda en: 5", skin);
         countdownLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
         countdownLabel.setColor(UIStyles.Colors.ACCENT);
         countdownLabel.setAlignment(Align.center);
@@ -166,7 +180,7 @@ public class ScoreboardScreen implements Screen {
 
             Table scoreItem = new ScoreItem(skin)
                     .rank(i + 1)
-                    .playerName(player.getPlayerName() + (isLocalPlayer ? " (You)" : ""))
+                    .playerName(player.getPlayerName() + (isLocalPlayer ? " (Tú)" : ""))
                     .score(player.getScore())
                     .highlighted(isLocalPlayer)
                     .build();
@@ -203,7 +217,7 @@ public class ScoreboardScreen implements Screen {
         countdownTimer -= delta;
         if (countdownLabel != null) {
             int seconds = Math.max(0, (int) Math.ceil(countdownTimer));
-            countdownLabel.setText("Next round in: " + seconds);
+            countdownLabel.setText("Siguiente ronda en: " + seconds);
         }
 
         if (countdownTimer <= 0 && NetworkManager.getInstance().isHost()) {
@@ -259,10 +273,8 @@ public class ScoreboardScreen implements Screen {
         NetworkManager.getInstance().broadcastFromHost(packet);
 
         if (participatingPlayers == null || participatingPlayers.contains(localPlayerId)) {
-            // Show intro screen before the game
             game.setScreen(new MinigameIntroScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
         } else {
-            // Show intro screen before spectating
             game.setScreen(
                     new MinigameIntroScreen(game, nextGame, flowManager.getCurrentRound(), flowManager.getTotalRounds(), true));
         }
@@ -339,14 +351,11 @@ public class ScoreboardScreen implements Screen {
                 to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager
                         .getInstance();
                 if (flowManager.isSpectator(localPlayerId)) {
-                    // Show intro screen before spectating
                     game.setScreen(new MinigameIntroScreen(game, minigameType, startNextRound.roundNumber, totalRounds, true));
                 } else if (startNextRound.participatingPlayerIds == null ||
                         startNextRound.participatingPlayerIds.contains(localPlayerId)) {
-                    // Show intro screen before the game
                     game.setScreen(new MinigameIntroScreen(game, minigameType, startNextRound.roundNumber, totalRounds));
                 } else {
-                    // Show intro screen before spectating
                     game.setScreen(new MinigameIntroScreen(game, minigameType, startNextRound.roundNumber, totalRounds, true));
                 }
                 dispose();

@@ -28,18 +28,20 @@ public class Duck {
         }
     }
     
-    // Duck dimensions
+    /** Ancho del pato. */
     public static final float DUCK_WIDTH = 30f;
+    /** Alto del pato. */
     public static final float DUCK_HEIGHT = 30f;
     
-    // Physics constants
-    private static final float FALL_SPEED = 120f;  // Pixels per second
+    /** Velocidad de caída en píxeles por segundo. */
+    private static final float FALL_SPEED = 120f;
+    /** Posición Y del suelo. */
     private static final float GROUND_Y = 60f;
     
-    // Animation constants
-    private static final float DUCK_ANIMATION_FRAME_DURATION = 0.2f; // 200ms per frame
+    /** Duración de cada frame de animación en segundos. */
+    private static final float DUCK_ANIMATION_FRAME_DURATION = 0.2f;
     
-    public int id;  // Unique duck ID for network sync
+    public int id;
     public float x;
     public float y;
     public DuckType type;
@@ -61,7 +63,6 @@ public class Duck {
         
         this.bounds = new Rectangle(x, y, DUCK_WIDTH, DUCK_HEIGHT);
         
-        // Initialize animation
         initializeAnimation();
     }
     
@@ -84,28 +85,23 @@ public class Duck {
     public void update() {
         float deltaTime = Gdx.graphics.getDeltaTime();
         
-        // Update animation always (even when caught or grounded)
         if (animation != null) {
             animation.update(deltaTime);
         } else {
             initializeAnimation();
         }
         
-        // Don't update physics if already caught or reached ground
         if (caught || reachedGround) {
             return;
         }
         
-        // Fall down
         y -= FALL_SPEED * deltaTime;
         
-        // Check if reached ground
         if (y <= GROUND_Y) {
             y = GROUND_Y;
             reachedGround = true;
         }
         
-        // Update bounds
         updateBounds();
     }
 

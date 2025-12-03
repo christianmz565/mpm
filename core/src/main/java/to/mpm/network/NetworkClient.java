@@ -23,16 +23,20 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * y el registro de manejadores de paquetes.
  */
 public class NetworkClient {
-    private Client client; //!< instancia del cliente KryoNet
-    private final Map<Class<? extends NetworkPacket>, CopyOnWriteArrayList<ClientPacketHandler>> handlers; //!<
-                                                                                                           // handlers
-                                                                                                           // por
-                                                                                                           // paquete
-    private final ConcurrentHashMap<Integer, String> connectedPlayers; //!< mapa de jugadores conectados (ID -> nombre)
-    private final ClientPacketContext clientContext; //!< contexto compartido para handlers
-    private int myPlayerId = -1; //!< ID del jugador local
-    private String myPlayerName; //!< nombre del jugador local
-    private String pendingJoinCorrelationId; //!< correlación para detectar la asignación local
+    /** Instancia del cliente KryoNet. */
+    private Client client;
+    /** Manejadores por tipo de paquete. */
+    private final Map<Class<? extends NetworkPacket>, CopyOnWriteArrayList<ClientPacketHandler>> handlers;
+    /** Mapa de jugadores conectados (ID -> nombre). */
+    private final ConcurrentHashMap<Integer, String> connectedPlayers;
+    /** Contexto compartido para handlers. */
+    private final ClientPacketContext clientContext;
+    /** ID del jugador local. */
+    private int myPlayerId = -1;
+    /** Nombre del jugador local. */
+    private String myPlayerName;
+    /** Correlación para detectar la asignación local. */
+    private String pendingJoinCorrelationId;
 
     /**
      * Construye una nueva instancia del cliente de red.

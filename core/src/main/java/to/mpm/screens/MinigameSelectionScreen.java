@@ -132,7 +132,6 @@ public class MinigameSelectionScreen implements Screen {
      * @param type tipo de minijuego a iniciar
      */
     private void startGame(MinigameType type) {
-        // Show intro screen before the game
         game.setScreen(new MinigameIntroScreen(game, type, 1, 1));
         dispose();
     }

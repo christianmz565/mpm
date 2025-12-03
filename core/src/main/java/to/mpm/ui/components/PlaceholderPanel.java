@@ -12,10 +12,14 @@ import to.mpm.ui.UIStyles;
  * Crea un Label centrado con ancho controlado para evitar desbordes verticales.
  */
 public class PlaceholderPanel {
-    private final Skin skin; //!< skin para renderizar componentes UI
-    private String text = ""; //!< texto del marcador de posición
-    private float width = UIStyles.Layout.PANEL_MAX_WIDTH; //!< ancho máximo utilizado por el label
-    private float padding = UIStyles.Spacing.XLARGE; //!< padding interno del contenedor
+    /** Skin para renderizar componentes UI. */
+    private final Skin skin;
+    /** Texto del marcador de posición. */
+    private String text = "";
+    /** Ancho máximo utilizado por el label. */
+    private float width = UIStyles.Layout.PANEL_MAX_WIDTH;
+    /** Padding interno del contenedor. */
+    private float padding = UIStyles.Spacing.XLARGE;
 
     /**
      * Construye un nuevo panel de marcador de posición.

@@ -43,7 +43,6 @@ public final class KryoClassRegistrar {
         kryo.register(Packets.Pong.class);
         kryo.register(Object[].class);
 
-        // Duck Shooter packets
         kryo.register(DuckShooterPackets.DuckState.class);
         kryo.register(DuckShooterPackets.ShootQuack.class);
         kryo.register(DuckShooterPackets.QuackHit.class);

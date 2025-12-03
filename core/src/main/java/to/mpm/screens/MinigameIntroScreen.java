@@ -15,28 +15,57 @@ import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
 
 /**
- * Intro screen shown before each minigame.
- * Displays a description of the minigame and a video preview.
- * Supports both players and spectators.
+ * Pantalla de introducción mostrada antes de cada minijuego.
+ * <p>
+ * Muestra la descripción del minijuego y una vista previa.
+ * Soporta tanto jugadores como espectadores.
  */
 public class MinigameIntroScreen implements Screen {
+    /** Instancia del juego principal. */
     private final Main game;
+    /** Tipo de minijuego a mostrar. */
     private final MinigameType minigameType;
+    /** Ronda actual. */
     private final int currentRound;
+    /** Total de rondas. */
     private final int totalRounds;
+    /** Indica si el usuario es espectador. */
     private final boolean isSpectator;
     
+    /** Stage para renderizar componentes de UI. */
     private Stage stage;
+    /** Skin para estilizar componentes. */
     private Skin skin;
+    /** Temporizador para la cuenta regresiva. */
     private float timer;
+    /** Etiqueta para mostrar el temporizador. */
     private Label timerLabel;
+    /** Textura de la imagen de vista previa. */
     private Texture previewTexture;
+    /** Imagen de vista previa del minijuego. */
     private Image previewImage;
 
+    /**
+     * Construye una nueva pantalla de introducción para un jugador.
+     *
+     * @param game         instancia del juego principal
+     * @param minigameType tipo de minijuego a mostrar
+     * @param currentRound ronda actual
+     * @param totalRounds  total de rondas
+     */
     public MinigameIntroScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds) {
         this(game, minigameType, currentRound, totalRounds, false);
     }
 
+    /**
+     * Construye una nueva pantalla de introducción.
+     *
+     * @param game         instancia del juego principal
+     * @param minigameType tipo de minijuego a mostrar
+     * @param currentRound ronda actual
+     * @param totalRounds  total de rondas
+     * @param isSpectator  indica si el usuario es espectador
+     */
     public MinigameIntroScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds, boolean isSpectator) {
         this.game = game;
         this.minigameType = minigameType;
@@ -53,42 +82,35 @@ public class MinigameIntroScreen implements Screen {
         Gdx.input.setInputProcessor(stage);
         game.getSettingsOverlayManager().attachStage(stage);
 
-        // Main container with dark semi-transparent background
         Table mainContainer = new Table();
         mainContainer.setFillParent(true);
         mainContainer.setBackground(UIStyles.createSemiTransparentBackground(0.1f, 0.1f, 0.15f, 0.95f));
         stage.addActor(mainContainer);
 
-        // Content container - centered with padding
         Table contentContainer = new Table();
         contentContainer.setBackground(UIStyles.createSemiTransparentBackground(0.2f, 0.2f, 0.25f, 0.9f));
         contentContainer.pad(UIStyles.Spacing.LARGE);
 
-        // Calculate responsive widths based on screen size
         float screenWidth = Gdx.graphics.getWidth();
         float descriptionWidth = Math.min(400f, screenWidth * 0.35f);
         float videoWidth = Math.min(320f, screenWidth * 0.3f);
-        float videoHeight = videoWidth * 0.75f; // 4:3 aspect ratio
+        float videoHeight = videoWidth * 0.75f;
 
-        // Left side - Description
         Table leftSide = new Table();
         leftSide.top().left();
         
-        // Minigame name
         Label titleLabel = new Label(minigameType.getDisplayName(), skin);
         titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         titleLabel.setColor(UIStyles.Colors.PRIMARY);
         leftSide.add(titleLabel).left().padBottom(UIStyles.Spacing.MEDIUM).row();
         
-        // Round info
         if (currentRound > 0 && totalRounds > 0) {
-            Label roundLabel = new Label("Round " + currentRound + " of " + totalRounds, skin);
+            Label roundLabel = new Label("Ronda " + currentRound + " de " + totalRounds, skin);
             roundLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
             roundLabel.setColor(UIStyles.Colors.SECONDARY);
             leftSide.add(roundLabel).left().padBottom(UIStyles.Spacing.MEDIUM).row();
         }
         
-        // Spectator badge if spectating
         if (isSpectator) {
             Label spectatorLabel = new Label("ESPECTANDO", skin);
             spectatorLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
@@ -96,7 +118,6 @@ public class MinigameIntroScreen implements Screen {
             leftSide.add(spectatorLabel).left().padBottom(UIStyles.Spacing.LARGE).row();
         }
         
-        // Description
         String description = getMinigameDescription(minigameType);
         Label descriptionLabel = new Label(description, skin);
         descriptionLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
@@ -105,31 +126,26 @@ public class MinigameIntroScreen implements Screen {
         descriptionLabel.setAlignment(Align.topLeft);
         leftSide.add(descriptionLabel).width(descriptionWidth).left().padBottom(UIStyles.Spacing.LARGE).row();
         
-        // Controls hint
         String controls = getMinigameControls(minigameType);
-        Label controlsLabel = new Label("Controls: " + controls, skin);
+        Label controlsLabel = new Label("Controles: " + controls, skin);
         controlsLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
         controlsLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
         controlsLabel.setWrap(true);
         leftSide.add(controlsLabel).width(descriptionWidth).left().row();
 
-        // Right side - Preview image
         Table rightSide = new Table();
         rightSide.center();
         
-        // Create preview container with static image
         Table previewContainer = createPreviewContainer(videoWidth, videoHeight);
         rightSide.add(previewContainer).size(videoWidth, videoHeight);
 
-        // Add sides to content container
         contentContainer.add(leftSide).pad(UIStyles.Spacing.MEDIUM).top().left();
         contentContainer.add(rightSide).pad(UIStyles.Spacing.MEDIUM).center();
 
         mainContainer.add(contentContainer).center().expand();
 
-        // Timer label at the bottom
         Table bottomContainer = new Table();
-        timerLabel = new Label("Starting in " + (int) timer + "...", skin);
+        timerLabel = new Label("Iniciando en " + (int) timer + "...", skin);
         timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
         timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
         bottomContainer.add(timerLabel);
@@ -137,7 +153,6 @@ public class MinigameIntroScreen implements Screen {
         mainContainer.row();
         mainContainer.add(bottomContainer).padBottom(UIStyles.Spacing.LARGE).bottom();
 
-        // Load preview image
         loadPreviewImage();
 
         Gdx.app.log("MinigameIntroScreen", "Showing intro for: " + minigameType.getDisplayName());
@@ -145,7 +160,6 @@ public class MinigameIntroScreen implements Screen {
 
     private void loadPreviewImage() {
         try {
-            // Try to load minigame-specific image first, fall back to placeholder
             String imagePath = "images/guides/" + minigameType.name().toLowerCase() + ".png";
             if (!Gdx.files.internal(imagePath).exists()) {
                 imagePath = "images/guides/placeholder.png";
@@ -164,29 +178,40 @@ public class MinigameIntroScreen implements Screen {
         Table placeholder = new Table();
         placeholder.setBackground(UIStyles.createSemiTransparentBackground(0.1f, 0.1f, 0.15f, 1f));
         
-        // Create an image widget for the preview
         previewImage = new Image();
         placeholder.add(previewImage).size(width, height);
         
         return placeholder;
     }
 
+    /**
+     * Obtiene la descripción detallada del minijuego.
+     *
+     * @param type tipo de minijuego
+     * @return descripción del minijuego
+     */
     private String getMinigameDescription(MinigameType type) {
         return switch (type) {
-            case CATCH_THEM_ALL -> "Catch falling ducks with your basket! Good ducks give you points, " +
-                    "but watch out for bad ducks that will reduce your score. Be quick and accurate!";
-            case SUMO -> "Push other players off the platform! The arena is a circular platform - " +
-                    "collide with other players to knock them into the water. Last duck standing wins!";
-            case THE_FINALE -> "The ultimate showdown! Only the top players compete in this final battle. " +
-                    "Shoot other ducks to eliminate them. The last duck standing is the champion!";
+            case CATCH_THEM_ALL -> "¡Atrapa los patos que caen con tu cesta! Los patos buenos te dan puntos, " +
+                    "pero cuidado con los patos malos que reducirán tu puntuación. ¡Sé rápido y preciso!";
+            case SUMO -> "¡Empuja a los otros jugadores fuera de la plataforma! La arena es una plataforma circular - " +
+                    "choca con otros jugadores para tirarlos al agua. ¡El último pato en pie gana!";
+            case THE_FINALE -> "¡El enfrentamiento final! Solo los mejores jugadores compiten en esta batalla final. " +
+                    "Dispara a otros patos para eliminarlos. ¡El último pato en pie es el campeón!";
         };
     }
 
+    /**
+     * Obtiene la descripción de los controles del minijuego.
+     *
+     * @param type tipo de minijuego
+     * @return descripción de los controles
+     */
     private String getMinigameControls(MinigameType type) {
         return switch (type) {
-            case SUMO -> "WASD or Arrow Keys to move";
-            case CATCH_THEM_ALL -> "A/D or Left/Right Arrows to move";
-            case THE_FINALE -> "WASD to move, Mouse to aim, SPACE to shoot";
+            case SUMO -> "WASD o Flechas para moverse";
+            case CATCH_THEM_ALL -> "A/D o Flechas Izquierda/Derecha para moverse";
+            case THE_FINALE -> "WASD para moverse, Ratón para apuntar, ESPACIO para disparar";
         };
     }
 
@@ -194,13 +219,11 @@ public class MinigameIntroScreen implements Screen {
     public void render(float delta) {
         timer -= delta;
 
-        // Update timer label
         if (timerLabel != null) {
-            timerLabel.setText("Starting in " + Math.max(1, (int) Math.ceil(timer)) + "...");
+            timerLabel.setText("Iniciando en " + Math.max(1, (int) Math.ceil(timer)) + "...");
         }
 
         if (timer <= 0) {
-            // Transition to game or spectator screen based on role
             if (isSpectator) {
                 game.setScreen(new SpectatorScreen(game, minigameType, currentRound, totalRounds));
             } else {

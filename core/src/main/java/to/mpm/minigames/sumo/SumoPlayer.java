@@ -11,8 +11,9 @@ public class SumoPlayer {
     public boolean isAlive = true;
     public static final float RADIUS = 15f;
 
-    // Variables para saber quién me empujó
+    /** ID del último jugador que golpeó a este jugador. */
     public int lastHitterId = -1;
+    /** Tiempo transcurrido desde el último golpe recibido. */
     public float timeSinceLastHit = 0f;
 
     public SumoPlayer(int id, float x, float y, Color color) {

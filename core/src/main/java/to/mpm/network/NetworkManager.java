@@ -10,13 +10,17 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Coordinador principal de la red.
  * Maneja la lógica tanto del servidor como del cliente,
- * y proporciona una interfaz unificada para enviar paquetes
+ * y proporciona una interfaz unificada para enviar paquetes.
  */
 public class NetworkManager {
-    private static NetworkManager instance; //!< instancia singleton
-    private NetworkServer server; //!< instancia del servidor de red
-    private NetworkClient client; //!< instancia del cliente de red
-    private boolean isHost; //!< indica si este es el host
+    /** Instancia singleton. */
+    private static NetworkManager instance;
+    /** Instancia del servidor de red. */
+    private NetworkServer server;
+    /** Instancia del cliente de red. */
+    private NetworkClient client;
+    /** Indica si este es el host. */
+    private boolean isHost;
 
     /**
      * Constructor privado para el singleton.

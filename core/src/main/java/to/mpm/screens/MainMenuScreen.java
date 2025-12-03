@@ -20,9 +20,12 @@ import to.mpm.ui.components.StyledButton;
  * Muestra título, botones de crear/unirse/ajustes y la ilustración del pato.
  */
 public class MainMenuScreen implements Screen {
-    private final Main game; // !< instancia del juego principal
-    private Stage stage; // !< stage para renderizar componentes de UI
-    private Skin skin; // !< skin para estilizar componentes
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Stage para renderizar componentes de UI. */
+    private Stage stage;
+    /** Skin para estilizar componentes. */
+    private Skin skin;
 
     /**
      * Construye una nueva pantalla de menú principal.

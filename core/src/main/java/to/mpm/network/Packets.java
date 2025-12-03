@@ -10,25 +10,32 @@ public class Packets {
      * Solicitud enviada por un cliente para unirse al juego.
      */
     public static class PlayerJoinRequest extends NetworkPacket {
-        public String playerName; // !< nombre para mostrar del jugador
-        public String correlationId; // !< identificador para reconocer la respuesta local
+        /** Nombre para mostrar del jugador. */
+        public String playerName;
+        /** Identificador para reconocer la respuesta local. */
+        public String correlationId;
     }
 
     /**
      * Notificación broadcast del servidor sobre un nuevo jugador.
      */
     public static class PlayerJoined extends NetworkPacket {
-        public int playerId; // !< id del jugador que se unió
-        public String playerName; // !< nombre para mostrar del jugador
-        public boolean existingPlayer; // !< true si ya estaba en la sala
-        public String correlationId; // !< correlación opcional para el jugador local
+        /** ID del jugador que se unió. */
+        public int playerId;
+        /** Nombre para mostrar del jugador. */
+        public String playerName;
+        /** True si ya estaba en la sala. */
+        public boolean existingPlayer;
+        /** Correlación opcional para el jugador local. */
+        public String correlationId;
     }
 
     /**
      * Notificación de que un jugador se desconectó.
      */
     public static class PlayerLeft extends NetworkPacket {
-        public int playerId; // !< id del jugador que se fue
+        /** ID del jugador que se fue. */
+        public int playerId;
     }
 
     /**
@@ -36,9 +43,12 @@ public class Packets {
      * partida.
      */
     public static class StartGame extends NetworkPacket {
-        public String minigameType; // !< tipo de minijuego a iniciar (nombre del enum)
-        public int currentRound; // !< ronda que se va a jugar
-        public int totalRounds; // !< total de rondas configuradas
+        /** Tipo de minijuego a iniciar (nombre del enum). */
+        public String minigameType;
+        /** Ronda que se va a jugar. */
+        public int currentRound;
+        /** Total de rondas configuradas. */
+        public int totalRounds;
     }
 
     /**
@@ -46,10 +56,14 @@ public class Packets {
      * sincronizado.
      */
     public static class SyncUpdate extends NetworkPacket {
-        public UUID objectId; // !< id asignado por {@link to.mpm.network.sync.SyncedObject}
-        public String fieldName; // !< nombre del campo a actualizar
-        public Object value; // !< nuevo valor (debe ser serializable por Kryo)
+        /** ID asignado por {@link to.mpm.network.sync.SyncedObject}. */
+        public UUID objectId;
+        /** Nombre del campo a actualizar. */
+        public String fieldName;
+        /** Nuevo valor (debe ser serializable por Kryo). */
+        public Object value;
 
+        /** Constructor por defecto que prefiere UDP. */
         public SyncUpdate() {
             preferTransport(Transports.UDP);
         }
@@ -59,21 +73,30 @@ public class Packets {
      * Paquete para anunciar la creación de un objeto sincronizado.
      */
     public static class SyncedObjectCreated extends NetworkPacket {
-        public UUID objectId; // !< id único del objeto
-        public String objectType; // !< etiqueta opcional para el tipo
+        /** ID único del objeto. */
+        public UUID objectId;
+        /** Etiqueta opcional para el tipo. */
+        public String objectType;
     }
 
     /**
      * Actualización de posición del jugador.
      */
     public static class PlayerPosition extends NetworkPacket {
-        public int playerId; //!< id del jugador
-        public float x; //!< nueva posición x
-        public float y; //!< nueva posición y
-        public float velocityY; //!< velocidad vertical (para sincronizar gravedad)
-        public float lastVelocityX; //!< velocidad horizontal (para sincronizar colisiones)
-        public boolean isGrounded; //!< si está en el suelo o sobre otro jugador
+        /** ID del jugador. */
+        public int playerId;
+        /** Nueva posición X. */
+        public float x;
+        /** Nueva posición Y. */
+        public float y;
+        /** Velocidad vertical (para sincronizar gravedad). */
+        public float velocityY;
+        /** Velocidad horizontal (para sincronizar colisiones). */
+        public float lastVelocityX;
+        /** Si está en el suelo o sobre otro jugador. */
+        public boolean isGrounded;
 
+        /** Constructor por defecto que prefiere UDP. */
         public PlayerPosition() {
             preferTransport(Transports.UDP);
         }
@@ -83,17 +106,20 @@ public class Packets {
      * Marcador para paquetes RPC si se necesitan.
      */
     public static class RPC extends NetworkPacket {
-        // TODO: actually implement RPC functionality if we need it
-        public String methodName; // !< nombre del método a invocar
-        public Object[] args; // !< argumentos para el método
+        /** Nombre del método a invocar. */
+        public String methodName;
+        /** Argumentos para el método. */
+        public Object[] args;
     }
 
     /**
      * Paquete de ping para medición de latencia.
      */
     public static class Ping extends NetworkPacket {
-        public long timestamp; // !< instante en que se envió el ping
+        /** Instante en que se envió el ping. */
+        public long timestamp;
 
+        /** Constructor por defecto que prefiere UDP. */
         public Ping() {
             preferTransport(Transports.UDP);
         }
@@ -103,8 +129,10 @@ public class Packets {
      * Respuesta pong a un {@link Ping}.
      */
     public static class Pong extends NetworkPacket {
-        public long timestamp; // !< instante en que se recibió el ping
+        /** Instante en que se recibió el ping. */
+        public long timestamp;
 
+        /** Constructor por defecto que prefiere UDP. */
         public Pong() {
             preferTransport(Transports.UDP);
         }
@@ -114,7 +142,9 @@ public class Packets {
      * Paquete para actualizar el estado de espectador de un jugador.
      */
     public static class SpectatorStatus extends NetworkPacket {
-        public int playerId; // !< id del jugador
-        public boolean isSpectator; // !< true si es espectador, false si es jugador
+        /** ID del jugador. */
+        public int playerId;
+        /** True si es espectador, false si es jugador. */
+        public boolean isSpectator;
     }
 }

@@ -25,21 +25,36 @@ import to.mpm.ui.UISkinProvider;
  * Muestra el minijuego en curso sin permitir interacción.
  */
 public class SpectatorScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private final MinigameType minigameType; //!< tipo de minijuego que se está jugando
-    private final int currentRound; //!< ronda actual
-    private final int totalRounds; //!< total de rondas
-    private Minigame currentMinigame; //!< instancia del minijuego en curso
-    private SpriteBatch batch; //!< sprite batch para renderizado
-    private ShapeRenderer shapeRenderer; //!< shape renderer para renderizado
-    private Stage uiStage; //!< stage para la UI overlay
-    private Skin skin; //!< skin para estilizar componentes de UI
-    private Label timerLabel; //!< etiqueta para mostrar el temporizador
-    private Label roundLabel; //!< etiqueta para mostrar la ronda actual
-    private float gameTimer = 10f; //!< temporizador del juego
-    private ClientPacketHandler showScoreboardHandler; //!< manejador de paquete para mostrar el marcador
-    private ClientPacketHandler showResultsHandler; //!< manejador de paquete para mostrar resultados
-    private ClientPacketHandler startNextRoundHandler; //!< manejador de paquete para iniciar la siguiente ronda
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Tipo de minijuego que se está jugando. */
+    private final MinigameType minigameType;
+    /** Ronda actual. */
+    private final int currentRound;
+    /** Total de rondas. */
+    private final int totalRounds;
+    /** Instancia del minijuego en curso. */
+    private Minigame currentMinigame;
+    /** Sprite batch para renderizado. */
+    private SpriteBatch batch;
+    /** Shape renderer para renderizado. */
+    private ShapeRenderer shapeRenderer;
+    /** Stage para la UI overlay. */
+    private Stage uiStage;
+    /** Skin para estilizar componentes de UI. */
+    private Skin skin;
+    /** Etiqueta para mostrar el temporizador. */
+    private Label timerLabel;
+    /** Etiqueta para mostrar la ronda actual. */
+    private Label roundLabel;
+    /** Temporizador del juego. */
+    private float gameTimer = 10f;
+    /** Manejador de paquete para mostrar el marcador. */
+    private ClientPacketHandler showScoreboardHandler;
+    /** Manejador de paquete para mostrar resultados. */
+    private ClientPacketHandler showResultsHandler;
+    /** Manejador de paquete para iniciar la siguiente ronda. */
+    private ClientPacketHandler startNextRoundHandler;
 
     /**
      * Construye una nueva pantalla de espectador.
@@ -68,17 +83,14 @@ public class SpectatorScreen implements Screen {
         skin = UISkinProvider.obtain();
         game.getSettingsOverlayManager().attachStage(uiStage);
 
-        // Main UI layout table - matches GameScreen style
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
         uiStage.addActor(uiRoot);
 
-        // Create top bar with three sections: left (spectator badge), center (time/round), right (empty for balance)
         Table topBar = new Table();
         topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
         topBar.pad(UIStyles.Spacing.SMALL);
 
-        // === TOP LEFT: Spectator badge ===
         Table topLeftContainer = new Table();
         topLeftContainer.left();
         
@@ -94,7 +106,6 @@ public class SpectatorScreen implements Screen {
         topLeftContainer.add(spectatorBadge);
         topBar.add(topLeftContainer).width(150).left();
 
-        // === TOP CENTER: Time and Round ===
         Table topCenterContainer = new Table();
         topCenterContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
         topCenterContainer.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
@@ -103,19 +114,18 @@ public class SpectatorScreen implements Screen {
         
         if (!isFinale) {
             if (currentRound > 0 && totalRounds > 0) {
-                roundLabel = new Label("Round " + currentRound + "/" + totalRounds, skin);
+                roundLabel = new Label("Ronda " + currentRound + "/" + totalRounds, skin);
                 roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
                 roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
                 topCenterContainer.add(roundLabel).padRight(UIStyles.Spacing.MEDIUM);
             }
 
-            timerLabel = new Label("Time: 60", skin);
+            timerLabel = new Label("Tiempo: 60", skin);
             timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
             timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
             topCenterContainer.add(timerLabel);
         } else {
-            // Finale: just show "THE FINALE" title
-            Label finaleLabel = new Label("THE FINALE", skin);
+            Label finaleLabel = new Label("LA FINAL", skin);
             finaleLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
             finaleLabel.setColor(UIStyles.Colors.SECONDARY);
             topCenterContainer.add(finaleLabel);
@@ -123,13 +133,12 @@ public class SpectatorScreen implements Screen {
 
         topBar.add(topCenterContainer).expandX().center();
 
-        // === TOP RIGHT: Empty for balance ===
         Table topRightContainer = new Table();
         topRightContainer.right();
         topBar.add(topRightContainer).width(150).right();
 
         uiRoot.add(topBar).expandX().fillX().top().row();
-        uiRoot.add().expand(); // Spacer to push top bar to top
+        uiRoot.add().expand();
 
         currentMinigame = MinigameFactory.createMinigame(minigameType, -1);
         currentMinigame.initialize();
@@ -161,7 +170,7 @@ public class SpectatorScreen implements Screen {
         if (!isFinale && timerLabel != null) {
             gameTimer -= delta;
             int seconds = Math.max(0, (int) Math.ceil(gameTimer));
-            timerLabel.setText("Time: " + seconds);
+            timerLabel.setText("Tiempo: " + seconds);
         }
 
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
@@ -300,11 +309,9 @@ public class SpectatorScreen implements Screen {
                             startNextRound.participatingPlayerIds.contains(myId);
 
                     if (shouldParticipate) {
-                        // Show intro screen before the game
                         game.setScreen(new MinigameIntroScreen(game, nextMinigameType,
                                 startNextRound.roundNumber, totalRounds));
                     } else {
-                        // Show intro screen before spectating
                         game.setScreen(new MinigameIntroScreen(game, nextMinigameType,
                                 startNextRound.roundNumber, totalRounds, true));
                     }

@@ -22,15 +22,19 @@ import java.util.concurrent.ConcurrentHashMap;
  * para identificarla en mensajes {@link Packets.SyncUpdate}.
  */
 public class SyncedObject {
-    private static final Map<UUID, SyncedObject> syncedObjects = new ConcurrentHashMap<>(); //!< Registro de todos los
-                                                                                            // objetos sincronizados por
-                                                                                            // id
-    private static ClientPacketHandler clientHandler; //!< handler global del lado del cliente
-    private static ServerPacketHandler serverHandler; //!< handler global del lado del servidor
+    /** Registro de todos los objetos sincronizados por ID. */
+    private static final Map<UUID, SyncedObject> syncedObjects = new ConcurrentHashMap<>();
+    /** Handler global del lado del cliente. */
+    private static ClientPacketHandler clientHandler;
+    /** Handler global del lado del servidor. */
+    private static ServerPacketHandler serverHandler;
 
-    private final UUID objectId; //!< Id único para este objeto sincronizado
-    private final Map<String, Object> lastKnownValues; //!< Últimos valores conocidos de los campos sincronizados
-    private boolean isLocallyOwned; //!< true si esta instancia debe enviar actualizaciones
+    /** ID único para este objeto sincronizado. */
+    private final UUID objectId;
+    /** Últimos valores conocidos de los campos sincronizados. */
+    private final Map<String, Object> lastKnownValues;
+    /** True si esta instancia debe enviar actualizaciones. */
+    private boolean isLocallyOwned;
 
     /**
      * Crea un nuevo objeto sincronizado.
@@ -172,7 +176,6 @@ public class SyncedObject {
      * Ayudante para crear una copia del valor para una serialización segura.
      */
     private Object copyValue(Object value) {
-        // TODO: make deep copies for mutable types if necessary
         return value;
     }
 

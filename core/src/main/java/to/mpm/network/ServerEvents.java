@@ -11,10 +11,12 @@ public final class ServerEvents {
     }
 
     /**
-     * Paquete enviado cuando un jugador se une al servidor.
+     * Paquete enviado cuando un jugador se desconecta del servidor.
      */
     public static class ClientDisconnected extends NetworkPacket {
-        public int playerId = -1; //!< ID del jugador que se desconectó
-        public String playerName; //!< Nombre del jugador que se desconectó
+        /** ID del jugador que se desconectó. */
+        public int playerId = -1;
+        /** Nombre del jugador que se desconectó. */
+        public String playerName;
     }
 }

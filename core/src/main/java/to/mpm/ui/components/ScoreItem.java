@@ -12,11 +12,16 @@ import to.mpm.ui.UIStyles;
  * Muestra posición del jugador, nombre y puntuación en una fila formateada.
  */
 public class ScoreItem {
-    private final Skin skin; //!< skin para renderizar componentes UI
-    private Integer rank; //!< posición del jugador en el ranking
-    private String playerName; //!< nombre del jugador
-    private int score; //!< puntuación del jugador
-    private boolean isHighlighted = false; //!< indica si el elemento debe resaltarse
+    /** Skin para renderizar componentes UI. */
+    private final Skin skin;
+    /** Posición del jugador en el ranking. */
+    private Integer rank;
+    /** Nombre del jugador. */
+    private String playerName;
+    /** Puntuación del jugador. */
+    private int score;
+    /** Indica si el elemento debe resaltarse. */
+    private boolean isHighlighted = false;
 
     /**
      * Construye un nuevo ScoreItem con el skin especificado.

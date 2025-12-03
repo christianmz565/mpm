@@ -38,7 +38,6 @@ public class Duck {
         position.x += dx * MOVE_SPEED * delta;
         position.y += dy * MOVE_SPEED * delta;
 
-        // Mantener dentro de los límites
         position.x = Math.max(DUCK_RADIUS, Math.min(640 - DUCK_RADIUS, position.x));
         position.y = Math.max(DUCK_RADIUS, Math.min(480 - DUCK_RADIUS, position.y));
     }

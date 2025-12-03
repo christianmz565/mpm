@@ -66,7 +66,6 @@ public class ScreenTransition {
      * @param callback callback a ejecutar cuando el fade complete
      */
     public static void fadeIn(Stage stage, float duration, TransitionCallback callback) {
-        // Create a black overlay
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.BLACK);
         pixmap.fill();

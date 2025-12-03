@@ -50,9 +50,7 @@ public class BallMovementMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Skip creating local player for spectators (playerId == -1)
         if (localPlayerId != -1) {
-            // Create local player with a color based on id
             float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
             localPlayer = new Player(true,
                     localPlayerId == 0 ? 100 : 540,
@@ -105,7 +103,6 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void update(float delta) {
-        // Spectators (localPlayer == null) don't update or send position
         if (localPlayer != null) {
             localPlayer.update();
             sendPlayerPosition();
@@ -116,7 +113,6 @@ public class BallMovementMinigame implements Minigame {
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Draw all players
         for (IntMap.Entry<Player> entry : players) {
             Player p = entry.value;
             shapeRenderer.setColor(p.r, p.g, p.b, 1f);
@@ -128,7 +124,6 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void handleInput(float delta) {
-        // Spectators (localPlayer == null) don't handle input
         if (localPlayer == null)
             return;
 
@@ -150,7 +145,6 @@ public class BallMovementMinigame implements Minigame {
         localPlayer.x += dx;
         localPlayer.y += dy;
 
-        // Keep inside bounds
         localPlayer.x = Math.max(PLAYER_RADIUS, Math.min(640 - PLAYER_RADIUS, localPlayer.x));
         localPlayer.y = Math.max(PLAYER_RADIUS, Math.min(480 - PLAYER_RADIUS, localPlayer.y));
     }
@@ -170,13 +164,12 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public Map<Integer, Integer> getScores() {
-        // This minigame doesn't have scores
         return new HashMap<>();
     }
 
     @Override
     public int getWinnerId() {
-        return -1; // No winner in this game
+        return -1;
     }
 
     @Override
@@ -198,7 +191,6 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
-        // Not needed for this simple game
     }
 
     private static class Player extends SyncedObject {

@@ -4,7 +4,8 @@ package to.mpm.network;
  * Clase base para paquetes de red.
  */
 public abstract class NetworkPacket {
-    private Transports transportMode = Transports.TCP; //!< modo de transporte preferido
+    /** Modo de transporte preferido. */
+    private Transports transportMode = Transports.TCP;
 
     /**
      * Constructor protegido para permitir la extensión.

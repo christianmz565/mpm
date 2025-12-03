@@ -67,7 +67,6 @@ public class HealthPack {
      * Obtiene el color del botiquín con parpadeo si está por expirar.
      */
     public Color getRenderColor() {
-        // Parpadear cuando quedan menos de 3 segundos
         if (lifespanTimer < 3f && (System.currentTimeMillis() / 200) % 2 == 0) {
             return new Color(0, 0.5f, 0, 1); // Verde oscuro
         }

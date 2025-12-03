@@ -13,12 +13,18 @@ import java.util.stream.Collectors;
  * Implementa el patrón singleton para asegurar una única instancia.
  */
 public class GameFlowManager {
-    private static GameFlowManager instance; //!< instancia singleton
-    private int currentRound; //!< ronda actual (desde 1)
-    private int totalRounds; //!< total de rondas configuradas
-    private final Map<Integer, Integer> accumulatedScores; //!< puntuaciones acumuladas por jugador (playerId -> score)
-    private final Set<Integer> spectatorIds; //!< jugadores marcados como espectadores
-    private boolean initialized; //!< indica si se ha llamado a initialize()
+    /** Instancia singleton. */
+    private static GameFlowManager instance;
+    /** Ronda actual (desde 1). */
+    private int currentRound;
+    /** Total de rondas configuradas. */
+    private int totalRounds;
+    /** Puntuaciones acumuladas por jugador (playerId -> score). */
+    private final Map<Integer, Integer> accumulatedScores;
+    /** Jugadores marcados como espectadores. */
+    private final Set<Integer> spectatorIds;
+    /** Indica si se ha llamado a initialize(). */
+    private boolean initialized;
 
     /**
      * Constructor privado para el singleton.

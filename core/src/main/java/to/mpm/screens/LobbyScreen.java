@@ -36,19 +36,32 @@ import java.util.ArrayList;
  * según el rol.
  */
 public class LobbyScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private final boolean isHost; //!< indica si este jugador es el host
-    private final String serverIp; //!< dirección IP del servidor (para clientes)
-    private final int serverPort; //!< puerto del servidor (para clientes)
-    private int rounds; //!< número de rondas configuradas
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
-    private Label ipLabel; //!< etiqueta que muestra la IP del servidor
-    private Label portLabel; //!< etiqueta que muestra el puerto del servidor
-    private Table playersContainer; //!< contenedor de la lista de jugadores
-    private TextButton startButton; //!< botón para iniciar el juego (solo host)
-    private TextButton spectatorButton; //!< botón para alternar modo espectador
-    private final Set<Integer> spectators = new HashSet<>(); //!< conjunto de IDs de jugadores espectadores
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Indica si este jugador es el host. */
+    private final boolean isHost;
+    /** Dirección IP del servidor (para clientes). */
+    private final String serverIp;
+    /** Puerto del servidor (para clientes). */
+    private final int serverPort;
+    /** Número de rondas configuradas. */
+    private int rounds;
+    /** Stage para renderizar componentes de UI. */
+    private Stage stage;
+    /** Skin para estilizar componentes. */
+    private Skin skin;
+    /** Etiqueta que muestra la IP del servidor. */
+    private Label ipLabel;
+    /** Etiqueta que muestra el puerto del servidor. */
+    private Label portLabel;
+    /** Contenedor de la lista de jugadores. */
+    private Table playersContainer;
+    /** Botón para iniciar el juego (solo host). */
+    private TextButton startButton;
+    /** Botón para alternar modo espectador. */
+    private TextButton spectatorButton;
+    /** Conjunto de IDs de jugadores espectadores. */
+    private final Set<Integer> spectators = new HashSet<>();
     private LobbyClientHandler lobbyClientHandler;
     private LobbyServerHandler lobbyServerHandler;
     private StartGameClientHandler startGameClientHandler;
@@ -106,12 +119,10 @@ public class LobbyScreen implements Screen {
         root.top();
         stage.addActor(root);
 
-        // Top bar with back button (left), title (center), and IP+port (right)
         Table topBar = new Table();
         topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
         topBar.pad(UIStyles.Spacing.MEDIUM);
 
-        // Left: Back button
         TextButton backButton = new StyledButton(skin)
                 .text("< Volver")
                 .width(120f)
@@ -124,13 +135,11 @@ public class LobbyScreen implements Screen {
                 .build();
         topBar.add(backButton).size(120f, 45f).left().width(150f);
 
-        // Center: Title
         Label titleLabel = new Label("Sala", skin);
         titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         topBar.add(titleLabel).expandX().center();
 
-        // Right: IP and Port
         Table rightHeader = new Table();
         if (isHost) {
             try {
@@ -315,10 +324,8 @@ public class LobbyScreen implements Screen {
 
                 int localPlayerId = NetworkManager.getInstance().getMyId();
                 if (spectators.contains(localPlayerId)) {
-                    // Show intro screen before spectating
                     game.setScreen(new MinigameIntroScreen(game, type, roundNumber, configuredRounds, true));
                 } else {
-                    // Show intro screen before the game
                     game.setScreen(new MinigameIntroScreen(game, type, roundNumber, configuredRounds));
                 }
                 dispose();
@@ -399,11 +406,9 @@ public class LobbyScreen implements Screen {
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         if (spectators.contains(localPlayerId)) {
-            // Show intro screen before spectating
             game.setScreen(new MinigameIntroScreen(game, selectedGame, flowManager.getCurrentRound(),
                     flowManager.getTotalRounds(), true));
         } else {
-            // Show intro screen before the game
             game.setScreen(new MinigameIntroScreen(game, selectedGame, flowManager.getCurrentRound(),
                     flowManager.getTotalRounds()));
         }
@@ -512,7 +517,6 @@ public class LobbyScreen implements Screen {
         public void handle(ClientPacketContext context, NetworkPacket packet) {
             if (packet instanceof to.mpm.minigames.manager.ManagerPackets.RoomConfig roomConfig) {
                 rounds = roomConfig.rounds;
-                // Sync spectator list from host
                 if (roomConfig.spectatorIds != null) {
                     spectators.clear();
                     spectators.addAll(roomConfig.spectatorIds);
