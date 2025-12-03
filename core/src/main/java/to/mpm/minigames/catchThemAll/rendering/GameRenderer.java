@@ -39,7 +39,6 @@ public class GameRenderer {
             }
         }
         
-        // Load sprites
         spriteManager = SpriteManager.getInstance();
         spriteManager.loadSprites();
     }
@@ -70,17 +69,14 @@ public class GameRenderer {
     public static void render(SpriteBatch batch, ShapeRenderer shapeRenderer, IntMap<Player> players, List<Duck> ducks, 
                              java.util.Map<Integer, Integer> scores, float[][] playerColors, int localPlayerId) {
         
-        // Render background and environment with sprites
         batch.begin();
         
         if (spriteManager != null && spriteManager.isLoaded()) {
-            // Draw background
             Texture bg = spriteManager.getBackground();
             if (bg != null) {
                 batch.draw(bg, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
             }
             
-            // Draw floor
             Texture floor = spriteManager.getFloor();
             if (floor != null) {
                 batch.draw(floor, 0, 0, SCREEN_WIDTH, GROUND_Y);
@@ -89,7 +85,6 @@ public class GameRenderer {
         
         batch.end();
         
-        // If sprites not loaded, fallback to shapes for ground
         if (spriteManager == null || !spriteManager.isLoaded()) {
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 1f);
@@ -97,7 +92,6 @@ public class GameRenderer {
             shapeRenderer.end();
         }
         
-        // Render game entities with sprites
         batch.begin();
         
         for (Duck duck : ducks) {
@@ -110,8 +104,6 @@ public class GameRenderer {
         }
         
         batch.end();
-        
-        // Note: Score UI is now handled by GameScreen's normalized UI overlay
     }
     
     /**
@@ -139,34 +131,26 @@ public class GameRenderer {
         if (animation != null && spriteManager != null && spriteManager.isLoaded()) {
             Texture currentFrame = animation.getCurrentFrame();
             if (currentFrame != null) {
-                // Apply color tint to differentiate players
                 batch.setColor(p.r, p.g, p.b, 1f);
                 
-                // Flip sprite horizontally if facing left using texture coordinates
                 if (p.isFacingRight()) {
-                    // Normal draw
                     batch.draw(currentFrame, 
-                        p.x, p.y,                           // position
+                        p.x, p.y,
                         Player.PLAYER_WIDTH, Player.PLAYER_HEIGHT);
                 } else {
-                    // Draw flipped: use region parameters to flip texture coordinates
                     batch.draw(currentFrame,
-                        p.x, p.y,                           // position
-                        Player.PLAYER_WIDTH / 2, Player.PLAYER_HEIGHT / 2,  // origin (center for rotation)
-                        Player.PLAYER_WIDTH, Player.PLAYER_HEIGHT,          // size
-                        -1f, 1f,                            // scale X negative flips horizontally
-                        0f,                                 // rotation
-                        0, 0,                               // source position in texture
-                        currentFrame.getWidth(), currentFrame.getHeight(),  // source size
-                        false, false);                      // no additional flip
+                        p.x, p.y,
+                        Player.PLAYER_WIDTH / 2, Player.PLAYER_HEIGHT / 2,
+                        Player.PLAYER_WIDTH, Player.PLAYER_HEIGHT,
+                        -1f, 1f,
+                        0f,
+                        0, 0,
+                        currentFrame.getWidth(), currentFrame.getHeight(),
+                        false, false);
                 }
                 
-                // Reset color
                 batch.setColor(1f, 1f, 1f, 1f);
             }
         }
-        
-        // Draw basket (could be replaced with sprite later)
-        // For now, we'll skip it or you can add a basket sprite
     }
 }

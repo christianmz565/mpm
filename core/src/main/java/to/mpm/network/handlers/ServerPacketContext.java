@@ -9,8 +9,10 @@ import to.mpm.network.Transports;
  * Clase que contiene el contexto para el manejo de paquetes en el servidor.
  */
 public class ServerPacketContext extends PacketContext {
-    private final NetworkServer server; //!< instancia del servidor de red
-    private final Connection connection; //!< conexión del cliente que envió el paquete
+    /** Instancia del servidor de red. */
+    private final NetworkServer server;
+    /** Conexión del cliente que envió el paquete. */
+    private final Connection connection;
 
     /**
      * Construye un nuevo contexto de paquete para el servidor.

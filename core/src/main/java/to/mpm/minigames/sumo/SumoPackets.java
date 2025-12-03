@@ -13,7 +13,10 @@ public class SumoPackets {
         public int playerId;
     }
     
-    // Aunque el tiempo lo maneje otro, mantenemos esto por si acaso se necesita forzar el fin
+    /**
+     * Paquete para forzar el fin del juego.
+     * Aunque el tiempo lo maneje otro módulo, se mantiene por compatibilidad.
+     */
     public static class GameEnd extends NetworkPacket {
         public int winnerId;
     }
@@ -23,7 +26,10 @@ public class SumoPackets {
         public int newScore;
     }
 
+    /**
+     * Paquete para señalar el reinicio de ronda.
+     * Indica que se deben reiniciar las posiciones de los jugadores.
+     */
     public static class RoundReset extends NetworkPacket {
-        // Señal para reiniciar posiciones
     }
 }

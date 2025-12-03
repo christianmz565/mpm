@@ -29,28 +29,49 @@ import java.util.List;
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
  */
 public class GameScreen implements Screen {
-    private final Main game; // !< instancia del juego principal
-    private final MinigameType minigameType; // !< tipo de minijuego a ejecutar
-    private final boolean isFinale; // !< whether this is the finale minigame
-    private Minigame currentMinigame; // !< instancia del minijuego actual
-    private SpriteBatch batch; // !< lote de sprites para renderizado
-    private ShapeRenderer shapeRenderer; // !< renderizador de formas
-    private Stage uiStage; // !< stage para la superposición de UI
-    private Skin skin; // !< skin para estilizar componentes de UI
-    private Label scoreLabel; // !< etiqueta que muestra la puntuación del jugador
-    private Table scoreContainer; // !< container for score display
-    private Label timerLabel; // !< etiqueta que muestra el temporizador
-    private Label roundLabel; // !< etiqueta que muestra la ronda actual
-    private float gameTimer; // !< temporizador del juego en segundos
-    private boolean gameEnded = false; // !< indica si el juego ha terminado
-    private final int currentRound; // !< ronda en curso (1-based)
-    private final int totalRounds; // !< total de rondas configuradas
-    private int previousScore = 0; // !< puntuación anterior para detectar cambios
-    private final List<ScorePopup> scorePopups = new ArrayList<>(); // !< lista de popups activos
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Tipo de minijuego a ejecutar. */
+    private final MinigameType minigameType;
+    /** Indica si este es el minijuego final. */
+    private final boolean isFinale;
+    /** Instancia del minijuego actual. */
+    private Minigame currentMinigame;
+    /** Lote de sprites para renderizado. */
+    private SpriteBatch batch;
+    /** Renderizador de formas. */
+    private ShapeRenderer shapeRenderer;
+    /** Stage para la superposición de UI. */
+    private Stage uiStage;
+    /** Skin para estilizar componentes de UI. */
+    private Skin skin;
+    /** Etiqueta que muestra la puntuación del jugador. */
+    private Label scoreLabel;
+    /** Contenedor para la visualización de puntuación. */
+    private Table scoreContainer;
+    /** Etiqueta que muestra el temporizador. */
+    private Label timerLabel;
+    /** Etiqueta que muestra la ronda actual. */
+    private Label roundLabel;
+    /** Temporizador del juego en segundos. */
+    private float gameTimer;
+    /** Indica si el juego ha terminado. */
+    private boolean gameEnded = false;
+    /** Ronda en curso (1-based). */
+    private final int currentRound;
+    /** Total de rondas configuradas. */
+    private final int totalRounds;
+    /** Puntuación anterior para detectar cambios. */
+    private int previousScore = 0;
+    /** Lista de popups activos. */
+    private final List<ScorePopup> scorePopups = new ArrayList<>();
 
-    private StartGamePacketHandler startGameHandler; // !< manejador de paquete para iniciar el juego
-    private ShowScoreboardPacketHandler showScoreboardHandler; // !< manejador de paquete para mostrar el marcador
-    private ShowResultsPacketHandler showResultsHandler; // !< manejador de paquete para mostrar resultados
+    /** Manejador de paquete para iniciar el juego. */
+    private StartGamePacketHandler startGameHandler;
+    /** Manejador de paquete para mostrar el marcador. */
+    private ShowScoreboardPacketHandler showScoreboardHandler;
+    /** Manejador de paquete para mostrar resultados. */
+    private ShowResultsPacketHandler showResultsHandler;
 
     /**
      * Clase interna para representar un popup de puntuación.
@@ -69,9 +90,8 @@ public class GameScreen implements Screen {
         boolean update(float delta) {
             age += delta;
             if (age >= fadeTime) {
-                return true; // Fully faded
+                return true;
             }
-            // Update alpha based on age
             float alpha = 1f - (age / fadeTime);
             label.getColor().a = alpha;
             return false;
@@ -112,23 +132,18 @@ public class GameScreen implements Screen {
         skin = UISkinProvider.obtain();
         game.getSettingsOverlayManager().attachStage(uiStage);
 
-        // Main UI layout table
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
         uiStage.addActor(uiRoot);
 
-        // Create top bar with three sections: left (game data), center (time/round), right (score)
         Table topBar = new Table();
         topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
         topBar.pad(UIStyles.Spacing.SMALL);
 
-        // === TOP LEFT: Game-specific data (empty by default, minigames can add their own) ===
-        // Use fixed width to ensure center stays centered
         Table topLeftContainer = new Table();
         topLeftContainer.left();
         topBar.add(topLeftContainer).width(150).left();
 
-        // === TOP CENTER: Time and Round ===
         Table topCenterContainer = new Table();
         topCenterContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
         topCenterContainer.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
@@ -141,22 +156,20 @@ public class GameScreen implements Screen {
             totalRoundsToDisplay = flowManager.getTotalRounds();
         }
 
-        // Only show round and timer for non-finale games
         if (!isFinale) {
             if (roundToDisplay > 0 && totalRoundsToDisplay > 0) {
-                roundLabel = new Label("Round " + roundToDisplay + "/" + totalRoundsToDisplay, skin);
+                roundLabel = new Label("Ronda " + roundToDisplay + "/" + totalRoundsToDisplay, skin);
                 roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
                 roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
                 topCenterContainer.add(roundLabel).padRight(UIStyles.Spacing.MEDIUM);
             }
 
-            timerLabel = new Label("Time: 60", skin);
+            timerLabel = new Label("Tiempo: 60", skin);
             timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
             timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
             topCenterContainer.add(timerLabel);
         } else {
-            // Finale: just show "THE FINALE" title
-            Label finaleLabel = new Label("THE FINALE", skin);
+            Label finaleLabel = new Label("LA FINAL", skin);
             finaleLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
             finaleLabel.setColor(UIStyles.Colors.SECONDARY);
             topCenterContainer.add(finaleLabel);
@@ -164,8 +177,6 @@ public class GameScreen implements Screen {
 
         topBar.add(topCenterContainer).expandX().center();
 
-        // === TOP RIGHT: Score display (hidden for finale) ===
-        // Use fixed width to ensure center stays centered
         Table topRightContainer = new Table();
         topRightContainer.right();
 
@@ -184,7 +195,7 @@ public class GameScreen implements Screen {
         topBar.add(topRightContainer).width(150).right();
 
         uiRoot.add(topBar).expandX().fillX().top().row();
-        uiRoot.add().expand(); // Spacer to push top bar to top
+        uiRoot.add().expand();
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
@@ -221,35 +232,30 @@ public class GameScreen implements Screen {
         currentMinigame.handleInput(delta);
         currentMinigame.update(delta);
 
-        // Update timer (only for non-finale games)
         if (!isFinale) {
             gameTimer -= delta;
             if (timerLabel != null) {
                 int seconds = Math.max(0, (int) Math.ceil(gameTimer));
-                timerLabel.setText("Time: " + seconds);
+                timerLabel.setText("Tiempo: " + seconds);
             }
         }
 
-        // Update score display (only for non-finale games)
         if (!isFinale && scoreLabel != null) {
             int localPlayerId = NetworkManager.getInstance().getMyId();
             int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
             
-            // Show score with increment animation if score changed
             if (currentScore != previousScore) {
                 int increment = currentScore - previousScore;
                 String incrementText = increment >= 0 ? "+" + increment : String.valueOf(increment);
                 scoreLabel.setText(currentScore + " pts (" + incrementText + ")");
                 scoreLabel.setColor(increment >= 0 ? UIStyles.Colors.SECONDARY : UIStyles.Colors.ERROR);
                 
-                // Reset color after a delay (handled in scorePopups timing)
                 ScorePopup popup = new ScorePopup(scoreLabel, 1.5f);
                 scorePopups.clear();
                 scorePopups.add(popup);
                 previousScore = currentScore;
             }
 
-            // Update popups and reset score label color when animation finishes
             scorePopups.removeIf(popup -> {
                 boolean finished = popup.update(delta);
                 if (finished) {
@@ -260,7 +266,6 @@ public class GameScreen implements Screen {
             });
         }
 
-        // Check for game end conditions
         boolean timeUp = !isFinale && gameTimer <= 0;
         boolean minigameFinished = currentMinigame.isFinished();
 
@@ -439,7 +444,6 @@ public class GameScreen implements Screen {
             if (packet instanceof Packets.StartGame startGame) {
                 int roundNumber = startGame.currentRound > 0 ? startGame.currentRound : 1;
                 int roundsTotal = startGame.totalRounds > 0 ? startGame.totalRounds : 1;
-                // Show intro screen before the game
                 game.setScreen(
                         new MinigameIntroScreen(game, MinigameType.valueOf(startGame.minigameType), roundNumber, roundsTotal));
             }

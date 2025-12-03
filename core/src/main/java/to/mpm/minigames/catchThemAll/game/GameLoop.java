@@ -20,17 +20,14 @@ import java.util.Map;
 public class GameLoop {
     
     public static void updateHost(float delta, GameState state) {
-        // Update all player physics
         for (IntMap.Entry<Player> entry : state.getPlayers()) {
             entry.value.update();
         }
         
-        // Update duck physics
         for (Duck duck : state.getDucks()) {
             duck.update();
         }
         
-        // Spawn new ducks
         if (state.getDuckSpawner() != null) {
             List<Duck> newDucks = state.getDuckSpawner().update(delta);
             for (Duck duck : newDucks) {
@@ -39,28 +36,23 @@ public class GameLoop {
             }
         }
         
-        // Calculate collisions
         CollisionHandler.handlePlayerCollisions(state.getPlayers());
         
-        // Detect catches
         Map<Integer, Player> playersMap = new HashMap<>();
         for (IntMap.Entry<Player> entry : state.getPlayers()) {
             playersMap.put(entry.key, entry.value);
         }
         
-        // Save list of ducks before catch detection (for network notifications)
         List<Duck> ducksBeforeCatch = new ArrayList<>(state.getDucks());
         
         Map<Integer, Integer> pointsEarned = CatchDetector.detectCatches(state.getDucks(), playersMap);
         
-        // Send removal notifications for caught ducks (those that were removed)
         for (Duck duck : ducksBeforeCatch) {
             if (!state.getDucks().contains(duck)) {
                 NetworkHandler.sendDuckRemoved(duck);
             }
         }
         
-        // Update scores
         for (Map.Entry<Integer, Integer> entry : pointsEarned.entrySet()) {
             int playerId = entry.getKey();
             int points = entry.getValue();
@@ -68,7 +60,6 @@ public class GameLoop {
             NetworkHandler.sendScoreUpdate(playerId, state.getScores().get(playerId));
         }
         
-        // Remove grounded ducks (track before removal for notifications)
         List<Duck> groundedDucks = new ArrayList<>();
         for (Duck duck : state.getDucks()) {
             if (duck.shouldRemove()) {
@@ -78,23 +69,19 @@ public class GameLoop {
         
         CatchDetector.removeGroundedDucks(state.getDucks());
         
-        // Send removal notifications for grounded ducks
         for (Duck duck : groundedDucks) {
             NetworkHandler.sendDuckRemoved(duck);
         }
         
-        // Broadcast updates
         NetworkHandler.sendDuckUpdates(state.getDucks());
         NetworkHandler.sendAllPlayerPositions(state.getPlayers());
     }
     
     public static void updateClient(GameState state) {
-        // Update all players (local physics + animations for all)
         for (IntMap.Entry<Player> entry : state.getPlayers()) {
             entry.value.update();
         }
         
-        // Send local player position to server
         NetworkHandler.sendPlayerPosition(state.getLocalPlayerId(), state.getLocalPlayer());
     }
 }

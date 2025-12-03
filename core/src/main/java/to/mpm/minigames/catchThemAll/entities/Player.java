@@ -10,38 +10,51 @@ import to.mpm.minigames.catchThemAll.rendering.SpriteManager;
  * Position and physics state are synchronized via PlayerPosition packets.
  */
 public class Player {
-    // Player dimensions
+    /** Ancho del jugador. */
     public static final float PLAYER_WIDTH = 45f;
+    /** Alto del jugador. */
     public static final float PLAYER_HEIGHT = 60f;
+    /** Ancho de la canasta. */
     public static final float BASKET_WIDTH = 60f;
+    /** Alto de la canasta. */
     public static final float BASKET_HEIGHT = 22f;
     
-    // Physics constants
+    /** Gravedad en píxeles por segundo cuadrado. */
     public static final float GRAVITY = -800f;
+    /** Posición Y del suelo. */
     public static final float GROUND_Y = 60f;
     
-    // Animation constants
-    private static final float ANIMATION_FRAME_DURATION = 0.15f; // 150ms per frame
-    private static final float MOVEMENT_THRESHOLD = 0.5f; // Minimum velocity (pixels per delta) to animate
+    /** Duración de cada frame de animación. */
+    private static final float ANIMATION_FRAME_DURATION = 0.15f;
+    /** Umbral mínimo de velocidad para animar. */
+    private static final float MOVEMENT_THRESHOLD = 0.5f;
     
-    // Physics state (synchronized via network)
+    /** Posición X del jugador. */
     public float x;
+    /** Posición Y del jugador. */
     public float y;
+    /** Velocidad vertical. */
     public float velocityY;
+    /** Indica si está en el suelo. */
     public boolean isGrounded;
+    /** Última velocidad horizontal. */
     public float lastVelocityX;
-    public float blockedTimer = 0f; // Prevents input vibration on collision
+    /** Tiempo de bloqueo de input. */
+    public float blockedTimer = 0f;
     
-    // Rendering
-    public final float r, g, b; // Player color
+    /** Componente rojo del color. */
+    public final float r;
+    /** Componente verde del color. */
+    public final float g;
+    /** Componente azul del color. */
+    public final float b;
     private AnimatedSprite runAnimation;
     private boolean facingRight = true;
     
-    // Collision detection
     private final Rectangle bounds;
     private final Rectangle basketBounds;
     
-    // Network ownership
+    /** Indica si es propiedad local. */
     private final boolean isLocallyOwned;
 
     public Player(boolean isLocallyOwned, float x, float y, float r, float g, float b) {
@@ -63,7 +76,6 @@ public class Player {
             BASKET_HEIGHT
         );
         
-        // Initialize animation
         initializeAnimation();
     }
     
@@ -87,23 +99,18 @@ public class Player {
         float deltaTime = Gdx.graphics.getDeltaTime();
         
         if (isLocallyOwned) {
-            // Decrease blocked timer
             if (blockedTimer > 0) {
                 blockedTimer -= deltaTime;
             }
             
-            // Apply gravity
             velocityY += GRAVITY * deltaTime;
             y += velocityY * deltaTime;
             
-            // Ground collision
             if (y <= GROUND_Y) {
                 y = GROUND_Y;
                 velocityY = 0;
                 isGrounded = true;
             }
-            // Note: isGrounded may be set to true by CollisionHandler when standing on another player
-            // Only reset to false if we're clearly in the air (will be overridden by collision resolution)
         }
         
         updateBounds();
@@ -119,17 +126,13 @@ public class Player {
             if (runAnimation == null) return;
         }
         
-        // Update facing direction and animation based on horizontal velocity
         float absVelocity = Math.abs(lastVelocityX);
         
         if (absVelocity > MOVEMENT_THRESHOLD) {
-            // Update facing direction
             facingRight = lastVelocityX > 0;
-            // Animate while moving
             runAnimation.resume();
             runAnimation.update(deltaTime);
         } else {
-            // Pause animation when not moving and reset to first frame
             runAnimation.pause();
             runAnimation.reset();
         }

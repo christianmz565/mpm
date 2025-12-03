@@ -17,12 +17,18 @@ import to.mpm.ui.components.SettingsOverlay;
  * pantalla activa.
  */
 public class SettingsOverlayManager {
-    private static final Color OVERLAY_COLOR = new Color(0f, 0f, 0f, 0.7f); //!< color de la capa de oscurecimiento
-    private final Stage overlayStage; //!< stage dedicado para el overlay
-    private final ShapeRenderer dimRenderer; //!< renderer para la capa oscura de fondo
-    private final SettingsOverlay overlay; //!< componente visual de ajustes
-    private final InputMultiplexer inputMultiplexer; //!< multiplexer compartido con la pantalla activa
-    private Stage activeStage; //!< stage actual de la pantalla principal
+    /** Color de la capa de oscurecimiento. */
+    private static final Color OVERLAY_COLOR = new Color(0f, 0f, 0f, 0.7f);
+    /** Stage dedicado para el overlay. */
+    private final Stage overlayStage;
+    /** Renderer para la capa oscura de fondo. */
+    private final ShapeRenderer dimRenderer;
+    /** Componente visual de ajustes. */
+    private final SettingsOverlay overlay;
+    /** Multiplexer compartido con la pantalla activa. */
+    private final InputMultiplexer inputMultiplexer;
+    /** Stage actual de la pantalla principal. */
+    private Stage activeStage;
 
     /**
      * Construye el administrador de la superposición utilizando el skin compartido.

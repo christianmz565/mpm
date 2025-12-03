@@ -18,8 +18,10 @@ public class ManagerPackets {
      * Paquete enviado por el host para configurar la sala.
      */
     public static class RoomConfig extends NetworkPacket {
-        public int rounds; //!< número total de rondas a jugar
-        public List<Integer> spectatorIds; //!< lista de IDs de jugadores marcados como espectadores
+        /** Número total de rondas a jugar. */
+        public int rounds;
+        /** Lista de IDs de jugadores marcados como espectadores. */
+        public List<Integer> spectatorIds;
 
         public RoomConfig() {
         }
@@ -53,9 +55,12 @@ public class ManagerPackets {
      * Contiene las puntuaciones acumuladas y la información de la ronda.
      */
     public static class ShowScoreboard extends NetworkPacket {
-        public int currentRound; //!< la ronda que acaba de terminar
-        public int totalRounds; //!< total de rondas en el juego
-        public Map<Integer, Integer> allPlayerScores; //!< Mapa de playerId -> puntuación acumulada
+        /** La ronda que acaba de terminar. */
+        public int currentRound;
+        /** Total de rondas en el juego. */
+        public int totalRounds;
+        /** Mapa de playerId -> puntuación acumulada. */
+        public Map<Integer, Integer> allPlayerScores;
 
         public ShowScoreboard() {
             this.allPlayerScores = new HashMap<>();
@@ -81,9 +86,12 @@ public class ManagerPackets {
      * Incluye la lista de jugadores participantes (para filtrado de la final).
      */
     public static class StartNextRound extends NetworkPacket {
-        public int roundNumber; //!< la ronda que está a punto de comenzar
-        public String minigameType; //!< minijuego elegido para esta ronda
-        public List<Integer> participatingPlayerIds; //!< jugadores permitidos para jugar (null = todos)
+        /** La ronda que está a punto de comenzar. */
+        public int roundNumber;
+        /** Minijuego elegido para esta ronda. */
+        public String minigameType;
+        /** Jugadores permitidos para jugar (null = todos). */
+        public List<Integer> participatingPlayerIds;
 
         public StartNextRound() {
         }
@@ -108,7 +116,8 @@ public class ManagerPackets {
      * Contiene las puntuaciones finales acumuladas de todos los jugadores.
      */
     public static class ShowResults extends NetworkPacket {
-        public Map<Integer, Integer> finalScores; //!< Mapa de playerId -> puntuación final acumulada
+        /** Mapa de playerId -> puntuación final acumulada. */
+        public Map<Integer, Integer> finalScores;
 
         public ShowResults() {
             this.finalScores = new HashMap<>();

@@ -23,13 +23,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  * y el registro de manejadores de paquetes.
  */
 public class NetworkServer {
-    private Server server; //!< instancia del servidor KryoNet
-    private final Map<Class<? extends NetworkPacket>, CopyOnWriteArrayList<ServerPacketHandler>> handlers; //!<
-                                                                                                           // manejadores
-                                                                                                           // por tipo
-    private final ConcurrentHashMap<Integer, String> connectedPlayers; //!< mapa de jugadores conectados (ID -> nombre)
-    private final ConcurrentHashMap<Integer, Integer> connectionToPlayerId; //!< mapa de conexión a ID de jugador
-    private final AtomicInteger nextPlayerId; //!< contador para asignar nuevos IDs de jugador
+    /** Instancia del servidor KryoNet. */
+    private Server server;
+    /** Manejadores por tipo de paquete. */
+    private final Map<Class<? extends NetworkPacket>, CopyOnWriteArrayList<ServerPacketHandler>> handlers;
+    /** Mapa de jugadores conectados (ID -> nombre). */
+    private final ConcurrentHashMap<Integer, String> connectedPlayers;
+    /** Mapa de conexión a ID de jugador. */
+    private final ConcurrentHashMap<Integer, Integer> connectionToPlayerId;
+    /** Contador para asignar nuevos IDs de jugador. */
+    private final AtomicInteger nextPlayerId;
 
     /**
      * Construye una nueva instancia del servidor de red.

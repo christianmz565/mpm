@@ -57,7 +57,6 @@ public class DuckShooterMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Only create local duck if not a spectator
         if (!isSpectator) {
             Color color = GameConstants.Player.COLORS[localPlayerId % GameConstants.Player.COLORS.length];
             float startX = 100 + (localPlayerId * 100) % 440;
@@ -73,7 +72,6 @@ public class DuckShooterMinigame implements Minigame {
             Gdx.app.log("DuckShooter", "Initialized as SPECTATOR");
         }
 
-        // Configure network handlers
         clientHandler = new DuckShooterClientHandler();
         nm.registerClientHandler(clientHandler);
 
@@ -88,24 +86,20 @@ public class DuckShooterMinigame implements Minigame {
         if (finished)
             return;
 
-        // Actualizar temporizador
         gameTimer -= delta;
         if (gameTimer <= 0) {
             endGame();
             return;
         }
 
-        // Actualizar cooldown de disparo
         if (shootCooldown > 0) {
             shootCooldown -= delta;
         }
 
-        // Actualizar patos
         for (IntMap.Entry<Duck> entry : ducks) {
             entry.value.update(delta);
         }
 
-        // Actualizar proyectiles
         Iterator<Quack> it = quacks.iterator();
         while (it.hasNext()) {
             Quack quack = it.next();
@@ -116,13 +110,11 @@ public class DuckShooterMinigame implements Minigame {
                 continue;
             }
 
-            // Verificar colisiones (solo el host)
             if (NetworkManager.getInstance().isHost()) {
                 checkQuackCollisions(quack);
             }
         }
 
-        // Verificar si solo queda un pato vivo (victoria por eliminación)
         int aliveDucks = 0;
         int lastAliveId = -1;
         for (IntMap.Entry<Duck> entry : ducks) {
@@ -132,16 +124,13 @@ public class DuckShooterMinigame implements Minigame {
             }
         }
 
-        // Si solo queda un pato vivo, ese pato gana inmediatamente
         if (aliveDucks == 1 && ducks.size > 1) {
             winnerId = lastAliveId;
             endGame();
         } else if (aliveDucks == 0 && ducks.size > 1) {
-            // Si todos murieron al mismo tiempo, empate (no debería pasar normalmente)
             endGame();
         }
 
-        // Enviar estado del pato local (solo si no es espectador)
         if (!isSpectator) {
             sendDuckState();
         }
@@ -160,19 +149,16 @@ public class DuckShooterMinigame implements Minigame {
                     Gdx.app.log("DuckShooter", "HIT! Shooter=" + quack.shooterId + " Target=" + duck.playerId
                             + " Remaining=" + duck.getHits());
 
-                    // Actualizar scores localmente (para el host)
                     if (!duck.isAlive()) {
                         scores.merge(quack.shooterId, 1, Integer::sum);
                     }
 
-                    // Enviar notificación de impacto a los clientes
                     DuckShooterPackets.QuackHit hitPacket = new DuckShooterPackets.QuackHit();
                     hitPacket.shooterId = quack.shooterId;
                     hitPacket.targetId = duck.playerId;
                     hitPacket.remainingHits = duck.getHits();
                     NetworkManager.getInstance().sendPacket(hitPacket);
 
-                    // Si el pato murió, enviar notificación de eliminación
                     if (!duck.isAlive()) {
                         DuckShooterPackets.DuckEliminated elimPacket = new DuckShooterPackets.DuckEliminated();
                         elimPacket.playerId = duck.playerId;
@@ -188,7 +174,6 @@ public class DuckShooterMinigame implements Minigame {
 
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
-        // Renderizar patos
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         for (IntMap.Entry<Duck> entry : ducks) {
@@ -196,7 +181,6 @@ public class DuckShooterMinigame implements Minigame {
             if (!duck.isAlive())
                 continue;
 
-            // Parpadeo si es invulnerable
             if (duck.isInvulnerable() && (System.currentTimeMillis() / 100) % 2 == 0) {
                 continue;
             }
@@ -204,7 +188,6 @@ public class DuckShooterMinigame implements Minigame {
             shapeRenderer.setColor(duck.color);
             shapeRenderer.circle(duck.position.x, duck.position.y, duck.getRadius());
 
-            // Barra de vida
             float barWidth = 40f;
             float barHeight = 5f;
             float barX = duck.position.x - barWidth / 2;
@@ -217,7 +200,6 @@ public class DuckShooterMinigame implements Minigame {
             shapeRenderer.rect(barX, barY, barWidth * (duck.getHits() / 3f), barHeight);
         }
 
-        // Renderizar quacks
         for (Quack quack : quacks) {
             if (quack.isActive()) {
                 shapeRenderer.setColor(quack.color);
@@ -226,17 +208,13 @@ public class DuckShooterMinigame implements Minigame {
         }
 
         shapeRenderer.end();
-
-        // Minimal UI - just render the game entities, GameScreen overlay handles the rest
     }
 
     @Override
     public void handleInput(float delta) {
-        // Spectators don't handle input
         if (isSpectator || localDuck == null || !localDuck.isAlive())
             return;
 
-        // Movimiento
         float dx = 0, dy = 0;
 
         if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
@@ -256,22 +234,19 @@ public class DuckShooterMinigame implements Minigame {
             localDuck.move(dx, dy, delta);
         }
 
-        // Disparo con espacio
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && shootCooldown <= 0) {
             shoot();
         }
     }
 
     private void shoot() {
-        // Dirección hacia el mouse
         float mouseX = Gdx.input.getX();
-        float mouseY = 480 - Gdx.input.getY(); // Invertir Y (coordenadas de pantalla)
+        float mouseY = 480 - Gdx.input.getY();
 
         Vector2 direction = new Vector2(
                 mouseX - localDuck.position.x,
                 mouseY - localDuck.position.y);
 
-        // Si el mouse está muy cerca del pato, disparar hacia arriba por defecto
         if (direction.len() < 10f) {
             direction.set(0, 1);
         }
@@ -280,7 +255,6 @@ public class DuckShooterMinigame implements Minigame {
 
         shootCooldown = SHOOT_COOLDOWN;
 
-        // Crear el quack localmente primero
         Quack quack = new Quack(
                 localPlayerId,
                 localDuck.position.x,
@@ -292,7 +266,6 @@ public class DuckShooterMinigame implements Minigame {
 
         Gdx.app.log("DuckShooter", "Player " + localPlayerId + " shot! Total ducks in map: " + ducks.size);
 
-        // Enviar paquete de disparo a otros jugadores
         DuckShooterPackets.ShootQuack packet = new DuckShooterPackets.ShootQuack();
         packet.shooterId = localPlayerId;
         packet.x = localDuck.position.x;
@@ -317,10 +290,7 @@ public class DuckShooterMinigame implements Minigame {
 
         finished = true;
 
-        // Si no hay un ganador ya determinado (por ser el último vivo)
         if (winnerId == -1) {
-            // Encontrar ganador por tiempo: el pato vivo con más kills
-            // Si no hay vivos, el que más kills tenga
             int maxScore = -1;
             boolean foundAlive = false;
 
@@ -329,7 +299,6 @@ public class DuckShooterMinigame implements Minigame {
                 int score = entry.getValue();
                 boolean isAlive = duck != null && duck.isAlive();
 
-                // Priorizar patos vivos
                 if (isAlive) {
                     if (!foundAlive || score > maxScore) {
                         maxScore = score;
@@ -337,7 +306,6 @@ public class DuckShooterMinigame implements Minigame {
                         foundAlive = true;
                     }
                 } else if (!foundAlive) {
-                    // Solo considerar muertos si no hay vivos
                     if (score > maxScore) {
                         maxScore = score;
                         winnerId = entry.getKey();
@@ -346,7 +314,6 @@ public class DuckShooterMinigame implements Minigame {
             }
         }
 
-        // Si somos el host, notificar a todos los clientes que el juego terminó
         if (NetworkManager.getInstance().isHost()) {
             DuckShooterPackets.GameEnd gameEndPacket = new DuckShooterPackets.GameEnd();
             gameEndPacket.winnerId = winnerId;
@@ -391,10 +358,7 @@ public class DuckShooterMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
-        // No necesita ajustes especiales
     }
-
-    // ==================== Handlers de red ====================
 
     private class DuckShooterClientHandler implements ClientPacketHandler {
         @Override
@@ -433,7 +397,6 @@ public class DuckShooterMinigame implements Minigame {
 
         @Override
         public void handle(ServerPacketContext context, NetworkPacket packet) {
-            // Retransmitir a todos excepto el emisor
             context.broadcastExceptSender(packet);
         }
     }
@@ -453,17 +416,12 @@ public class DuckShooterMinigame implements Minigame {
 
         duck.setPosition(state.x, state.y);
 
-        // Solo el host ignora los hits de DuckState (porque él es la autoridad)
-        // Los clientes sí deben actualizar hits de DuckState para tener la vista
-        // correcta
         if (!NetworkManager.getInstance().isHost()) {
             duck.setHits(state.hits);
         }
     }
 
     private void handleShootQuack(DuckShooterPackets.ShootQuack shoot) {
-        // Filtrar disparos del jugador local porque ya los creamos directamente en
-        // shoot()
         if (shoot.shooterId == localPlayerId)
             return;
 
@@ -489,14 +447,12 @@ public class DuckShooterMinigame implements Minigame {
         if (target != null) {
             target.setHits(hit.remainingHits);
 
-            // Si somos nosotros, actualizar nuestro localDuck también (only if not spectator)
             if (!isSpectator && hit.targetId == localPlayerId && localDuck != null) {
                 localDuck.setHits(hit.remainingHits);
                 Gdx.app.log("DuckShooter", "We got hit! Remaining hits: " + hit.remainingHits);
             }
         }
 
-        // Actualizar puntuación del shooter
         if (hit.remainingHits <= 0) {
             scores.merge(hit.shooterId, 1, Integer::sum);
         }
@@ -507,7 +463,6 @@ public class DuckShooterMinigame implements Minigame {
         if (duck != null) {
             duck.setHits(0);
 
-            // Si somos nosotros, actualizar nuestro localDuck también (only if not spectator)
             if (!isSpectator && elim.playerId == localPlayerId && localDuck != null) {
                 localDuck.setHits(0);
                 Gdx.app.log("DuckShooter", "We were eliminated!");

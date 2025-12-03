@@ -34,35 +34,45 @@ public class ResultsScreen implements Screen {
      * Enumeración de modos de vista disponibles.
      */
     public enum ViewMode {
-        VIEW_TOP3, // !< Vista de podio
-        VIEW_FULL_LIST, // !< Vista de lista completa
-        VIEW_WINNER_SPOTLIGHT // !< Vista de foco en el ganador
+        VIEW_TOP3,
+        VIEW_FULL_LIST,
+        VIEW_WINNER_SPOTLIGHT
     }
 
     /**
-     * Animation states for automatic sequence.
+     * Estados de animación para la secuencia automática.
      */
     private enum AnimationState {
-        SCROLLING, // !< Desplazamiento de la lista completa
-        PODIUM, // !< Vista de podio
-        FADE, // !< Desvanecimiento a negro
-        WINNER, // !< Ganador en el centro de la pantalla
-        RETURN, // !< Regresa todos al lobby
-        COMPLETE // !< Animación completa
+        SCROLLING,
+        PODIUM,
+        FADE,
+        WINNER,
+        RETURN,
+        COMPLETE
     }
 
-    private final Main game; // !< Referencia a la instancia principal del juego
-    private Stage stage; // !< Escenario para elementos de UI
-    private Skin skin; // !< Skin para los componentes de UI
+    /** Referencia a la instancia principal del juego. */
+    private final Main game;
+    /** Escenario para elementos de UI. */
+    private Stage stage;
+    /** Skin para los componentes de UI. */
+    private Skin skin;
 
-    private ViewMode currentView = ViewMode.VIEW_TOP3; // !< Modo de vista actual
-    private Table contentContainer; // !< Contenedor del contenido que cambia según el modo
-    private ScrollPane fullListScrollPane; // !< ScrollPane para la lista completa
+    /** Modo de vista actual. */
+    private ViewMode currentView = ViewMode.VIEW_TOP3;
+    /** Contenedor del contenido que cambia según el modo. */
+    private Table contentContainer;
+    /** ScrollPane para la lista completa. */
+    private ScrollPane fullListScrollPane;
 
-    private List<to.mpm.utils.PlayerData> results; // !< Lista de resultados de jugadores
-    private AnimationState animationState = AnimationState.SCROLLING; // !< Estado actual de la animación
-    private float stateTimer = 0f; // !< Temporizador para el estado actual
-    private to.mpm.network.handlers.ClientPacketHandler returnToLobbyHandler; // !< Handler para volver al lobby
+    /** Lista de resultados de jugadores. */
+    private List<to.mpm.utils.PlayerData> results;
+    /** Estado actual de la animación. */
+    private AnimationState animationState = AnimationState.SCROLLING;
+    /** Temporizador para el estado actual. */
+    private float stateTimer = 0f;
+    /** Handler para volver al lobby. */
+    private to.mpm.network.handlers.ClientPacketHandler returnToLobbyHandler;
 
     /**
      * Constructor de la pantalla de resultados con scores map.

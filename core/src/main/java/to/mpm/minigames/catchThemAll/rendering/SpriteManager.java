@@ -11,26 +11,32 @@ import to.mpm.minigames.catchThemAll.entities.Duck;
 public class SpriteManager {
     private static SpriteManager instance;
     
-    // Environment sprites
+    /** Textura del fondo. */
     private Texture background;
+    /** Textura del suelo. */
     private Texture floor;
     
-    // Player animation frames
+    /** Frame 1 del jugador. */
     private Texture playerFrame1;
+    /** Frame 2 del jugador. */
     private Texture playerFrame2;
     
-    // Duck animation frames by type
+    /** Frame 1 del pato neutral. */
     private Texture duckNeutral1;
+    /** Frame 2 del pato neutral. */
     private Texture duckNeutral2;
+    /** Frame 1 del pato dorado. */
     private Texture duckGold1;
+    /** Frame 2 del pato dorado. */
     private Texture duckGold2;
+    /** Frame 1 del pato malo. */
     private Texture duckBad1;
+    /** Frame 2 del pato malo. */
     private Texture duckBad2;
     
     private boolean loaded = false;
     
     private SpriteManager() {
-        // Private constructor for singleton
     }
     
     /**
@@ -52,15 +58,12 @@ public class SpriteManager {
         }
         
         try {
-            // Load environment
             background = new Texture(Gdx.files.internal("sprites/catchThemAll/background.png"));
             floor = new Texture(Gdx.files.internal("sprites/catchThemAll/floor.png"));
             
-            // Load player frames
             playerFrame1 = new Texture(Gdx.files.internal("sprites/catchThemAll/player-frame1.png"));
             playerFrame2 = new Texture(Gdx.files.internal("sprites/catchThemAll/player-frame2.png"));
             
-            // Load duck frames
             duckNeutral1 = new Texture(Gdx.files.internal("sprites/catchThemAll/duck-neutral1.png"));
             duckNeutral2 = new Texture(Gdx.files.internal("sprites/catchThemAll/duck-neutral2.png"));
             duckGold1 = new Texture(Gdx.files.internal("sprites/catchThemAll/duck-gold1.png"));
@@ -98,12 +101,14 @@ public class SpriteManager {
         Gdx.app.log("SpriteManager", "All sprites disposed");
     }
     
-    // Getters for environment
+    /** Obtiene el fondo. */
     public Texture getBackground() { return background; }
+    /** Obtiene el suelo. */
     public Texture getFloor() { return floor; }
     
-    // Getters for player frames
+    /** Obtiene el frame 1 del jugador. */
     public Texture getPlayerFrame1() { return playerFrame1; }
+    /** Obtiene el frame 2 del jugador. */
     public Texture getPlayerFrame2() { return playerFrame2; }
     
     /**

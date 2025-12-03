@@ -22,13 +22,20 @@ import java.io.IOException;
  * Muestra campos de entrada para Puerto, Rondas y Nombre de sala.
  */
 public class CreateRoomScreen implements Screen {
-    private final Main game; // !< instancia del juego principal
-    private Stage stage; // !< stage para renderizar componentes de UI
-    private Skin skin; // !< skin para estilizar componentes
-    private TextField portField; // !< campo de entrada para el puerto
-    private TextField roundsField; // !< campo de entrada para el número de rondas
-    private TextField nameField; // !< campo de entrada para el nombre del jugador
-    private Label statusLabel; // !< etiqueta para mostrar mensajes de estado
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Stage para renderizar componentes de UI. */
+    private Stage stage;
+    /** Skin para estilizar componentes. */
+    private Skin skin;
+    /** Campo de entrada para el puerto. */
+    private TextField portField;
+    /** Campo de entrada para el número de rondas. */
+    private TextField roundsField;
+    /** Campo de entrada para el nombre del jugador. */
+    private TextField nameField;
+    /** Etiqueta para mostrar mensajes de estado. */
+    private Label statusLabel;
 
     /**
      * Construye una nueva pantalla de creación de sala.
@@ -74,7 +81,6 @@ public class CreateRoomScreen implements Screen {
 
         formTable.add(headerTable).left().padBottom(UIStyles.Spacing.XLARGE).row();
 
-        // Form fields with consistent label width for alignment
         float labelWidth = 100f;
         float fieldWidth = 175f;
 

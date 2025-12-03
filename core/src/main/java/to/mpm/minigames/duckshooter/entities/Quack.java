@@ -30,7 +30,6 @@ public class Quack {
         
         position.add(velocity.x * delta, velocity.y * delta);
         
-        // Desactivar si sale de los límites
         if (position.x < 0 || position.x > 640 || position.y < 0 || position.y > 480) {
             active = false;
         }

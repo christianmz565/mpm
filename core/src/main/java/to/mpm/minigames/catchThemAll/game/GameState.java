@@ -92,7 +92,6 @@ public class GameState {
         }
     }
 
-    // Getters
     public int getLocalPlayerId() { return localPlayerId; }
     public Player getLocalPlayer() { return localPlayer; }
     public IntMap<Player> getPlayers() { return players; }

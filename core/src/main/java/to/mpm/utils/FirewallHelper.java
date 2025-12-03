@@ -45,9 +45,6 @@ public class FirewallHelper {
                     JOptionPane.INFORMATION_MESSAGE);
         });
 
-        // TODO: check whether this actually achieves something or if we just need to
-        // try a connection for windows to ask for permission
-        // TODO: prevent duplicate rules?
         try {
             String appName = "MicroPatosMania";
             String javaPath = System.getProperty("java.home") + "\\bin\\javaw.exe";
@@ -88,7 +85,6 @@ public class FirewallHelper {
      *
      * @param port Número de puerto
      */
-    // TODO: uh we cant actually test this but sure maybe it works
     private static void requestMacFirewall(int port) {
         SwingUtilities.invokeLater(() -> {
             String message = "Necesitas permitir el acceso a la red para el juego.\n" +
