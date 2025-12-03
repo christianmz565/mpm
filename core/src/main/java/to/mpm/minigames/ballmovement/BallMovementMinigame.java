@@ -7,7 +7,12 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.IntMap;
 import to.mpm.minigames.Minigame;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
 import to.mpm.network.Packets;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
+import to.mpm.network.handlers.ServerPacketContext;
+import to.mpm.network.handlers.ServerPacketHandler;
 import to.mpm.network.sync.SyncedObject;
 import to.mpm.network.sync.Synchronized;
 
@@ -22,18 +27,20 @@ public class BallMovementMinigame implements Minigame {
     private static final float PLAYER_RADIUS = 20f;
     private static final float MOVE_SPEED = 200f;
     private static final float[][] PLAYER_COLORS = {
-            {1f, 0f, 0f}, // 0 - Red
-            {0f, 0f, 1f}, // 1 - Blue
-            {0f, 1f, 0f}, // 2 - Green
-            {1f, 1f, 0f}, // 3 - Yellow
-            {1f, 0f, 1f}, // 4 - Magenta
-            {0f, 1f, 1f}, // 5 - Cyan
+            { 1f, 0f, 0f }, // 0 - Red
+            { 0f, 0f, 1f }, // 1 - Blue
+            { 0f, 1f, 0f }, // 2 - Green
+            { 1f, 1f, 0f }, // 3 - Yellow
+            { 1f, 0f, 1f }, // 4 - Magenta
+            { 0f, 1f, 1f }, // 5 - Cyan
     };
 
     private final int localPlayerId;
     private Player localPlayer;
     private final IntMap<Player> players = new IntMap<>();
     private boolean finished = false;
+    private BallMovementClientHandler clientHandler;
+    private BallMovementServerRelay serverRelay;
 
     public BallMovementMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
@@ -43,37 +50,46 @@ public class BallMovementMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Create local player with a color based on id
-        float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        localPlayer = new Player(true,
-                localPlayerId == 0 ? 100 : 540,
-                240,
-                color[0], color[1], color[2]);
-        players.put(localPlayerId, localPlayer);
+        if (localPlayerId != -1) {
+            float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
+            localPlayer = new Player(true,
+                    localPlayerId == 0 ? 100 : 540,
+                    240,
+                    color[0], color[1], color[2]);
+            players.put(localPlayerId, localPlayer);
+        }
 
-        // Register network handlers
-        nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition);
-        nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
-        nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
+        clientHandler = new BallMovementClientHandler();
+        nm.registerClientHandler(clientHandler);
+
+        if (nm.isHost()) {
+            serverRelay = new BallMovementServerRelay();
+            nm.registerServerHandler(serverRelay);
+        }
     }
 
     private void onPlayerJoined(Packets.PlayerJoined packet) {
-        if (packet.playerId == localPlayerId) return;
-        if (players.containsKey(packet.playerId)) return;
-        
+        if (packet.playerId == localPlayerId)
+            return;
+        if (players.containsKey(packet.playerId))
+            return;
+
         float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
         Player remote = new Player(false, 320, 240, color[0], color[1], color[2]);
         players.put(packet.playerId, remote);
     }
 
     private void onPlayerLeft(Packets.PlayerLeft packet) {
-        if (packet.playerId == localPlayerId) return;
+        if (packet.playerId == localPlayerId)
+            return;
         Player p = players.remove(packet.playerId);
-        if (p != null) p.dispose();
+        if (p != null)
+            p.dispose();
     }
 
     private void onPlayerPosition(Packets.PlayerPosition packet) {
-        if (packet.playerId == localPlayerId) return;
+        if (packet.playerId == localPlayerId)
+            return;
 
         Player remote = players.get(packet.playerId);
         if (remote == null) {
@@ -87,15 +103,16 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void update(float delta) {
-        localPlayer.update();
-        sendPlayerPosition();
+        if (localPlayer != null) {
+            localPlayer.update();
+            sendPlayerPosition();
+        }
     }
 
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Draw all players
         for (IntMap.Entry<Player> entry : players) {
             Player p = entry.value;
             shapeRenderer.setColor(p.r, p.g, p.b, 1f);
@@ -107,6 +124,9 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void handleInput(float delta) {
+        if (localPlayer == null)
+            return;
+
         float dx = 0, dy = 0;
 
         if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
@@ -125,7 +145,6 @@ public class BallMovementMinigame implements Minigame {
         localPlayer.x += dx;
         localPlayer.y += dy;
 
-        // Keep inside bounds
         localPlayer.x = Math.max(PLAYER_RADIUS, Math.min(640 - PLAYER_RADIUS, localPlayer.x));
         localPlayer.y = Math.max(PLAYER_RADIUS, Math.min(480 - PLAYER_RADIUS, localPlayer.y));
     }
@@ -145,17 +164,25 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public Map<Integer, Integer> getScores() {
-        // This minigame doesn't have scores
         return new HashMap<>();
     }
 
     @Override
     public int getWinnerId() {
-        return -1; // No winner in this game
+        return -1;
     }
 
     @Override
     public void dispose() {
+        NetworkManager nm = NetworkManager.getInstance();
+        if (clientHandler != null) {
+            nm.unregisterClientHandler(clientHandler);
+            clientHandler = null;
+        }
+        if (serverRelay != null) {
+            nm.unregisterServerHandler(serverRelay);
+            serverRelay = null;
+        }
         for (IntMap.Entry<Player> entry : players) {
             entry.value.dispose();
         }
@@ -164,12 +191,13 @@ public class BallMovementMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
-        // Not needed for this simple game
     }
 
     private static class Player extends SyncedObject {
-        @Synchronized public float x;
-        @Synchronized public float y;
+        @Synchronized
+        public float x;
+        @Synchronized
+        public float y;
         public float r, g, b;
 
         public Player(boolean isLocallyOwned, float x, float y, float r, float g, float b) {
@@ -184,6 +212,41 @@ public class BallMovementMinigame implements Minigame {
         public void setPosition(float x, float y) {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    private final class BallMovementClientHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(
+                    Packets.PlayerPosition.class,
+                    Packets.PlayerJoined.class,
+                    Packets.PlayerLeft.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.PlayerPosition position) {
+                onPlayerPosition(position);
+            } else if (packet instanceof Packets.PlayerJoined joined) {
+                onPlayerJoined(joined);
+            } else if (packet instanceof Packets.PlayerLeft left) {
+                onPlayerLeft(left);
+            }
+        }
+    }
+
+    private static final class BallMovementServerRelay implements ServerPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(Packets.PlayerPosition.class);
+        }
+
+        @Override
+        public void handle(ServerPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.PlayerPosition position) {
+                context.broadcastExceptSender(position);
+            }
         }
     }
 }

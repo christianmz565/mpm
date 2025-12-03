@@ -18,16 +18,24 @@ import java.io.IOException;
 
 /**
  * Pantalla para unirse a una sala de juego existente.
+ * <p>
  * Muestra campos de entrada para IP, Puerto y Nombre del jugador.
  */
 public class JoinLobbyScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
-    private TextField nameField; //!< campo de entrada para el nombre del jugador
-    private TextField ipField; //!< campo de entrada para la IP del servidor
-    private TextField portField; //!< campo de entrada para el puerto del servidor
-    private Label statusLabel; //!< etiqueta para mostrar mensajes de estado
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Stage para renderizar componentes de UI. */
+    private Stage stage;
+    /** Skin para estilizar componentes. */
+    private Skin skin;
+    /** Campo de entrada para el nombre del jugador. */
+    private TextField nameField;
+    /** Campo de entrada para la IP del servidor. */
+    private TextField ipField;
+    /** Campo de entrada para el puerto del servidor. */
+    private TextField portField;
+    /** Etiqueta para mostrar mensajes de estado. */
+    private Label statusLabel;
 
     /**
      * Construye una nueva pantalla de unión a sala.
@@ -55,64 +63,73 @@ public class JoinLobbyScreen implements Screen {
         formTable.top().left();
 
         Table headerTable = new Table();
-        TextButton backButton = new TextButton("<-", skin);
-        backButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-            @Override
-            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
-                game.setScreen(new MainMenuScreen(game));
-                dispose();
-            }
-        });
-        headerTable.add(backButton).padRight(UIStyles.Spacing.MEDIUM);
+        TextButton backButton = new StyledButton(skin)
+                .text("< Volver")
+                .width(120f)
+                .height(45f)
+                .onClick(() -> {
+                    game.setScreen(new MainMenuScreen(game));
+                    dispose();
+                })
+                .build();
+        headerTable.add(backButton).size(120f, 45f).padRight(UIStyles.Spacing.MEDIUM);
 
-        Label titleLabel = new Label("MicroPatosMania\nUnirse a sala", skin);
-        titleLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
+        Label titleLabel = new Label("Unirse a sala", skin);
+        titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
         titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         headerTable.add(titleLabel).left();
 
-        formTable.add(headerTable).left().padBottom(UIStyles.Spacing.LARGE).row();
+        formTable.add(headerTable).left().padBottom(UIStyles.Spacing.XLARGE).row();
+
+        float labelWidth = 100f;
+        float fieldWidth = 175f;
 
         Table ipRow = new Table();
         Label ipLabel = new Label("IP", skin);
-        ipRow.add(ipLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
+        ipLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        ipRow.add(ipLabel).width(labelWidth).left();
         ipField = new InputField(skin)
                 .defaultValue("localhost")
                 .messageText("...")
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .buildField();
-        ipRow.add(ipField);
+        ipRow.add(ipField).width(fieldWidth);
         formTable.add(ipRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table portRow = new Table();
         Label portLabel = new Label("Puerto", skin);
-        portRow.add(portLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
+        portLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        portRow.add(portLabel).width(labelWidth).left();
         portField = new InputField(skin)
                 .defaultValue(String.valueOf(NetworkConfig.DEFAULT_PORT))
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .filter(new TextField.TextFieldFilter.DigitsOnlyFilter())
                 .maxLength(5)
                 .buildField();
-        portRow.add(portField);
+        portRow.add(portField).width(fieldWidth);
         formTable.add(portRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table nameRow = new Table();
         Label nameLabel = new Label("Nombre", skin);
-        nameRow.add(nameLabel).padRight(UIStyles.Spacing.SMALL).width(80f);
+        nameLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        nameRow.add(nameLabel).width(labelWidth).left();
         nameField = new InputField(skin)
                 .defaultValue("")
                 .messageText("...")
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .maxLength(20)
                 .buildField();
-        nameRow.add(nameField);
-        formTable.add(nameRow).left().padBottom(UIStyles.Spacing.LARGE).row();
+        nameRow.add(nameField).width(fieldWidth);
+        formTable.add(nameRow).left().padBottom(UIStyles.Spacing.XLARGE).row();
 
         formTable.add(
                 new StyledButton(skin)
                         .text("Unirse")
+                        .width(250f)
+                        .height(60f)
                         .onClick(this::joinGame)
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         statusLabel = new Label("", skin);
         statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
@@ -126,6 +143,7 @@ public class JoinLobbyScreen implements Screen {
 
     /**
      * Maneja la conexión a una sala de juego existente.
+     * <p>
      * Valida los campos de entrada e intenta conectar al servidor.
      */
     private void joinGame() {
@@ -134,27 +152,37 @@ public class JoinLobbyScreen implements Screen {
         int port;
 
         if (playerName.trim().isEmpty()) {
-            statusLabel.setText("Please enter a player name");
+            statusLabel.setText("Por favor ingresa un nombre de jugador");
             return;
         }
 
         try {
             port = Integer.parseInt(portField.getText());
         } catch (NumberFormatException e) {
-            statusLabel.setText("Invalid port number");
+            statusLabel.setText("Número de puerto inválido");
             return;
         }
 
-        statusLabel.setText("Connecting...");
+        statusLabel.setText("Conectando...");
 
         try {
             NetworkManager.getInstance().joinGame(host, port, playerName);
-            statusLabel.setText("Connected!");
+
+            NetworkManager.getInstance().registerAdditionalClasses(
+                    to.mpm.minigames.manager.ManagerPackets.RoomConfig.class,
+                    to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class,
+                    to.mpm.minigames.manager.ManagerPackets.StartNextRound.class,
+                    to.mpm.minigames.manager.ManagerPackets.ShowResults.class,
+                    to.mpm.minigames.manager.ManagerPackets.ReturnToLobby.class,
+                    java.util.HashMap.class,
+                    java.util.ArrayList.class);
+
+            statusLabel.setText("¡Conectado!");
 
             game.setScreen(new LobbyScreen(game, false, host, port));
             dispose();
         } catch (IOException e) {
-            statusLabel.setText("Connection failed: " + e.getMessage());
+            statusLabel.setText("Conexión fallida: " + e.getMessage());
             Gdx.app.error("JoinLobbyScreen", "Failed to connect", e);
         }
     }

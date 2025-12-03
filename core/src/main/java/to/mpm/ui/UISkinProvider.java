@@ -5,10 +5,12 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 
 /**
  * Proveedor centralizado del skin de UI.
+ * <p>
  * Gestiona una instancia compartida para evitar recargas repetidas del recurso.
  */
 public final class UISkinProvider {
-    private static Skin sharedSkin; //!< instancia compartida del skin
+    /** Instancia compartida del skin. */
+    private static Skin sharedSkin;
 
     private UISkinProvider() {
     }

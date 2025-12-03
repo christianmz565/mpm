@@ -5,36 +5,53 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Lógica del lado del cliente de red.
+ * <p>
  * Maneja la conexión al servidor, el envío y recepción de paquetes,
  * y el registro de manejadores de paquetes.
  */
 public class NetworkClient {
-    private Client client; //!< instancia del cliente KryoNet
-    private final PacketHandlerRegistry handlerRegistry; //!< registro de manejadores de paquetes
-    private final ConcurrentHashMap<Integer, String> connectedPlayers; //!< mapa de jugadores conectados (ID -> nombre)
-    private int myPlayerId = -1; //!< ID del jugador local
-    private String myPlayerName; //!< nombre del jugador local
+    /** Instancia del cliente KryoNet. */
+    private Client client;
+    /** Manejadores por tipo de paquete. */
+    private final Map<Class<? extends NetworkPacket>, CopyOnWriteArrayList<ClientPacketHandler>> handlers;
+    /** Mapa de jugadores conectados (ID -> nombre). */
+    private final ConcurrentHashMap<Integer, String> connectedPlayers;
+    /** Contexto compartido para handlers. */
+    private final ClientPacketContext clientContext;
+    /** ID del jugador local. */
+    private int myPlayerId = -1;
+    /** Nombre del jugador local. */
+    private String myPlayerName;
+    /** Correlación para detectar la asignación local. */
+    private String pendingJoinCorrelationId;
 
     /**
      * Construye una nueva instancia del cliente de red.
      */
     public NetworkClient() {
-        handlerRegistry = new PacketHandlerRegistry();
+        handlers = new ConcurrentHashMap<>();
         connectedPlayers = new ConcurrentHashMap<>();
+        clientContext = new ClientPacketContext(this);
     }
 
     /**
      * Conecta a un servidor como cliente.
      *
-     * @param host la dirección del servidor
-     * @param port el puerto del servidor
+     * @param host       la dirección del servidor
+     * @param port       el puerto del servidor
      * @param playerName el nombre del jugador local
      * @throws IOException si la conexión falla
      */
@@ -45,17 +62,17 @@ public class NetworkClient {
         }
 
         myPlayerName = playerName != null ? playerName : "Player";
+        pendingJoinCorrelationId = UUID.randomUUID().toString();
 
         client = new Client(NetworkConfig.UDP_BUFFER_SIZE, NetworkConfig.UDP_BUFFER_SIZE);
-        registerClasses(client.getKryo());
+        KryoClassRegistrar.registerCoreClasses(client.getKryo());
 
         client.addListener(new Listener() {
             @Override
             public void received(Connection connection, Object object) {
-                if (object instanceof Packets.PlayerJoinResponse) {
-                    handlePlayerJoinResponse((Packets.PlayerJoinResponse) object);
-                } else {
-                    Gdx.app.postRunnable(() -> handlerRegistry.invokeHandlers(object));
+                if (object instanceof NetworkPacket packet) {
+                    handleInternalPacket(packet);
+                    Gdx.app.postRunnable(() -> dispatchPacket(packet));
                 }
             }
 
@@ -68,24 +85,9 @@ public class NetworkClient {
         client.start();
         client.connect(NetworkConfig.TIMEOUT_MS, host, port, port);
 
-        Packets.PlayerJoinRequest joinRequest = new Packets.PlayerJoinRequest();
-        joinRequest.playerName = myPlayerName;
-        client.sendTCP(joinRequest);
+        sendJoinRequest();
 
         Gdx.app.log("NetworkClient", "Connected to " + host + ":" + port);
-    }
-
-    /**
-     * Inicializa el cliente como el host local.
-     * 
-     * @param playerId el ID asignado al jugador host
-     * @param playerName el nombre del jugador host
-     */
-    public void connectAsLocalHost(int playerId, String playerName) {
-        myPlayerId = playerId;
-        myPlayerName = playerName;
-        connectedPlayers.put(playerId, playerName);
-        Gdx.app.log("NetworkClient", "Initialized as local host client with ID: " + playerId);
     }
 
     /**
@@ -98,7 +100,9 @@ public class NetworkClient {
             client = null;
         }
         myPlayerId = -1;
+        pendingJoinCorrelationId = null;
         connectedPlayers.clear();
+        handlers.clear();
         Gdx.app.log("NetworkClient", "Client disconnected");
     }
 
@@ -107,7 +111,7 @@ public class NetworkClient {
      *
      * @param packet el paquete a enviar
      */
-    public void sendTCP(Object packet) {
+    public void sendTCP(NetworkPacket packet) {
         if (client != null && client.isConnected()) {
             client.sendTCP(packet);
         }
@@ -118,59 +122,59 @@ public class NetworkClient {
      *
      * @param packet el paquete a enviar
      */
-    public void sendUDP(Object packet) {
+    public void sendUDP(NetworkPacket packet) {
         if (client != null && client.isConnected()) {
             client.sendUDP(packet);
         }
     }
 
     /**
-     * Registra un manejador para un tipo específico de paquete.
+     * Envía el paquete usando su modo preferido.
      * 
-     * @param <T>        el tipo de paquete
-     * @param packetClass la clase del paquete
-     * @param handler    el consumidor que maneja el paquete
-     * @return el ID del manejador registrado
+     * @param packet paquete de red a enviar
      */
-    public <T> long registerHandler(Class<T> packetClass, Consumer<T> handler) {
-        return handlerRegistry.registerHandler(packetClass, handler);
+    public void send(NetworkPacket packet) {
+        if (packet.getTransportMode() == Transports.UDP) {
+            sendUDP(packet);
+        } else {
+            sendTCP(packet);
+        }
     }
 
     /**
-     * Desregistra un manejador por su ID.
-     *
-     * @param handlerId el ID del manejador retornado por registerHandler
-     * @return true si el manejador fue removido
+     * Reenvía la solicitud de unión si aún no se recibió un ID.
      */
-    public boolean unregisterHandler(long handlerId) {
-        return handlerRegistry.unregisterHandler(handlerId);
+    public void resendJoinRequestIfNeeded() {
+        if (client != null && client.isConnected() && !isInitialized()) {
+            sendJoinRequest();
+        }
     }
 
     /**
-     * Desregistra todos los manejadores para un tipo específico de paquete.
+     * Registra un manejador basado en clases de paquete.
      * 
-     * @param packetClass la clase del paquete
-     * @return el número de manejadores removidos
+     * @param handler el manejador a registrar
      */
-    public int unregisterAllHandlers(Class<?> packetClass) {
-        return handlerRegistry.unregisterAllHandlers(packetClass);
+    public void registerHandler(ClientPacketHandler handler) {
+        Collection<Class<? extends NetworkPacket>> packetClasses = handler.receivablePackets();
+        if (packetClasses == null || packetClasses.isEmpty()) {
+            throw new IllegalArgumentException("Handler must declare receivable packets");
+        }
+        for (Class<? extends NetworkPacket> packetClass : packetClasses) {
+            handlers.computeIfAbsent(packetClass, key -> new CopyOnWriteArrayList<>())
+                    .add(handler);
+        }
     }
 
     /**
-     * Limpia todos los manejadores registrados.
+     * Desregistra un manejador previamente agregado.
+     * 
+     * @param handler el manejador a desregistrar
      */
-    public void clearAllHandlers() {
-        handlerRegistry.clear();
-    }
-
-    /**
-     * Procesa un paquete recibido del servidor (usado para el cliente host local).
-     * Esto permite que el host reciba paquetes desde el lado del servidor.
-     *
-     * @param packet el paquete a procesar
-     */
-    public void processPacket(Object packet) {
-        Gdx.app.postRunnable(() -> handlerRegistry.invokeHandlers(packet));
+    public void unregisterHandler(ClientPacketHandler handler) {
+        for (List<ClientPacketHandler> handlerList : handlers.values()) {
+            handlerList.remove(handler);
+        }
     }
 
     /**
@@ -225,7 +229,7 @@ public class NetworkClient {
     }
 
     /**
-     * Verifica si este cliente está inicializado (ya sea conectado o host local).
+     * Verifica si este cliente está inicializado.
      *
      * @return true si está inicializado
      */
@@ -234,33 +238,56 @@ public class NetworkClient {
     }
 
     /**
-     * Registra las clases principales de paquetes con Kryo.
+     * Maneja paquetes internos relacionados con la gestión de jugadores.
      *
-     * @param kryo la instancia de Kryo
+     * @param packet el paquete de red recibido
      */
-    private void registerClasses(Kryo kryo) {
-        kryo.register(Packets.PlayerJoinRequest.class);
-        kryo.register(Packets.PlayerJoinResponse.class);
-        kryo.register(Packets.PlayerJoined.class);
-        kryo.register(Packets.PlayerLeft.class);
-        kryo.register(Packets.StartGame.class);
-        kryo.register(Packets.SyncUpdate.class);
-        kryo.register(Packets.PlayerPosition.class);
-        kryo.register(Packets.RPC.class);
-        kryo.register(Packets.Ping.class);
-        kryo.register(Packets.Pong.class);
-        kryo.register(Object[].class);
+    private void handleInternalPacket(NetworkPacket packet) {
+        if (packet instanceof Packets.PlayerJoined joined) {
+            connectedPlayers.put(joined.playerId, joined.playerName);
+            if (pendingJoinCorrelationId != null && pendingJoinCorrelationId.equals(joined.correlationId)) {
+                myPlayerId = joined.playerId;
+                pendingJoinCorrelationId = null;
+                Gdx.app.log("NetworkClient", "Assigned player ID: " + myPlayerId + " (" + joined.playerName + ")");
+            }
+        } else if (packet instanceof Packets.PlayerLeft left) {
+            connectedPlayers.remove(left.playerId);
+            if (left.playerId == myPlayerId) {
+                myPlayerId = -1;
+            }
+        }
     }
 
     /**
-     * Maneja la respuesta de unión del jugador desde el servidor.
-     * Asigna el ID del jugador local.
+     * Reenvía un paquete a los manejadores registrados.
      *
-     * @param response la respuesta de unión
+     * @param packet el paquete de red a reenvíar
      */
-    private void handlePlayerJoinResponse(Packets.PlayerJoinResponse response) {
-        myPlayerId = response.playerId;
-        connectedPlayers.put(myPlayerId, response.playerName);
-        Gdx.app.log("NetworkClient", "Assigned player ID: " + myPlayerId + " (" + response.playerName + ")");
+    private void dispatchPacket(NetworkPacket packet) {
+        List<ClientPacketHandler> handlerList = handlers.get(packet.getClass());
+        if (handlerList == null || handlerList.isEmpty()) {
+            return;
+        }
+        for (ClientPacketHandler handler : handlerList) {
+            try {
+                handler.handle(clientContext, packet);
+            } catch (Exception ex) {
+                Gdx.app.error("NetworkClient", "Handler error for packet " + packet.getClass().getSimpleName(), ex);
+            }
+        }
+    }
+
+    /**
+     * Envía una solicitud de unión al servidor.
+     */
+    private void sendJoinRequest() {
+        if (client == null || !client.isConnected()) {
+            return;
+        }
+        pendingJoinCorrelationId = UUID.randomUUID().toString();
+        Packets.PlayerJoinRequest joinRequest = new Packets.PlayerJoinRequest();
+        joinRequest.playerName = myPlayerName != null ? myPlayerName : "Player";
+        joinRequest.correlationId = pendingJoinCorrelationId;
+        sendTCP(joinRequest);
     }
 }

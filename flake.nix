@@ -3,11 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    nixpkgsStable.url = "github:nixos/nixpkgs?ref=nixos-23.05";
   };
 
   outputs =
-    { nixpkgs, nixpkgsStable, ... }:
+    { nixpkgs, ... }:
     let
       system = "x86_64-linux";
     in
@@ -15,10 +14,6 @@
       devShells."${system}".default =
         let
           pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          };
-          pkgsStable = import nixpkgsStable {
             inherit system;
             config.allowUnfree = true;
           };
@@ -41,7 +36,6 @@
             graphviz
             just
             steam-run
-          ]) ++ (with pkgsStable; [
             texlive.combined.scheme-full
           ]);
           buildInputs = with pkgs; [

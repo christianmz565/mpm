@@ -8,16 +8,22 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de botones con estilo consistente.
- * Utiliza el patrón Builder para configuración flexible de botones de interfaz.
  */
 public class StyledButton {
-    private final Skin skin; //!< skin para renderizar el botón
-    private String text; //!< texto a mostrar en el botón
-    private float width = UIStyles.Sizes.BUTTON_WIDTH; //!< ancho del botón en píxeles
-    private float height = UIStyles.Sizes.BUTTON_HEIGHT; //!< alto del botón en píxeles
-    private ChangeListener listener; //!< listener para eventos de clic
-    private boolean disabled = false; //!< indica si el botón está deshabilitado
-    private String style = "default"; //!< nombre del estilo visual del botón
+    /** Skin para renderizar el botón. */
+    private final Skin skin;
+    /** Texto a mostrar en el botón. */
+    private String text;
+    /** Ancho del botón en píxeles. */
+    private float width = UIStyles.Sizes.BUTTON_WIDTH;
+    /** Alto del botón en píxeles. */
+    private float height = UIStyles.Sizes.BUTTON_HEIGHT;
+    /** Listener para eventos de clic. */
+    private ChangeListener listener;
+    /** Indica si el botón está deshabilitado. */
+    private boolean disabled = false;
+    /** Nombre del estilo visual del botón. */
+    private String style = "default";
 
     /**
      * Construye un nuevo StyledButton con el skin especificado.

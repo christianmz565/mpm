@@ -8,18 +8,24 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de campos de entrada etiquetados.
- * Proporciona un diseño consistente para entradas de formulario utilizando el
- * patrón Builder.
  */
 public class InputField {
-    private final Skin skin; //!< skin para renderizar componentes UI
-    private String labelText; //!< texto de la etiqueta del campo
-    private String defaultValue = ""; //!< valor por defecto del campo de texto
-    private String messageText = ""; //!< texto de marcador de posición cuando está vacío
-    private float width = UIStyles.Sizes.INPUT_WIDTH; //!< ancho del campo de texto en píxeles
-    private float height = UIStyles.Sizes.INPUT_HEIGHT; //!< alto del campo de texto en píxeles
-    private TextField.TextFieldFilter filter; //!< filtro opcional para validar entrada
-    private int maxLength = 0; //!< longitud máxima de caracteres (0 = sin límite)
+    /** Skin para renderizar componentes UI. */
+    private final Skin skin;
+    /** Texto de la etiqueta del campo. */
+    private String labelText;
+    /** Valor por defecto del campo de texto. */
+    private String defaultValue = "";
+    /** Texto de marcador de posición cuando está vacío. */
+    private String messageText = "";
+    /** Ancho del campo de texto en píxeles. */
+    private float width = UIStyles.Sizes.INPUT_WIDTH;
+    /** Alto del campo de texto en píxeles. */
+    private float height = UIStyles.Sizes.INPUT_HEIGHT;
+    /** Filtro opcional para validar entrada. */
+    private TextField.TextFieldFilter filter;
+    /** Longitud máxima de caracteres (0 = sin límite). */
+    private int maxLength = 0;
 
     /**
      * Construye un nuevo InputField con el skin especificado.

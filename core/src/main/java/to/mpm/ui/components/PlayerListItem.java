@@ -8,15 +8,22 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de elementos de lista de jugadores.
+ * <p>
  * Muestra nombre del jugador, indicador de rol y puntuación opcional.
  */
 public class PlayerListItem {
-    private final Skin skin; //!< skin para renderizar componentes UI
-    private String playerName; //!< nombre del jugador a mostrar
-    private String role; //!< rol del jugador ("Creador", "Jugador", "Espectador")
-    private Integer score; //!< puntuación opcional del jugador
-    private float width = UIStyles.Sizes.BUTTON_WIDTH; //!< ancho del elemento en píxeles
-    private float height = UIStyles.Sizes.PLAYER_ITEM_HEIGHT; //!< alto del elemento en píxeles
+    /** Skin para renderizar componentes UI. */
+    private final Skin skin;
+    /** Nombre del jugador a mostrar. */
+    private String playerName;
+    /** Rol del jugador ("Creador", "Jugador", "Espectador"). */
+    private String role;
+    /** Puntuación opcional del jugador. */
+    private Integer score;
+    /** Ancho del elemento en píxeles. */
+    private float width = UIStyles.Sizes.BUTTON_WIDTH;
+    /** Alto del elemento en píxeles. */
+    private float height = UIStyles.Sizes.PLAYER_ITEM_HEIGHT;
 
     /**
      * Construye un nuevo PlayerListItem con el skin especificado.

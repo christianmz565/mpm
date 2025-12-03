@@ -16,12 +16,16 @@ import to.mpm.ui.components.StyledButton;
 
 /**
  * Pantalla del menú principal de MicroPatosMania.
+ * <p>
  * Muestra título, botones de crear/unirse/ajustes y la ilustración del pato.
  */
 public class MainMenuScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Stage para renderizar componentes de UI. */
+    private Stage stage;
+    /** Skin para estilizar componentes. */
+    private Skin skin;
 
     /**
      * Construye una nueva pantalla de menú principal.
@@ -56,31 +60,37 @@ public class MainMenuScreen implements Screen {
         menuTable.add(
                 new StyledButton(skin)
                         .text("Crear")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             game.setScreen(new CreateRoomScreen(game));
                             dispose();
                         })
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         menuTable.add(
                 new StyledButton(skin)
                         .text("Unirse")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             game.setScreen(new JoinLobbyScreen(game));
                             dispose();
                         })
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         menuTable.add(
                 new StyledButton(skin)
                         .text("Salir")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             Gdx.app.exit();
                         })
                         .build())
-                .left().row();
+                .size(250f, 60f).left().row();
 
         Table duckTable = new DuckPlaceholder(skin).build();
 

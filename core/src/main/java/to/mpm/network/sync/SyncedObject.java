@@ -2,45 +2,53 @@ package to.mpm.network.sync;
 
 import com.badlogic.gdx.Gdx;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
 import to.mpm.network.Packets;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
+import to.mpm.network.handlers.ServerPacketContext;
+import to.mpm.network.handlers.ServerPacketHandler;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Clase base para objetos cuyos campos deben sincronizarse a través de la red.
- * Esta clase asigna un identificador único {@code objectId} a cada instancia para
- * identificarla en mensajes {@link Packets.SyncUpdate}.
+ * <p>
+ * Esta clase asigna un identificador único {@code objectId} a cada instancia
+ * para identificarla en mensajes {@link Packets.SyncUpdate}.
  */
 public class SyncedObject {
-    private static final Map<Integer, SyncedObject> syncedObjects = new ConcurrentHashMap<>(); //!< Registro de todos los objetos sincronizados por id
-    private static int nextObjectId = 0; //!< Contador global para asignar ids únicos a objetos
-    private static long globalHandlerId = -1; //!< Handler ID for the global SyncUpdate handler
-    
-    private final int objectId; //!< Id único para este objeto sincronizado
-    private final Map<String, Object> lastKnownValues; //!< Últimos valores conocidos de los campos sincronizados
-    private boolean isLocallyOwned; //!< true si esta instancia debe enviar actualizaciones
+    /** Registro de todos los objetos sincronizados por ID. */
+    private static final Map<UUID, SyncedObject> syncedObjects = new ConcurrentHashMap<>();
+    /** Handler global del lado del cliente. */
+    private static ClientPacketHandler clientHandler;
+    /** Handler global del lado del servidor. */
+    private static ServerPacketHandler serverHandler;
+
+    /** ID único para este objeto sincronizado. */
+    private final UUID objectId;
+    /** Últimos valores conocidos de los campos sincronizados. */
+    private final Map<String, Object> lastKnownValues;
+    /** True si esta instancia debe enviar actualizaciones. */
+    private boolean isLocallyOwned;
 
     /**
      * Crea un nuevo objeto sincronizado.
      *
-     * @param isLocallyOwned true si esta instancia debe enviar actualizaciones para sus campos anotados
+     * @param isLocallyOwned true si esta instancia debe enviar actualizaciones para
+     *                       sus campos anotados
      */
     public SyncedObject(boolean isLocallyOwned) {
-        this.objectId = nextObjectId++;
+        this.objectId = UUID.randomUUID();
         this.isLocallyOwned = isLocallyOwned;
         this.lastKnownValues = new HashMap<>();
 
         syncedObjects.put(objectId, this);
-
-        if (globalHandlerId == -1) {
-            globalHandlerId = NetworkManager.getInstance().registerHandler(
-                Packets.SyncUpdate.class, 
-                SyncedObject::handleGlobalSyncUpdate
-            );
-        }
+        ensureHandlersRegistered();
 
         for (Field field : getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(Synchronized.class)) {
@@ -53,6 +61,10 @@ public class SyncedObject {
                 }
             }
         }
+
+        if (isLocallyOwned) {
+            announceCreation();
+        }
     }
 
     /**
@@ -60,19 +72,23 @@ public class SyncedObject {
      */
     public static void clearAll() {
         syncedObjects.clear();
-        nextObjectId = 0;
-        
-        if (globalHandlerId != -1) {
-            NetworkManager.getInstance().unregisterHandler(globalHandlerId);
-            globalHandlerId = -1;
+        NetworkManager nm = NetworkManager.getInstance();
+        if (clientHandler != null) {
+            nm.unregisterClientHandler(clientHandler);
+            clientHandler = null;
+        }
+        if (serverHandler != null) {
+            nm.unregisterServerHandler(serverHandler);
+            serverHandler = null;
         }
     }
 
     /**
-     * Global static handler for all SyncUpdate packets.
-     * Dispatches to the correct SyncedObject instance.
-     *
-     * @param packet the sync update packet
+     * Manejador estático global para todos los paquetes SyncUpdate.
+     * <p>
+     * Envía al objeto SyncedObject correcto.
+     * 
+     * @param packet el paquete de actualización de sincronización
      */
     private static void handleGlobalSyncUpdate(Packets.SyncUpdate packet) {
         SyncedObject obj = syncedObjects.get(packet.objectId);
@@ -82,8 +98,8 @@ public class SyncedObject {
     }
 
     /**
-     * Ejecuta un ciclo de actualización, comprobando cambios en los campos sincronizados
-     * y enviando actualizaciones si es necesario.
+     * Ejecuta un ciclo de actualización, comprobando cambios en los campos
+     * sincronizados y enviando actualizaciones si es necesario.
      */
     public void update() {
         if (!isLocallyOwned) {
@@ -109,7 +125,8 @@ public class SyncedObject {
     }
 
     /**
-     * Envía una actualización de sincronización para un campo específico a los pares remotos.
+     * Envía una actualización de sincronización para un campo específico a los
+     * pares remotos.
      *
      * @param fieldName nombre del campo que cambió
      * @param value     nuevo valor del campo
@@ -148,8 +165,10 @@ public class SyncedObject {
      * @return true si los valores son iguales
      */
     private boolean valueEquals(Object a, Object b) {
-        if (a == null && b == null) return true;
-        if (a == null || b == null) return false;
+        if (a == null && b == null)
+            return true;
+        if (a == null || b == null)
+            return false;
         return a.equals(b);
     }
 
@@ -157,7 +176,6 @@ public class SyncedObject {
      * Ayudante para crear una copia del valor para una serialización segura.
      */
     private Object copyValue(Object value) {
-        // TODO: make deep copies for mutable types if necessary
         return value;
     }
 
@@ -166,7 +184,7 @@ public class SyncedObject {
      *
      * @return id del objeto
      */
-    public int getObjectId() {
+    public UUID getObjectId() {
         return objectId;
     }
 
@@ -194,5 +212,67 @@ public class SyncedObject {
      */
     public void dispose() {
         syncedObjects.remove(objectId);
+    }
+
+    /**
+     * Anuncia la creación de este objeto sincronizado a los pares remotos.
+     */
+    private void announceCreation() {
+        Packets.SyncedObjectCreated created = new Packets.SyncedObjectCreated();
+        created.objectId = objectId;
+        created.objectType = getClass().getSimpleName();
+        NetworkManager.getInstance().sendPacket(created);
+    }
+
+    /**
+     * Asegura que los manejadores globales estén registrados.
+     */
+    private void ensureHandlersRegistered() {
+        NetworkManager nm = NetworkManager.getInstance();
+        if (clientHandler == null) {
+            clientHandler = new SyncClientHandler();
+            nm.registerClientHandler(clientHandler);
+        }
+        if (serverHandler == null && nm.isHost()) {
+            serverHandler = new SyncServerRelay();
+            nm.registerServerHandler(serverHandler);
+        }
+    }
+
+    /**
+     * Manejador de paquetes del lado del cliente para actualizaciones de
+     * sincronización.
+     */
+    private static final class SyncClientHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(Packets.SyncUpdate.class, Packets.SyncedObjectCreated.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.SyncUpdate update) {
+                handleGlobalSyncUpdate(update);
+            } else if (packet instanceof Packets.SyncedObjectCreated created) {
+                Gdx.app.log("SyncedObject",
+                        "Remote object announced: " + created.objectId + " (" + created.objectType + ")");
+            }
+        }
+    }
+
+    /**
+     * Manejador de paquetes del lado del servidor para retransmitir actualizaciones
+     * de sincronización.
+     */
+    private static final class SyncServerRelay implements ServerPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(Packets.SyncUpdate.class, Packets.SyncedObjectCreated.class);
+        }
+
+        @Override
+        public void handle(ServerPacketContext context, NetworkPacket packet) {
+            context.broadcastExceptSender(packet);
+        }
     }
 }
