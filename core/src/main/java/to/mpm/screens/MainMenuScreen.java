@@ -57,31 +57,37 @@ public class MainMenuScreen implements Screen {
         menuTable.add(
                 new StyledButton(skin)
                         .text("Crear")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             game.setScreen(new CreateRoomScreen(game));
                             dispose();
                         })
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         menuTable.add(
                 new StyledButton(skin)
                         .text("Unirse")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             game.setScreen(new JoinLobbyScreen(game));
                             dispose();
                         })
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         menuTable.add(
                 new StyledButton(skin)
                         .text("Salir")
+                        .width(250f)
+                        .height(60f)
                         .onClick(() -> {
                             Gdx.app.exit();
                         })
                         .build())
-                .left().row();
+                .size(250f, 60f).left().row();
 
         Table duckTable = new DuckPlaceholder(skin).build();
 

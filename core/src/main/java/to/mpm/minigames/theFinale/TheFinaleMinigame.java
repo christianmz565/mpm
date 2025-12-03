@@ -3,11 +3,15 @@ package to.mpm.minigames.theFinale;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.IntMap;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import to.mpm.minigames.GameConstants;
 import to.mpm.minigames.Minigame;
 import to.mpm.minigames.duckshooter.entities.Duck;
 import to.mpm.minigames.duckshooter.entities.Quack;
@@ -27,18 +31,19 @@ import java.util.*;
  * Es el evento final del torneo, usa la misma mecánica del Duck Shooter.
  */
 public class TheFinaleMinigame implements Minigame {
-    private static final float SHOOT_COOLDOWN = 0.5f;
-    private static final float GAME_DURATION = 180f; // 3 minutos para el evento final
-    private static final Color[] DUCK_COLORS = {
-            Color.RED, Color.BLUE, Color.GREEN,
-            Color.YELLOW, Color.MAGENTA, Color.CYAN
-    };
+    private static final float SHOOT_COOLDOWN = GameConstants.DuckShooter.SHOOT_COOLDOWN;
+    private static final float GAME_DURATION = GameConstants.TheFinale.GAME_DURATION;
+    private static final float VIRTUAL_WIDTH = GameConstants.Screen.WIDTH;
+    private static final float VIRTUAL_HEIGHT = GameConstants.Screen.HEIGHT;
 
     private final int localPlayerId;
+    private final boolean isSpectator;
     private final IntMap<Duck> ducks = new IntMap<>();
     private final List<Quack> quacks = new ArrayList<>();
     private final Map<Integer, Integer> scores = new HashMap<>();
 
+    private OrthographicCamera camera;
+    private Viewport viewport;
     private Duck localDuck;
     private float shootCooldown;
     private float gameTimer;
@@ -47,10 +52,10 @@ public class TheFinaleMinigame implements Minigame {
 
     private FinaleClientHandler clientHandler;
     private FinaleServerHandler serverHandler;
-    private BitmapFont font;
 
     public TheFinaleMinigame(int localPlayerId) {
         this.localPlayerId = localPlayerId;
+        this.isSpectator = (localPlayerId == GameConstants.SPECTATOR_ID);
         this.gameTimer = GAME_DURATION;
         this.shootCooldown = 0f;
     }
@@ -59,19 +64,30 @@ public class TheFinaleMinigame implements Minigame {
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
-        // Crear pato local
-        Color color = DUCK_COLORS[localPlayerId % DUCK_COLORS.length];
-        float startX = 100 + (localPlayerId * 100) % 440;
-        float startY = 100 + (localPlayerId * 80) % 280;
+        // Set up camera and viewport for scaling
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
+        viewport.apply();
+        camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
+        camera.update();
 
-        localDuck = new Duck(localPlayerId, startX, startY, color);
-        ducks.put(localPlayerId, localDuck);
-        scores.put(localPlayerId, 0);
+        // Only create local duck if not a spectator
+        if (!isSpectator) {
+            Color color = GameConstants.Player.COLORS[localPlayerId % GameConstants.Player.COLORS.length];
+            float startX = 100 + (localPlayerId * 100) % 440;
+            float startY = 100 + (localPlayerId * 80) % 280;
 
-        Gdx.app.log("TheFinale",
-                "Initialized local player " + localPlayerId + " as " + (nm.isHost() ? "HOST" : "CLIENT"));
+            localDuck = new Duck(localPlayerId, startX, startY, color);
+            ducks.put(localPlayerId, localDuck);
+            scores.put(localPlayerId, 0);
 
-        // Configurar red
+            Gdx.app.log("TheFinale",
+                    "Initialized local player " + localPlayerId + " as " + (nm.isHost() ? "HOST" : "CLIENT"));
+        } else {
+            Gdx.app.log("TheFinale", "Initialized as SPECTATOR");
+        }
+
+        // Configure network handlers
         clientHandler = new FinaleClientHandler();
         nm.registerClientHandler(clientHandler);
 
@@ -79,11 +95,6 @@ public class TheFinaleMinigame implements Minigame {
             serverHandler = new FinaleServerHandler();
             nm.registerServerHandler(serverHandler);
         }
-
-        // Crear fuente para UI
-        font = new BitmapFont();
-        font.setColor(Color.WHITE);
-        font.getData().setScale(1.5f);
     }
 
     @Override
@@ -144,8 +155,10 @@ public class TheFinaleMinigame implements Minigame {
             endGame();
         }
 
-        // Enviar estado del pato local
-        sendDuckState();
+        // Enviar estado del pato local (solo si no es espectador)
+        if (!isSpectator) {
+            sendDuckState();
+        }
     }
 
     private void checkQuackCollisions(Quack quack) {
@@ -189,9 +202,17 @@ public class TheFinaleMinigame implements Minigame {
 
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
-        // Renderizar patos
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        // Apply viewport and camera
+        viewport.apply();
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        batch.setProjectionMatrix(camera.combined);
 
+        // Draw dark background
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(0.15f, 0.15f, 0.2f, 1f);
+        shapeRenderer.rect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+        // Renderizar patos
         for (IntMap.Entry<Duck> entry : ducks) {
             Duck duck = entry.value;
             if (!duck.isAlive())
@@ -228,91 +249,31 @@ public class TheFinaleMinigame implements Minigame {
 
         shapeRenderer.end();
 
-        // Renderizar UI
-        batch.begin();
+        // Draw crosshair at mouse position (for aiming)
+        if (!isSpectator && localDuck != null && localDuck.isAlive()) {
+            // Unproject mouse coordinates to game world
+            Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+            viewport.unproject(mousePos);
 
-        // Título del evento final
-        font.setColor(Color.GOLD);
-        font.getData().setScale(2f);
-        font.draw(batch, "THE FINALE", 230, 470);
-        font.setColor(Color.WHITE);
-        font.getData().setScale(1.5f);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            shapeRenderer.setColor(Color.WHITE);
 
-        // Temporizador
-        int minutes = (int) gameTimer / 60;
-        int seconds = (int) gameTimer % 60;
-        String timeText = String.format("Time: %d:%02d", minutes, seconds);
-        font.draw(batch, timeText, 10, 440);
+            // Draw crosshair (+) at mouse position
+            float crossSize = 10f;
+            shapeRenderer.line(mousePos.x - crossSize, mousePos.y, mousePos.x + crossSize, mousePos.y);
+            shapeRenderer.line(mousePos.x, mousePos.y - crossSize, mousePos.x, mousePos.y + crossSize);
 
-        // Información del jugador
-        String status = localDuck.isAlive() ? "ALIVE" : "ELIMINATED";
-        String playerInfo = String.format("Player %d | Hits: %d/3 | Kills: %d | %s",
-                localPlayerId,
-                localDuck.getHits(),
-                scores.getOrDefault(localPlayerId, 0),
-                status);
-        font.draw(batch, playerInfo, 10, 410);
-
-        // Cooldown de disparo
-        if (shootCooldown > 0) {
-            font.setColor(Color.RED);
-            font.draw(batch, "Reloading...", 10, 380);
-            font.setColor(Color.WHITE);
-        } else if (localDuck.isAlive()) {
-            font.setColor(Color.GREEN);
-            font.draw(batch, "[SPACE] to Shoot", 10, 380);
-            font.setColor(Color.WHITE);
+            shapeRenderer.end();
         }
 
-        // Controles
-        font.getData().setScale(1f);
-        font.setColor(Color.LIGHT_GRAY);
-        font.draw(batch, "WASD/Arrows: Move | SPACE: Shoot | Mouse: Aim", 10, 25);
-        font.setColor(Color.WHITE);
-        font.getData().setScale(1.5f);
-
-        // Tabla de jugadores (ordenar por vivos primero, luego por kills)
-        int y = 350;
-        font.draw(batch, "Players:", 450, y);
-        y -= 25;
-
-        List<Map.Entry<Integer, Integer>> sortedScores = new ArrayList<>(scores.entrySet());
-        sortedScores.sort((a, b) -> {
-            Duck duckA = ducks.get(a.getKey());
-            Duck duckB = ducks.get(b.getKey());
-            boolean aliveA = duckA != null && duckA.isAlive();
-            boolean aliveB = duckB != null && duckB.isAlive();
-
-            // Vivos primero
-            if (aliveA != aliveB) {
-                return aliveA ? -1 : 1;
-            }
-            // Luego por kills
-            return b.getValue().compareTo(a.getValue());
-        });
-
-        for (Map.Entry<Integer, Integer> entry : sortedScores) {
-            Duck duck = ducks.get(entry.getKey());
-            String playerStatus = duck != null && duck.isAlive() ? "⬤ ALIVE" : "✕ OUT";
-            String scoreText = String.format("P%d: %d kills %s", entry.getKey(), entry.getValue(), playerStatus);
-
-            // Resaltar si es el jugador local
-            if (entry.getKey() == localPlayerId) {
-                font.setColor(Color.YELLOW);
-                font.draw(batch, "> " + scoreText, 450, y);
-                font.setColor(Color.WHITE);
-            } else {
-                font.draw(batch, scoreText, 450, y);
-            }
-            y -= 20;
-        }
-
-        batch.end();
+        // Minimal UI - just render the game entities, GameScreen overlay handles the rest
+        // No cluttered UI elements in the finale
     }
 
     @Override
     public void handleInput(float delta) {
-        if (!localDuck.isAlive())
+        // Spectators don't handle input
+        if (isSpectator || localDuck == null || !localDuck.isAlive())
             return;
 
         // Movimiento
@@ -342,13 +303,13 @@ public class TheFinaleMinigame implements Minigame {
     }
 
     private void shoot() {
-        // Dirección hacia el mouse
-        float mouseX = Gdx.input.getX();
-        float mouseY = 480 - Gdx.input.getY(); // Invertir Y (coordenadas de pantalla)
+        // Unproject mouse coordinates to game world
+        Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+        viewport.unproject(mousePos);
 
         Vector2 direction = new Vector2(
-                mouseX - localDuck.position.x,
-                mouseY - localDuck.position.y);
+                mousePos.x - localDuck.position.x,
+                mousePos.y - localDuck.position.y);
 
         // Si el mouse está muy cerca del pato, disparar hacia arriba por defecto
         if (direction.len() < 10f) {
@@ -463,10 +424,6 @@ public class TheFinaleMinigame implements Minigame {
             serverHandler = null;
         }
 
-        if (font != null) {
-            font.dispose();
-        }
-
         ducks.clear();
         quacks.clear();
         scores.clear();
@@ -474,7 +431,9 @@ public class TheFinaleMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
-        // No necesita ajustes especiales
+        viewport.update(width, height, true);
+        camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
+        camera.update();
     }
 
     // ==================== Handlers de red ====================
@@ -527,7 +486,7 @@ public class TheFinaleMinigame implements Minigame {
 
         Duck duck = ducks.get(state.playerId);
         if (duck == null) {
-            Color color = DUCK_COLORS[state.playerId % DUCK_COLORS.length];
+            Color color = GameConstants.Player.COLORS[state.playerId % GameConstants.Player.COLORS.length];
             duck = new Duck(state.playerId, state.x, state.y, color);
             ducks.put(state.playerId, duck);
             scores.putIfAbsent(state.playerId, 0);
@@ -572,8 +531,8 @@ public class TheFinaleMinigame implements Minigame {
         if (target != null) {
             target.setHits(hit.remainingHits);
 
-            // Si somos nosotros, actualizar nuestro localDuck también
-            if (hit.targetId == localPlayerId) {
+            // Si somos nosotros, actualizar nuestro localDuck también (only if not spectator)
+            if (!isSpectator && hit.targetId == localPlayerId && localDuck != null) {
                 localDuck.setHits(hit.remainingHits);
                 Gdx.app.log("TheFinale", "We got hit! Remaining hits: " + hit.remainingHits);
             }
@@ -590,8 +549,8 @@ public class TheFinaleMinigame implements Minigame {
         if (duck != null) {
             duck.setHits(0);
 
-            // Si somos nosotros, actualizar nuestro localDuck también
-            if (elim.playerId == localPlayerId) {
+            // Si somos nosotros, actualizar nuestro localDuck también (only if not spectator)
+            if (!isSpectator && elim.playerId == localPlayerId && localDuck != null) {
                 localDuck.setHits(0);
                 Gdx.app.log("TheFinale", "We were eliminated!");
             }

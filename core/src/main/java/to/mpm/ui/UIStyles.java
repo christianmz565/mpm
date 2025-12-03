@@ -22,6 +22,8 @@ public class UIStyles {
         public static final Color PRIMARY = new Color(0.2f, 0.6f, 0.9f, 1f);
         public static final Color SECONDARY = new Color(0.9f, 0.7f, 0.2f, 1f);
         public static final Color ACCENT = new Color(0.9f, 0.3f, 0.3f, 1f);
+        public static final Color SUCCESS = new Color(0.3f, 0.8f, 0.3f, 1f);
+        public static final Color ERROR = new Color(0.9f, 0.3f, 0.3f, 1f);
         public static final Color TEXT_PRIMARY = Color.WHITE;
         public static final Color TEXT_SECONDARY = new Color(0.8f, 0.8f, 0.8f, 1f);
         public static final Color TEXT_DISABLED = new Color(0.5f, 0.5f, 0.5f, 1f);

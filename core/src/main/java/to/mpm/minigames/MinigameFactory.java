@@ -2,7 +2,6 @@ package to.mpm.minigames;
 
 import com.badlogic.gdx.Gdx;
 
-import to.mpm.minigames.ballmovement.BallMovementMinigame;
 import to.mpm.minigames.catchThemAll.CatchThemAllMinigame;
 import to.mpm.minigames.sumo.SumoMinigame; 
 import to.mpm.minigames.theFinale.TheFinaleMinigame;
@@ -20,8 +19,6 @@ public class MinigameFactory {
      */
     public static Minigame createMinigame(MinigameType type, int localPlayerId) {
         switch (type) {
-            case BALL_MOVEMENT:
-                return new BallMovementMinigame(localPlayerId);
             case CATCH_THEM_ALL:
                 return new CatchThemAllMinigame(localPlayerId);
             case SUMO:

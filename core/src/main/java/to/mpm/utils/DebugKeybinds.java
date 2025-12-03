@@ -62,11 +62,11 @@ public class DebugKeybinds {
         f4Pressed = handleKey(f4Pressed, Input.Keys.F4, "Switching to Host Lobby Screen",
                 () -> switchScreen(new LobbyScreen(game, true)));
 
-        f5Pressed = handleKey(f5Pressed, Input.Keys.F5, "Switching to Game Screen (Ball Movement)",
-                () -> switchScreen(new GameScreen(game, MinigameType.BALL_MOVEMENT, 1, 3)));
+        f5Pressed = handleKey(f5Pressed, Input.Keys.F5, "Switching to Game Screen (Catch Them All)",
+                () -> switchScreen(new GameScreen(game, MinigameType.CATCH_THEM_ALL, 1, 3)));
 
         f6Pressed = handleKey(f6Pressed, Input.Keys.F6, "Switching to Spectator Screen",
-                () -> switchScreen(new SpectatorScreen(game, to.mpm.minigames.MinigameType.BALL_MOVEMENT, 1, 5)));
+                () -> switchScreen(new SpectatorScreen(game, to.mpm.minigames.MinigameType.CATCH_THEM_ALL, 1, 5)));
 
         f7Pressed = handleKey(f7Pressed, Input.Keys.F7, "Switching to Scoreboard Screen",
                 () -> {
@@ -125,7 +125,7 @@ public class DebugKeybinds {
         Gdx.app.log("DebugKeybinds", "F2: Create Room Screen");
         Gdx.app.log("DebugKeybinds", "F3: Join Lobby Screen");
         Gdx.app.log("DebugKeybinds", "F4: Host Lobby Screen (starts server)");
-        Gdx.app.log("DebugKeybinds", "F5: Game Screen (Ball Movement)");
+        Gdx.app.log("DebugKeybinds", "F5: Game Screen (Catch Them All)");
         Gdx.app.log("DebugKeybinds", "F6: Spectator Screen");
         Gdx.app.log("DebugKeybinds", "F7: Scoreboard Screen");
         Gdx.app.log("DebugKeybinds", "F8: Results Screen");

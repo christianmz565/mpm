@@ -1,7 +1,11 @@
 package to.mpm.minigames.catchThemAll;
 
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import to.mpm.minigames.GameConstants;
 import to.mpm.minigames.Minigame;
 import to.mpm.minigames.catchThemAll.entities.Duck;
 import to.mpm.minigames.catchThemAll.game.GameLoop;
@@ -21,7 +25,12 @@ import java.util.Map;
  * - PacketHandlers: processes network packets
  */
 public class CatchThemAllMinigame implements Minigame {
+    private static final float VIRTUAL_WIDTH = GameConstants.Screen.WIDTH;
+    private static final float VIRTUAL_HEIGHT = GameConstants.Screen.HEIGHT;
+
     private final GameState state;
+    private OrthographicCamera camera;
+    private Viewport viewport;
     private PacketHandlers.ClientHandler clientHandler;
     private PacketHandlers.ServerRelay serverRelay;
 
@@ -32,6 +41,13 @@ public class CatchThemAllMinigame implements Minigame {
     @Override
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
+
+        // Set up camera and viewport for scaling
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
+        viewport.apply();
+        camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
+        camera.update();
 
         GameRenderer.initialize();
         state.createLocalPlayer();
@@ -67,6 +83,11 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
+        // Apply viewport and camera
+        viewport.apply();
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        batch.setProjectionMatrix(camera.combined);
+
         GameRenderer.render(batch, shapeRenderer, state.getPlayers(), state.getDucks(),
                 state.getScores(), GameState.PLAYER_COLORS, state.getLocalPlayerId());
     }
@@ -112,5 +133,8 @@ public class CatchThemAllMinigame implements Minigame {
 
     @Override
     public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
+        camera.update();
     }
 }
