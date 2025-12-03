@@ -305,7 +305,8 @@ public class LobbyScreen implements Screen {
                 if (spectators.contains(localPlayerId)) {
                     game.setScreen(new SpectatorScreen(game, type, roundNumber, configuredRounds));
                 } else {
-                    game.setScreen(new GameScreen(game, type, roundNumber, configuredRounds));
+                    // Show intro screen before the game
+                    game.setScreen(new MinigameIntroScreen(game, type, roundNumber, configuredRounds));
                 }
                 dispose();
             } catch (IllegalArgumentException e) {
@@ -388,8 +389,9 @@ public class LobbyScreen implements Screen {
             game.setScreen(new SpectatorScreen(game, selectedGame, flowManager.getCurrentRound(),
                     flowManager.getTotalRounds()));
         } else {
-            game.setScreen(
-                    new GameScreen(game, selectedGame, flowManager.getCurrentRound(), flowManager.getTotalRounds()));
+            // Show intro screen before the game
+            game.setScreen(new MinigameIntroScreen(game, selectedGame, flowManager.getCurrentRound(),
+                    flowManager.getTotalRounds()));
         }
         dispose();
     }

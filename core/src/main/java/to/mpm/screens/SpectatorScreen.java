@@ -267,7 +267,8 @@ public class SpectatorScreen implements Screen {
                             startNextRound.participatingPlayerIds.contains(myId);
 
                     if (shouldParticipate) {
-                        game.setScreen(new GameScreen(game, nextMinigameType,
+                        // Show intro screen before the game
+                        game.setScreen(new MinigameIntroScreen(game, nextMinigameType,
                                 startNextRound.roundNumber, totalRounds));
                     } else {
                         game.setScreen(new SpectatorScreen(game, nextMinigameType,

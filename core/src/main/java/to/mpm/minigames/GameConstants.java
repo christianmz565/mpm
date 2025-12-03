@@ -56,7 +56,7 @@ public final class GameConstants {
      */
     public static final class Timing {
         /** Default minigame duration in seconds */
-        public static final float DEFAULT_GAME_DURATION = 60f;
+        public static final float DEFAULT_GAME_DURATION = 15f;
         /** Extended duration for battle royale style games */
         public static final float EXTENDED_GAME_DURATION = 180f;
         /** Duration of the intro screen before each minigame */

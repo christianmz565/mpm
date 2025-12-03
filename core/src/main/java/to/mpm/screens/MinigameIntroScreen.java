@@ -61,7 +61,13 @@ public class MinigameIntroScreen implements Screen {
         // Content container - centered with padding
         Table contentContainer = new Table();
         contentContainer.setBackground(UIStyles.createSemiTransparentBackground(0.2f, 0.2f, 0.25f, 0.9f));
-        contentContainer.pad(UIStyles.Spacing.XLARGE);
+        contentContainer.pad(UIStyles.Spacing.LARGE);
+
+        // Calculate responsive widths based on screen size
+        float screenWidth = Gdx.graphics.getWidth();
+        float descriptionWidth = Math.min(400f, screenWidth * 0.35f);
+        float videoWidth = Math.min(320f, screenWidth * 0.3f);
+        float videoHeight = videoWidth * 0.75f; // 4:3 aspect ratio
 
         // Left side - Description
         Table leftSide = new Table();
@@ -88,7 +94,7 @@ public class MinigameIntroScreen implements Screen {
         descriptionLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         descriptionLabel.setWrap(true);
         descriptionLabel.setAlignment(Align.topLeft);
-        leftSide.add(descriptionLabel).width(350).left().padBottom(UIStyles.Spacing.LARGE).row();
+        leftSide.add(descriptionLabel).width(descriptionWidth).left().padBottom(UIStyles.Spacing.LARGE).row();
         
         // Controls hint
         String controls = getMinigameControls(minigameType);
@@ -96,19 +102,19 @@ public class MinigameIntroScreen implements Screen {
         controlsLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
         controlsLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
         controlsLabel.setWrap(true);
-        leftSide.add(controlsLabel).width(350).left().row();
+        leftSide.add(controlsLabel).width(descriptionWidth).left().row();
 
         // Right side - Preview placeholder
         Table rightSide = new Table();
         rightSide.center();
         
-        // Create video preview container
-        Table previewContainer = createPreviewContainer();
-        rightSide.add(previewContainer).size(320, 240);
+        // Create video preview container with responsive size
+        Table previewContainer = createPreviewContainer(videoWidth, videoHeight);
+        rightSide.add(previewContainer).size(videoWidth, videoHeight);
 
         // Add sides to content container
-        contentContainer.add(leftSide).pad(UIStyles.Spacing.LARGE).top().left();
-        contentContainer.add(rightSide).pad(UIStyles.Spacing.LARGE).center();
+        contentContainer.add(leftSide).pad(UIStyles.Spacing.MEDIUM).top().left();
+        contentContainer.add(rightSide).pad(UIStyles.Spacing.MEDIUM).center();
 
         mainContainer.add(contentContainer).center().expand();
 
@@ -153,13 +159,13 @@ public class MinigameIntroScreen implements Screen {
         }
     }
 
-    private Table createPreviewContainer() {
+    private Table createPreviewContainer(float width, float height) {
         Table placeholder = new Table();
         placeholder.setBackground(UIStyles.createSemiTransparentBackground(0.1f, 0.1f, 0.15f, 1f));
         
         // Create an image widget that will be updated with video frames
         videoImage = new Image();
-        placeholder.add(videoImage).size(320, 240);
+        placeholder.add(videoImage).size(width, height);
         
         return placeholder;
     }
