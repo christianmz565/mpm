@@ -2,13 +2,17 @@ package to.mpm.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.minigames.GameConstants;
@@ -22,8 +26,6 @@ import to.mpm.network.handlers.ClientPacketContext;
 import to.mpm.network.handlers.ClientPacketHandler;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
@@ -47,8 +49,6 @@ public class GameScreen implements Screen {
     private Skin skin;
     /** Etiqueta que muestra la puntuación del jugador. */
     private Label scoreLabel;
-    /** Contenedor para la visualización de puntuación. */
-    private Table scoreContainer;
     /** Etiqueta que muestra el temporizador. */
     private Label timerLabel;
     /** Etiqueta que muestra la ronda actual. */
@@ -61,10 +61,16 @@ public class GameScreen implements Screen {
     private final int currentRound;
     /** Total de rondas configuradas. */
     private final int totalRounds;
-    /** Puntuación anterior para detectar cambios. */
-    private int previousScore = 0;
-    /** Lista de popups activos. */
-    private final List<ScorePopup> scorePopups = new ArrayList<>();
+    /** Textura para el overlay de scanlines retro. */
+    private Texture scanlineOverlay;
+    /** Desplazamiento vertical del overlay de scanlines. */
+    private float scanlineOffset = 0f;
+    /** Tiempo acumulado para movimiento del overlay. */
+    private float scanlineTimer = 0f;
+    /** Intervalo para cambio aleatorio del offset. */
+    private float scanlineChangeInterval = 2f;
+    /** Fuente personalizada para la UI. */
+    private BitmapFont customFont;
 
     /** Manejador de paquete para iniciar el juego. */
     private StartGamePacketHandler startGameHandler;
@@ -73,30 +79,7 @@ public class GameScreen implements Screen {
     /** Manejador de paquete para mostrar resultados. */
     private ShowResultsPacketHandler showResultsHandler;
 
-    /**
-     * Clase interna para representar un popup de puntuación.
-     */
-    private static class ScorePopup {
-        Label label;
-        float age;
-        float fadeTime;
 
-        ScorePopup(Label label, float fadeTime) {
-            this.label = label;
-            this.age = 0f;
-            this.fadeTime = fadeTime;
-        }
-
-        boolean update(float delta) {
-            age += delta;
-            if (age >= fadeTime) {
-                return true;
-            }
-            float alpha = 1f - (age / fadeTime);
-            label.getColor().a = alpha;
-            return false;
-        }
-    }
 
     /**
      * Construye una nueva pantalla de juego.
@@ -128,6 +111,14 @@ public class GameScreen implements Screen {
         batch = game.batch;
         shapeRenderer = new ShapeRenderer();
 
+        try {
+            scanlineOverlay = new Texture(Gdx.files.internal("sprites/overlay.png"));
+        } catch (Exception e) {
+            Gdx.app.log("GameScreen", "Scanline overlay not found: " + e.getMessage());
+        }
+
+        customFont = UIStyles.Fonts.loadSixtyfour(32, Color.WHITE);
+
         uiStage = new Stage(new ScreenViewport());
         skin = UISkinProvider.obtain();
         game.getSettingsOverlayManager().attachStage(uiStage);
@@ -135,18 +126,6 @@ public class GameScreen implements Screen {
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
         uiStage.addActor(uiRoot);
-
-        Table topBar = new Table();
-        topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
-        topBar.pad(UIStyles.Spacing.SMALL);
-
-        Table topLeftContainer = new Table();
-        topLeftContainer.left();
-        topBar.add(topLeftContainer).width(150).left();
-
-        Table topCenterContainer = new Table();
-        topCenterContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
-        topCenterContainer.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
 
         int roundToDisplay = this.currentRound;
         int totalRoundsToDisplay = this.totalRounds;
@@ -157,44 +136,51 @@ public class GameScreen implements Screen {
         }
 
         if (!isFinale) {
+            Table topBar = new Table();
+            topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 1.0f));
+            topBar.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
+
+            Label.LabelStyle whiteStyle = new Label.LabelStyle();
+            whiteStyle.font = customFont;
+            whiteStyle.fontColor = Color.WHITE;
+
+            scoreLabel = new Label("0", whiteStyle);
+            scoreLabel.setAlignment(Align.center);
+            topBar.add(scoreLabel).expandX().center();
+
+            uiRoot.add(topBar).expandX().fillX().top().row();
+
+            Table infoBar = new Table();
+            infoBar.pad(UIStyles.Spacing.TINY, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.TINY, UIStyles.Spacing.MEDIUM);
+
+            Label.LabelStyle blackStyle = new Label.LabelStyle();
+            blackStyle.font = customFont;
+            blackStyle.fontColor = Color.BLACK;
+
+            timerLabel = new Label("TIEMPO 60", blackStyle);
+            timerLabel.setAlignment(Align.left);
+            infoBar.add(timerLabel).expandX().left();
+
             if (roundToDisplay > 0 && totalRoundsToDisplay > 0) {
-                roundLabel = new Label("Ronda " + roundToDisplay + "/" + totalRoundsToDisplay, skin);
-                roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-                roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-                topCenterContainer.add(roundLabel).padRight(UIStyles.Spacing.MEDIUM);
+                roundLabel = new Label("RONDA " + roundToDisplay + "/" + totalRoundsToDisplay, blackStyle);
+                roundLabel.setAlignment(Align.right);
+                infoBar.add(roundLabel).expandX().right();
             }
 
-            timerLabel = new Label("Tiempo: 60", skin);
-            timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-            timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-            topCenterContainer.add(timerLabel);
+            uiRoot.add(infoBar).expandX().fillX().top().row();
         } else {
+            Table topBar = new Table();
+            topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
+            topBar.pad(UIStyles.Spacing.SMALL);
+
             Label finaleLabel = new Label("LA FINAL", skin);
             finaleLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
             finaleLabel.setColor(UIStyles.Colors.SECONDARY);
-            topCenterContainer.add(finaleLabel);
+            topBar.add(finaleLabel).expandX().center();
+
+            uiRoot.add(topBar).expandX().fillX().top().row();
         }
 
-        topBar.add(topCenterContainer).expandX().center();
-
-        Table topRightContainer = new Table();
-        topRightContainer.right();
-
-        if (!isFinale) {
-            scoreContainer = new Table(skin);
-            scoreContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
-            scoreContainer.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
-
-            scoreLabel = new Label("0 pts", skin);
-            scoreLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-            scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-            scoreContainer.add(scoreLabel);
-            topRightContainer.add(scoreContainer);
-        }
-
-        topBar.add(topRightContainer).width(150).right();
-
-        uiRoot.add(topBar).expandX().fillX().top().row();
         uiRoot.add().expand();
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
@@ -236,34 +222,23 @@ public class GameScreen implements Screen {
             gameTimer -= delta;
             if (timerLabel != null) {
                 int seconds = Math.max(0, (int) Math.ceil(gameTimer));
-                timerLabel.setText("Tiempo: " + seconds);
+                timerLabel.setText("TIEMPO " + seconds);
             }
         }
 
         if (!isFinale && scoreLabel != null) {
             int localPlayerId = NetworkManager.getInstance().getMyId();
             int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
-            
-            if (currentScore != previousScore) {
-                int increment = currentScore - previousScore;
-                String incrementText = increment >= 0 ? "+" + increment : String.valueOf(increment);
-                scoreLabel.setText(currentScore + " pts (" + incrementText + ")");
-                scoreLabel.setColor(increment >= 0 ? UIStyles.Colors.SECONDARY : UIStyles.Colors.ERROR);
-                
-                ScorePopup popup = new ScorePopup(scoreLabel, 1.5f);
-                scorePopups.clear();
-                scorePopups.add(popup);
-                previousScore = currentScore;
-            }
+            scoreLabel.setText(String.valueOf(currentScore));
+        }
 
-            scorePopups.removeIf(popup -> {
-                boolean finished = popup.update(delta);
-                if (finished) {
-                    scoreLabel.setText(currentScore + " pts");
-                    scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-                }
-                return finished;
-            });
+        if (!isFinale) {
+            scanlineTimer += delta;
+            if (scanlineTimer >= scanlineChangeInterval) {
+                scanlineTimer = 0f;
+                scanlineChangeInterval = 1f + (float) Math.random() * 3f;
+                scanlineOffset = (float) (Math.random() * 10f - 5f);
+            }
         }
 
         boolean timeUp = !isFinale && gameTimer <= 0;
@@ -278,6 +253,18 @@ public class GameScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         currentMinigame.render(batch, shapeRenderer);
+
+        if (scanlineOverlay != null) {
+            batch.begin();
+            int screenWidth = Gdx.graphics.getWidth();
+            int screenHeight = Gdx.graphics.getHeight();
+            float y = scanlineOffset;
+            while (y < screenHeight) {
+                batch.draw(scanlineOverlay, 0, y, screenWidth, scanlineOverlay.getHeight());
+                y += scanlineOverlay.getHeight();
+            }
+            batch.end();
+        }
 
         uiStage.act(delta);
         uiStage.draw();
@@ -372,6 +359,12 @@ public class GameScreen implements Screen {
         }
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
+        }
+        if (scanlineOverlay != null) {
+            scanlineOverlay.dispose();
+        }
+        if (customFont != null) {
+            customFont.dispose();
         }
         if (startGameHandler != null) {
             NetworkManager.getInstance().unregisterClientHandler(startGameHandler);

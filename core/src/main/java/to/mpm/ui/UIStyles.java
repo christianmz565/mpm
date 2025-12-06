@@ -1,9 +1,12 @@
 package to.mpm.ui;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
@@ -63,6 +66,33 @@ public class UIStyles {
         public static final float BODY_SCALE = 1.0f;
         /** Escala para texto pequeño. */
         public static final float SMALL_SCALE = 0.8f;
+    }
+
+    /**
+     * Utilidades para cargar fuentes personalizadas.
+     * <p>
+     * Gestiona la carga de fuentes TrueType para uso en el juego.
+     */
+    public static class Fonts {
+        /** Ruta a la fuente Sixtyfour. */
+        private static final String SIXTYFOUR_PATH = "ui/fonts/Sixtyfour-Regular.ttf";
+
+        /**
+         * Carga la fuente Sixtyfour con el tamaño y color especificados.
+         *
+         * @param size tamaño de la fuente en píxeles
+         * @param color color de la fuente
+         * @return fuente generada
+         */
+        public static BitmapFont loadSixtyfour(int size, Color color) {
+            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal(SIXTYFOUR_PATH));
+            FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+            parameter.size = size;
+            parameter.color = color;
+            BitmapFont font = generator.generateFont(parameter);
+            generator.dispose();
+            return font;
+        }
     }
 
     /**
