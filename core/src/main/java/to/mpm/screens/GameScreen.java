@@ -117,7 +117,7 @@ public class GameScreen implements Screen {
             Gdx.app.log("GameScreen", "Scanline overlay not found: " + e.getMessage());
         }
 
-        customFont = UIStyles.Fonts.loadSixtyfour(32, Color.WHITE);
+        customFont = UIStyles.Fonts.loadSixtyfour(26, Color.WHITE);
 
         uiStage = new Stage(new ScreenViewport());
         skin = UISkinProvider.obtain();

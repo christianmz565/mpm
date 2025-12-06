@@ -48,6 +48,11 @@ public class SumoMinigame implements Minigame {
     
     private Texture backgroundTexture;
     private Texture islandTexture;
+    
+    private float backgroundOffsetX = 0f;
+    private float backgroundOffsetY = 0f;
+    private static final float BACKGROUND_SCROLL_SPEED = 10f;
+    private static final float ISLAND_Y_OFFSET = -30f;
 
     private SumoClientHandler clientHandler;
     private SumoServerHandler serverHandler;
@@ -107,6 +112,9 @@ public class SumoMinigame implements Minigame {
 
     @Override
     public void update(float delta) {
+        backgroundOffsetX -= BACKGROUND_SCROLL_SPEED * delta;
+        backgroundOffsetY -= BACKGROUND_SCROLL_SPEED * delta;
+        
         for (IntMap.Entry<SumoPlayer> entry : players) {
             entry.value.update(delta);
         }
@@ -217,11 +225,13 @@ public class SumoMinigame implements Minigame {
         batch.setProjectionMatrix(camera.combined);
 
         batch.begin();
-        batch.draw(backgroundTexture, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+        float bgWidth = VIRTUAL_WIDTH * 2;
+        float bgHeight = VIRTUAL_HEIGHT * 2;
+        batch.draw(backgroundTexture, backgroundOffsetX, backgroundOffsetY, bgWidth, bgHeight);
         
-        float islandSize = MAP_RADIUS * 2.2f; // Slightly larger than the collision radius
+        float islandSize = MAP_RADIUS * 2.2f;
         float islandX = MAP_CENTER_X - islandSize / 2;
-        float islandY = MAP_CENTER_Y - islandSize / 2;
+        float islandY = MAP_CENTER_Y - islandSize / 2 + ISLAND_Y_OFFSET;
         batch.draw(islandTexture, islandX, islandY, islandSize, islandSize);
         batch.end();
         
