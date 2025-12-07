@@ -2,11 +2,15 @@ package to.mpm.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.minigames.Minigame;
@@ -49,6 +53,16 @@ public class SpectatorScreen implements Screen {
     private Label roundLabel;
     /** Temporizador del juego. */
     private float gameTimer = 10f;
+    /** Textura para el overlay de scanlines retro. */
+    private Texture scanlineOverlay;
+    /** Desplazamiento vertical del overlay de scanlines. */
+    private float scanlineOffset = 0f;
+    /** Tiempo acumulado para movimiento del overlay. */
+    private float scanlineTimer = 0f;
+    /** Intervalo para cambio aleatorio del offset. */
+    private float scanlineChangeInterval = 2f;
+    /** Fuente personalizada para la UI. */
+    private BitmapFont customFont;
     /** Manejador de paquete para mostrar el marcador. */
     private ClientPacketHandler showScoreboardHandler;
     /** Manejador de paquete para mostrar resultados. */
@@ -79,6 +93,14 @@ public class SpectatorScreen implements Screen {
         batch = game.batch;
         shapeRenderer = new ShapeRenderer();
 
+        try {
+            scanlineOverlay = new Texture(Gdx.files.internal("sprites/overlay.png"));
+        } catch (Exception e) {
+            Gdx.app.log("SpectatorScreen", "Scanline overlay not found: " + e.getMessage());
+        }
+
+        customFont = UIStyles.Fonts.loadSixtyfour(26, Color.WHITE);
+
         uiStage = new Stage(new ScreenViewport());
         skin = UISkinProvider.obtain();
         game.getSettingsOverlayManager().attachStage(uiStage);
@@ -87,57 +109,76 @@ public class SpectatorScreen implements Screen {
         uiRoot.setFillParent(true);
         uiStage.addActor(uiRoot);
 
-        Table topBar = new Table();
-        topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
-        topBar.pad(UIStyles.Spacing.SMALL);
-
-        Table topLeftContainer = new Table();
-        topLeftContainer.left();
-        
-        Table spectatorBadge = new Table();
-        spectatorBadge.setBackground(UIStyles.createSemiTransparentBackground(0.9f, 0.3f, 0.3f, 0.3f));
-        spectatorBadge.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
-        
-        Label spectatorLabel = new Label("ESPECTANDO", skin);
-        spectatorLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-        spectatorLabel.setColor(UIStyles.Colors.ACCENT);
-        spectatorBadge.add(spectatorLabel);
-        
-        topLeftContainer.add(spectatorBadge);
-        topBar.add(topLeftContainer).width(150).left();
-
-        Table topCenterContainer = new Table();
-        topCenterContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.3f));
-        topCenterContainer.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
-
         boolean isFinale = minigameType == MinigameType.THE_FINALE;
-        
+
         if (!isFinale) {
+            Table topBar = new Table();
+            topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 1.0f));
+            topBar.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
+
+            Table spectatorBadge = new Table();
+            spectatorBadge.setBackground(UIStyles.createSemiTransparentBackground(0.9f, 0.3f, 0.3f, 0.8f));
+            spectatorBadge.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
+
+            Label.LabelStyle whiteStyle = new Label.LabelStyle();
+            whiteStyle.font = customFont;
+            whiteStyle.fontColor = Color.WHITE;
+
+            Label spectatorLabel = new Label("ESPECTADOR", whiteStyle);
+            spectatorLabel.setAlignment(Align.center);
+            spectatorBadge.add(spectatorLabel);
+
+            topBar.add(spectatorBadge).left().padRight(UIStyles.Spacing.MEDIUM);
+            topBar.add().expandX();
+
+            uiRoot.add(topBar).expandX().fillX().top().row();
+
+            Table infoBar = new Table();
+            infoBar.pad(UIStyles.Spacing.TINY, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.TINY, UIStyles.Spacing.MEDIUM);
+
+            Label.LabelStyle blackStyle = new Label.LabelStyle();
+            blackStyle.font = customFont;
+            blackStyle.fontColor = Color.BLACK;
+
+            timerLabel = new Label("TIEMPO 60", blackStyle);
+            timerLabel.setAlignment(Align.left);
+            infoBar.add(timerLabel).expandX().left();
+
             if (currentRound > 0 && totalRounds > 0) {
-                roundLabel = new Label("Ronda " + currentRound + "/" + totalRounds, skin);
-                roundLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-                roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-                topCenterContainer.add(roundLabel).padRight(UIStyles.Spacing.MEDIUM);
+                roundLabel = new Label("RONDA " + currentRound + "/" + totalRounds, blackStyle);
+                roundLabel.setAlignment(Align.right);
+                infoBar.add(roundLabel).expandX().right();
             }
 
-            timerLabel = new Label("Tiempo: 60", skin);
-            timerLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-            timerLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-            topCenterContainer.add(timerLabel);
+            uiRoot.add(infoBar).expandX().fillX().top().row();
         } else {
+            Table topBar = new Table();
+            topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 1.0f));
+            topBar.pad(UIStyles.Spacing.SMALL);
+
+            Table spectatorBadge = new Table();
+            spectatorBadge.setBackground(UIStyles.createSemiTransparentBackground(0.9f, 0.3f, 0.3f, 0.8f));
+            spectatorBadge.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
+
+            Label.LabelStyle badgeStyle = new Label.LabelStyle();
+            badgeStyle.font = customFont;
+            badgeStyle.fontColor = Color.WHITE;
+
+            Label spectatorLabel = new Label("ESPECTADOR", badgeStyle);
+            spectatorLabel.setAlignment(Align.center);
+            spectatorBadge.add(spectatorLabel);
+
+            topBar.add(spectatorBadge).left().padRight(UIStyles.Spacing.MEDIUM);
+
             Label finaleLabel = new Label("LA FINAL", skin);
-            finaleLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-            finaleLabel.setColor(UIStyles.Colors.SECONDARY);
-            topCenterContainer.add(finaleLabel);
+            BitmapFont finaleFont = skin.getFont("sixtyfour-32");
+            Label.LabelStyle finaleStyle = new Label.LabelStyle(finaleFont, UIStyles.Colors.SECONDARY);
+            finaleLabel.setStyle(finaleStyle);
+            topBar.add(finaleLabel).expandX().center();
+
+            uiRoot.add(topBar).expandX().fillX().top().row();
         }
 
-        topBar.add(topCenterContainer).expandX().center();
-
-        Table topRightContainer = new Table();
-        topRightContainer.right();
-        topBar.add(topRightContainer).width(150).right();
-
-        uiRoot.add(topBar).expandX().fillX().top().row();
         uiRoot.add().expand();
 
         currentMinigame = MinigameFactory.createMinigame(minigameType, -1);
@@ -167,16 +208,39 @@ public class SpectatorScreen implements Screen {
         currentMinigame.update(delta);
 
         boolean isFinale = minigameType == MinigameType.THE_FINALE;
-        if (!isFinale && timerLabel != null) {
+        if (!isFinale) {
             gameTimer -= delta;
-            int seconds = Math.max(0, (int) Math.ceil(gameTimer));
-            timerLabel.setText("Tiempo: " + seconds);
+            if (timerLabel != null) {
+                int seconds = Math.max(0, (int) Math.ceil(gameTimer));
+                timerLabel.setText("TIEMPO " + seconds);
+            }
+        }
+
+        if (!isFinale) {
+            scanlineTimer += delta;
+            if (scanlineTimer >= scanlineChangeInterval) {
+                scanlineTimer = 0f;
+                scanlineChangeInterval = 1f + (float) Math.random() * 3f;
+                scanlineOffset = (float) (Math.random() * 10f - 5f);
+            }
         }
 
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         currentMinigame.render(batch, shapeRenderer);
+
+        if (scanlineOverlay != null) {
+            batch.begin();
+            int screenWidth = Gdx.graphics.getWidth();
+            int screenHeight = Gdx.graphics.getHeight();
+            float y = scanlineOffset;
+            while (y < screenHeight) {
+                batch.draw(scanlineOverlay, 0, y, screenWidth, scanlineOverlay.getHeight());
+                y += scanlineOverlay.getHeight();
+            }
+            batch.end();
+        }
 
         uiStage.act(delta);
         uiStage.draw();
@@ -237,6 +301,12 @@ public class SpectatorScreen implements Screen {
         }
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
+        }
+        if (scanlineOverlay != null) {
+            scanlineOverlay.dispose();
+        }
+        if (customFont != null) {
+            customFont.dispose();
         }
         if (uiStage != null) {
             uiStage.dispose();

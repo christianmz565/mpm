@@ -83,6 +83,7 @@ public class SettingsOverlay {
         settingsPanel.add(
                 new StyledButton(skin)
                         .text("Salir al Menú")
+                        .fontSize(14)
                         .width(250f)
                         .height(60f)
                         .onClick(this::exitToMainMenu)
