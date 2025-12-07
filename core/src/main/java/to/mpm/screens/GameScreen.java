@@ -170,7 +170,7 @@ public class GameScreen implements Screen {
             uiRoot.add(infoBar).expandX().fillX().top().row();
         } else {
             Table topBar = new Table();
-            topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
+            topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 1.0f));
             topBar.pad(UIStyles.Spacing.SMALL);
 
             Label finaleLabel = new Label("LA FINAL", skin);
