@@ -125,14 +125,16 @@ public class ScoreboardScreen implements Screen {
         stage.addActor(root);
 
         roundLabel = new Label("¡Ronda " + currentRound + "/" + totalRounds + " Completada!", skin);
-        roundLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
-        roundLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+        com.badlogic.gdx.graphics.g2d.BitmapFont titleFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
+        roundLabel.setStyle(titleStyle);
         roundLabel.setAlignment(Align.center);
         root.add(roundLabel).expandX().center().row();
 
         Label titleLabel = new Label("Marcador", skin);
-        titleLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
-        titleLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
+        com.badlogic.gdx.graphics.g2d.BitmapFont subtitleFont = skin.getFont("sixtyfour-18");
+        Label.LabelStyle subtitleStyle = new Label.LabelStyle(subtitleFont, UIStyles.Colors.TEXT_SECONDARY);
+        titleLabel.setStyle(subtitleStyle);
         titleLabel.setAlignment(Align.center);
         root.add(titleLabel).expandX().center().padBottom(UIStyles.Spacing.LARGE).row();
 
@@ -151,8 +153,9 @@ public class ScoreboardScreen implements Screen {
         updateScoresList();
 
         countdownLabel = new Label("Siguiente ronda en: 5", skin);
-        countdownLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-        countdownLabel.setColor(UIStyles.Colors.ACCENT);
+        com.badlogic.gdx.graphics.g2d.BitmapFont countdownFont = skin.getFont("sixtyfour-14");
+        Label.LabelStyle countdownStyle = new Label.LabelStyle(countdownFont, UIStyles.Colors.ACCENT);
+        countdownLabel.setStyle(countdownStyle);
         countdownLabel.setAlignment(Align.center);
         root.add(countdownLabel)
                 .width(UIStyles.Layout.PANEL_MAX_WIDTH)
@@ -183,6 +186,9 @@ public class ScoreboardScreen implements Screen {
                     .playerName(player.getPlayerName() + (isLocalPlayer ? " (Tú)" : ""))
                     .score(player.getScore())
                     .highlighted(isLocalPlayer)
+                    .rankFontSize(20)
+                    .nameFontSize(18)
+                    .scoreFontSize(20)
                     .build();
 
             scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.LARGE).row();
@@ -224,8 +230,7 @@ public class ScoreboardScreen implements Screen {
             advanceToNextRound();
         }
 
-        Gdx.gl.glClearColor(UIStyles.Colors.BACKGROUND.r, UIStyles.Colors.BACKGROUND.g,
-                UIStyles.Colors.BACKGROUND.b, UIStyles.Colors.BACKGROUND.a);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(delta);

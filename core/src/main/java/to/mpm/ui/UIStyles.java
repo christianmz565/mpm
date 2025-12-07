@@ -57,15 +57,15 @@ public class UIStyles {
      */
     public static class Typography {
         /** Escala para títulos principales. */
-        public static final float TITLE_SCALE = 2.0f;
+        public static final float TITLE_SCALE = 3.0f;
         /** Escala para subtítulos. */
-        public static final float SUBTITLE_SCALE = 1.5f;
+        public static final float SUBTITLE_SCALE = 2.0f;
         /** Escala para encabezados. */
-        public static final float HEADING_SCALE = 1.3f;
+        public static final float HEADING_SCALE = 1.5f;
         /** Escala para texto normal. */
-        public static final float BODY_SCALE = 1.0f;
+        public static final float BODY_SCALE = 1.2f;
         /** Escala para texto pequeño. */
-        public static final float SMALL_SCALE = 0.8f;
+        public static final float SMALL_SCALE = 1.0f;
     }
 
     /**

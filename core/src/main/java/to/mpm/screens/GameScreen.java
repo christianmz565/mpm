@@ -174,8 +174,9 @@ public class GameScreen implements Screen {
             topBar.pad(UIStyles.Spacing.SMALL);
 
             Label finaleLabel = new Label("LA FINAL", skin);
-            finaleLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-            finaleLabel.setColor(UIStyles.Colors.SECONDARY);
+            com.badlogic.gdx.graphics.g2d.BitmapFont finaleFont = skin.getFont("sixtyfour-32");
+            Label.LabelStyle finaleStyle = new Label.LabelStyle(finaleFont, UIStyles.Colors.SECONDARY);
+            finaleLabel.setStyle(finaleStyle);
             topBar.add(finaleLabel).expandX().center();
 
             uiRoot.add(topBar).expandX().fillX().top().row();

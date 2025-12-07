@@ -24,6 +24,10 @@ public class StyledButton {
     private boolean disabled = false;
     /** Nombre del estilo visual del botón. */
     private String style = "default";
+    /** Tamaño de fuente personalizado (null para usar el predeterminado). */
+    private Integer fontSize = null;
+    /** Indica si el texto debe ajustarse automáticamente en varias líneas. */
+    private boolean wrapText = false;
 
     /**
      * Construye un nuevo StyledButton con el skin especificado.
@@ -119,14 +123,66 @@ public class StyledButton {
     }
 
     /**
+     * Establece el tamaño de fuente personalizado para el botón.
+     *
+     * @param fontSize tamaño de fuente en píxeles
+     * @return esta instancia para encadenamiento de métodos
+     */
+    public StyledButton fontSize(int fontSize) {
+        this.fontSize = fontSize;
+        return this;
+    }
+
+    /**
+     * Habilita el ajuste automático de texto en varias líneas.
+     *
+     * @return esta instancia para encadenamiento de métodos
+     */
+    public StyledButton wrapText() {
+        this.wrapText = true;
+        return this;
+    }
+
+    /**
      * Construye y devuelve el botón configurado.
      *
      * @return botón de texto con la configuración especificada
      */
     public TextButton build() {
         TextButton button = new TextButton(text, skin, style);
+        
+        String fontName = fontSize != null ? "sixtyfour-" + fontSize : "sixtyfour-24";
+        com.badlogic.gdx.graphics.g2d.BitmapFont buttonFont = skin.getFont(fontName);
+        
+        // Properly copy all style properties including backgrounds
+        TextButton.TextButtonStyle originalStyle = button.getStyle();
+        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
+        buttonStyle.font = buttonFont;
+        buttonStyle.fontColor = originalStyle.fontColor;
+        buttonStyle.downFontColor = originalStyle.downFontColor;
+        buttonStyle.overFontColor = originalStyle.overFontColor;
+        buttonStyle.checkedFontColor = originalStyle.checkedFontColor;
+        buttonStyle.checkedOverFontColor = originalStyle.checkedOverFontColor;
+        buttonStyle.disabledFontColor = originalStyle.disabledFontColor;
+        
+        // Copy all drawable states for proper button backgrounds
+        buttonStyle.up = originalStyle.up;
+        buttonStyle.down = originalStyle.down;
+        buttonStyle.over = originalStyle.over;
+        buttonStyle.checked = originalStyle.checked;
+        buttonStyle.checkedOver = originalStyle.checkedOver;
+        buttonStyle.disabled = originalStyle.disabled;
+        buttonStyle.focused = originalStyle.focused;
+        
+        button.setStyle(buttonStyle);
+        
         button.setSize(width, height);
         button.setDisabled(disabled);
+        
+        if (wrapText) {
+            button.getLabel().setWrap(true);
+        }
+        
         if (listener != null) {
             button.addListener(listener);
         }

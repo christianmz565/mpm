@@ -3,6 +3,7 @@ package to.mpm.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -11,7 +12,6 @@ import to.mpm.network.NetworkConfig;
 import to.mpm.network.NetworkManager;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
-import to.mpm.ui.components.DuckPlaceholder;
 import to.mpm.ui.components.InputField;
 import to.mpm.ui.components.StyledButton;
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.io.IOException;
 /**
  * Pantalla para unirse a una sala de juego existente.
  * <p>
- * Muestra campos de entrada para IP, Puerto y Nombre del jugador.
+ * Muestra campos de entrada con estilo retro minimalista centrado.
  */
 public class JoinLobbyScreen implements Screen {
     /** Instancia del juego principal. */
@@ -60,33 +60,34 @@ public class JoinLobbyScreen implements Screen {
         stage.addActor(root);
 
         Table formTable = new Table();
-        formTable.top().left();
 
-        Table headerTable = new Table();
         TextButton backButton = new StyledButton(skin)
                 .text("< Volver")
-                .width(120f)
-                .height(45f)
+                .width(180f)
+                .fontSize(18)
+                .height(60f)
                 .onClick(() -> {
                     game.setScreen(new MainMenuScreen(game));
                     dispose();
                 })
                 .build();
-        headerTable.add(backButton).size(120f, 45f).padRight(UIStyles.Spacing.MEDIUM);
+        formTable.add(backButton).size(180f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Label titleLabel = new Label("Unirse a sala", skin);
-        titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
-        titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-        headerTable.add(titleLabel).left();
+        BitmapFont titleFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
+        titleLabel.setStyle(titleStyle);
+        formTable.add(titleLabel).padBottom(UIStyles.Spacing.LARGE).row();
 
-        formTable.add(headerTable).left().padBottom(UIStyles.Spacing.XLARGE).row();
+        float labelWidth = 150f;
+        float fieldWidth = 250f;
 
-        float labelWidth = 100f;
-        float fieldWidth = 175f;
+        BitmapFont bodyFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle bodyStyle = new Label.LabelStyle(bodyFont, UIStyles.Colors.TEXT_PRIMARY);
 
         Table ipRow = new Table();
         Label ipLabel = new Label("IP", skin);
-        ipLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        ipLabel.setStyle(bodyStyle);
         ipRow.add(ipLabel).width(labelWidth).left();
         ipField = new InputField(skin)
                 .defaultValue("localhost")
@@ -94,11 +95,11 @@ public class JoinLobbyScreen implements Screen {
                 .width(fieldWidth)
                 .buildField();
         ipRow.add(ipField).width(fieldWidth);
-        formTable.add(ipRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+        formTable.add(ipRow).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table portRow = new Table();
         Label portLabel = new Label("Puerto", skin);
-        portLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        portLabel.setStyle(bodyStyle);
         portRow.add(portLabel).width(labelWidth).left();
         portField = new InputField(skin)
                 .defaultValue(String.valueOf(NetworkConfig.DEFAULT_PORT))
@@ -107,11 +108,11 @@ public class JoinLobbyScreen implements Screen {
                 .maxLength(5)
                 .buildField();
         portRow.add(portField).width(fieldWidth);
-        formTable.add(portRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+        formTable.add(portRow).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table nameRow = new Table();
         Label nameLabel = new Label("Nombre", skin);
-        nameLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        nameLabel.setStyle(bodyStyle);
         nameRow.add(nameLabel).width(labelWidth).left();
         nameField = new InputField(skin)
                 .defaultValue("")
@@ -120,25 +121,22 @@ public class JoinLobbyScreen implements Screen {
                 .maxLength(20)
                 .buildField();
         nameRow.add(nameField).width(fieldWidth);
-        formTable.add(nameRow).left().padBottom(UIStyles.Spacing.XLARGE).row();
+        formTable.add(nameRow).padBottom(UIStyles.Spacing.LARGE).row();
 
         formTable.add(
                 new StyledButton(skin)
                         .text("Unirse")
-                        .width(250f)
+                        .width(350f)
                         .height(60f)
                         .onClick(this::joinGame)
                         .build())
-                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(350f, 60f).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         statusLabel = new Label("", skin);
-        statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-        formTable.add(statusLabel).left().row();
+        statusLabel.setStyle(bodyStyle);
+        formTable.add(statusLabel).row();
 
-        Table duckTable = new DuckPlaceholder(skin).build();
-
-        root.add(formTable).top().left().pad(UIStyles.Spacing.LARGE).expandY();
-        root.add(duckTable).expand();
+        root.add(formTable).center();
     }
 
     /**
@@ -194,8 +192,7 @@ public class JoinLobbyScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(UIStyles.Colors.BACKGROUND.r, UIStyles.Colors.BACKGROUND.g,
-                UIStyles.Colors.BACKGROUND.b, UIStyles.Colors.BACKGROUND.a);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(delta);
