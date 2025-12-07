@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 
 import to.mpm.minigames.catchThemAll.CatchThemAllMinigame;
 import to.mpm.minigames.dodgeRain.DodgeRainMinigame;
+import to.mpm.minigames.infiniteRunner.InfiniteRunnerMinigame;
 import to.mpm.minigames.sumo.SumoMinigame;
 import to.mpm.minigames.theFinale.TheFinaleMinigame;
 
@@ -26,6 +27,8 @@ public class MinigameFactory {
                 return new SumoMinigame(localPlayerId);
             case DODGE_RAIN:
                 return new DodgeRainMinigame(localPlayerId);
+            case INFINITE_RUNNER:
+                return new InfiniteRunnerMinigame(localPlayerId);
             case THE_FINALE:
                 return new TheFinaleMinigame(localPlayerId);
             default:

@@ -27,6 +27,13 @@ public enum MinigameType {
                         "¡Esquiva la lluvia de objetos! Sobrevive el mayor tiempo posible.",
                         "A/D o Flechas Izquierda/Derecha para moverse",
                         2, 6),
+        /** Minijuego de carrera infinita con obstáculos. */
+        INFINITE_RUNNER(
+                        "Infinite Runner",
+                        "¡Corre y salta sobre obstáculos! La pantalla se mueve automáticamente. " +
+                                        "Evita los obstáculos o serás ralentizado. ¡Si te atrasas demasiado, pierdes!",
+                        "A/D o Flechas para moverte lateralmente, ESPACIO para saltar",
+                        2, 6),
         /** Minijuego final del torneo. */
         THE_FINALE(
                         "The Finale",
