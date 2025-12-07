@@ -15,6 +15,10 @@ public class SumoPlayer {
     public int lastHitterId = -1;
     /** Tiempo transcurrido desde el último golpe recibido. */
     public float timeSinceLastHit = 0f;
+    /** Rotación visual del jugador en grados. */
+    public float rotation = 0f;
+    /** Velocidad angular de rotación en grados por segundo. */
+    public float angularVelocity = 0f;
 
     public SumoPlayer(int id, float x, float y, Color color) {
         this.id = id;
@@ -24,10 +28,14 @@ public class SumoPlayer {
     }
 
     public void update(float delta) {
-        if (!isAlive) return;
+        if (!isAlive)
+            return;
 
         position.add(velocity.x * delta, velocity.y * delta);
-        velocity.scl(0.95f); // Fricción
+        velocity.scl(0.95f);
+
+        rotation += angularVelocity * delta;
+        angularVelocity *= 0.92f;
 
         timeSinceLastHit += delta;
         if (timeSinceLastHit > 5.0f) {
@@ -41,5 +49,7 @@ public class SumoPlayer {
         this.isAlive = true;
         this.lastHitterId = -1;
         this.timeSinceLastHit = 0;
+        this.rotation = 0f;
+        this.angularVelocity = 0f;
     }
 }
