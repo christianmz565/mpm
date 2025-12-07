@@ -247,7 +247,9 @@ public class TheFinaleMinigame implements Minigame {
 
         Texture bg = spriteManager.getBackground();
         if (bg != null) {
+            batch.setColor(1f, 1f, 1f, 0.65f);
             batch.draw(bg, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+            batch.setColor(Color.WHITE);
         } else {
             batch.end();
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
