@@ -12,16 +12,17 @@ import java.util.List;
  */
 public class DuckSpawner {
     private static final float SCREEN_WIDTH = 640f;
-    private static final float SPAWN_Y = 480f;  // Top of screen
+    private static final float SPAWN_Y = 480f;
     
-    // Spawn intervals
-    private static final float MIN_SPAWN_INTERVAL = 0.8f;  // Seconds
-    private static final float MAX_SPAWN_INTERVAL = 2.0f;  // Seconds
+    /** Intervalo mínimo de spawn en segundos. */
+    private static final float MIN_SPAWN_INTERVAL = 0.8f;
+    /** Intervalo máximo de spawn en segundos. */
+    private static final float MAX_SPAWN_INTERVAL = 2.0f;
     
-    // Duck type probabilities (out of 100)
-    private static final int GOLDEN_PROBABILITY = 10;   // 10% chance
-    private static final int BAD_PROBABILITY = 20;      // 20% chance
-    // NEUTRAL is the remaining 70%
+    /** Probabilidad del pato dorado (10%). */
+    private static final int GOLDEN_PROBABILITY = 10;
+    /** Probabilidad del pato malo (20%). */
+    private static final int BAD_PROBABILITY = 20;
     
     private float timeSinceLastSpawn;
     private float nextSpawnInterval;
@@ -45,12 +46,10 @@ public class DuckSpawner {
         
         timeSinceLastSpawn += delta;
         
-        // Check if it's time to spawn
         if (timeSinceLastSpawn >= nextSpawnInterval) {
             Duck newDuck = spawnDuck();
             newDucks.add(newDuck);
             
-            // Reset timer and get next interval
             timeSinceLastSpawn = 0;
             nextSpawnInterval = getRandomSpawnInterval();
         }
@@ -62,11 +61,9 @@ public class DuckSpawner {
      * Spawn a single duck at a random position.
      */
     private Duck spawnDuck() {
-        // Random X position (leave some margin from edges)
         float margin = 30f;
         float x = MathUtils.random(margin, SCREEN_WIDTH - margin - Duck.DUCK_WIDTH);
         
-        // Random duck type based on probabilities
         DuckType type = getRandomDuckType();
         
         int id = nextDuckId++;

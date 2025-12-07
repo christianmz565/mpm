@@ -3,6 +3,7 @@ package to.mpm.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -10,7 +11,6 @@ import to.mpm.Main;
 import to.mpm.network.NetworkManager;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
-import to.mpm.ui.components.DuckPlaceholder;
 import to.mpm.ui.components.InputField;
 import to.mpm.ui.components.StyledButton;
 import to.mpm.utils.FirewallHelper;
@@ -18,16 +18,24 @@ import java.io.IOException;
 
 /**
  * Pantalla para crear una nueva sala de juego.
- * Muestra campos de entrada para Puerto, Rondas y Nombre de sala.
+ * <p>
+ * Muestra campos de entrada con estilo retro minimalista centrado.
  */
 public class CreateRoomScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private Stage stage; //!< stage para renderizar componentes de UI
-    private Skin skin; //!< skin para estilizar componentes
-    private TextField portField; //!< campo de entrada para el puerto
-    private TextField roundsField; //!< campo de entrada para el número de rondas
-    private TextField nameField; //!< campo de entrada para el nombre del jugador
-    private Label statusLabel; //!< etiqueta para mostrar mensajes de estado
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Stage para renderizar componentes de UI. */
+    private Stage stage;
+    /** Skin para estilizar componentes. */
+    private Skin skin;
+    /** Campo de entrada para el puerto. */
+    private TextField portField;
+    /** Campo de entrada para el número de rondas. */
+    private TextField roundsField;
+    /** Campo de entrada para el nombre del jugador. */
+    private TextField nameField;
+    /** Etiqueta para mostrar mensajes de estado. */
+    private Label statusLabel;
 
     /**
      * Construye una nueva pantalla de creación de sala.
@@ -52,102 +60,125 @@ public class CreateRoomScreen implements Screen {
         stage.addActor(root);
 
         Table formTable = new Table();
-        formTable.top().left();
 
-        Table headerTable = new Table();
-        TextButton backButton = new TextButton("<-", skin);
-        backButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-            @Override
-            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
-                game.setScreen(new MainMenuScreen(game));
-                dispose();
-            }
-        });
-        headerTable.add(backButton).padRight(UIStyles.Spacing.MEDIUM);
+        TextButton backButton = new StyledButton(skin)
+                .text("< Volver")
+                .width(180f)
+                .fontSize(18)
+                .height(60f)
+                .onClick(() -> {
+                    game.setScreen(new MainMenuScreen(game));
+                    dispose();
+                })
+                .build();
+        formTable.add(backButton).size(180f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
 
-        Label titleLabel = new Label("MicroPatosMania\nCrear sala", skin);
-        titleLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
-        titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-        headerTable.add(titleLabel).left();
+        Label titleLabel = new Label("Crear sala", skin);
+        BitmapFont titleFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
+        titleLabel.setStyle(titleStyle);
+        formTable.add(titleLabel).padBottom(UIStyles.Spacing.LARGE).row();
 
-        formTable.add(headerTable).left().padBottom(UIStyles.Spacing.LARGE).row();
+        float labelWidth = 150f;
+        float fieldWidth = 250f;
 
         Table portRow = new Table();
         Label portLabel = new Label("Puerto", skin);
-        portRow.add(portLabel).padRight(UIStyles.Spacing.SMALL);
+        BitmapFont bodyFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle bodyStyle = new Label.LabelStyle(bodyFont, UIStyles.Colors.TEXT_PRIMARY);
+        portLabel.setStyle(bodyStyle);
+        portRow.add(portLabel).width(labelWidth).left();
         portField = new InputField(skin)
                 .defaultValue("61232")
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .filter(new TextField.TextFieldFilter.DigitsOnlyFilter())
                 .maxLength(5)
                 .buildField();
-        portRow.add(portField);
-        formTable.add(portRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+        portRow.add(portField).width(fieldWidth);
+        formTable.add(portRow).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table roundsRow = new Table();
         Label roundsLabel = new Label("Rondas", skin);
-        roundsRow.add(roundsLabel).padRight(UIStyles.Spacing.SMALL);
+        roundsLabel.setStyle(bodyStyle);
+        roundsRow.add(roundsLabel).width(labelWidth).left();
         roundsField = new InputField(skin)
                 .defaultValue("6")
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .filter(new TextField.TextFieldFilter.DigitsOnlyFilter())
                 .maxLength(2)
                 .buildField();
-        roundsRow.add(roundsField);
-        formTable.add(roundsRow).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+        roundsRow.add(roundsField).width(fieldWidth);
+        formTable.add(roundsRow).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Table nameRow = new Table();
         Label nameLabel = new Label("Nombre", skin);
-        nameRow.add(nameLabel).padRight(UIStyles.Spacing.SMALL);
+        nameLabel.setStyle(bodyStyle);
+        nameRow.add(nameLabel).width(labelWidth).left();
         nameField = new InputField(skin)
                 .defaultValue("")
                 .messageText("...")
-                .width(UIStyles.Sizes.INPUT_WIDTH)
+                .width(fieldWidth)
                 .maxLength(20)
                 .buildField();
-        nameRow.add(nameField);
-        formTable.add(nameRow).left().padBottom(UIStyles.Spacing.LARGE).row();
+        nameRow.add(nameField).width(fieldWidth);
+        formTable.add(nameRow).padBottom(UIStyles.Spacing.LARGE).row();
 
         formTable.add(
                 new StyledButton(skin)
                         .text("Crear")
+                        .width(350f)
+                        .height(60f)
                         .onClick(this::createRoom)
                         .build())
-                .left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(350f, 60f).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         statusLabel = new Label("", skin);
-        statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-        formTable.add(statusLabel).left().row();
+        statusLabel.setStyle(bodyStyle);
+        statusLabel.setWrap(true);
+        formTable.add(statusLabel).width(400f).row();
 
-        Table duckTable = new DuckPlaceholder(skin).build();
-
-        root.add(formTable).top().left().pad(UIStyles.Spacing.LARGE).expandY();
-        root.add(duckTable).expand();
+        root.add(formTable).center();
     }
 
     /**
      * Maneja la creación de una nueva sala de juego.
+     * <p>
      * Valida los campos de entrada e inicia el servidor.
      */
     private void createRoom() {
         try {
             int port = Integer.parseInt(portField.getText());
-            @SuppressWarnings("unused")
             int rounds = Integer.parseInt(roundsField.getText());
             String playerName = nameField.getText().trim();
 
-            if (playerName.isEmpty()) {
-                statusLabel.setText("Por favor ingresa un nombre");
+            if (rounds < 2) {
+                statusLabel.setText("Las rondas deben ser al menos 2");
                 return;
+            }
+
+            if (playerName.isEmpty()) {
+                playerName = "Host";
             }
 
             statusLabel.setText("Creando sala...");
 
+            NetworkManager.getInstance().hostGame(playerName, port);
             FirewallHelper.requestFirewallPermission(port);
 
-            NetworkManager.getInstance().hostGame();
+            NetworkManager.getInstance().registerAdditionalClasses(
+                    to.mpm.minigames.manager.ManagerPackets.RoomConfig.class,
+                    to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class,
+                    to.mpm.minigames.manager.ManagerPackets.StartNextRound.class,
+                    to.mpm.minigames.manager.ManagerPackets.ShowResults.class,
+                    to.mpm.minigames.manager.ManagerPackets.ReturnToLobby.class,
+                    java.util.HashMap.class,
+                    java.util.ArrayList.class);
 
-            game.setScreen(new HostLobbyScreen(game));
+            to.mpm.minigames.manager.ManagerPackets.RoomConfig roomConfig = new to.mpm.minigames.manager.ManagerPackets.RoomConfig(
+                    rounds);
+            NetworkManager.getInstance().broadcastFromHost(roomConfig);
+
+            game.setScreen(new LobbyScreen(game, true, rounds));
             dispose();
 
         } catch (NumberFormatException e) {
@@ -165,8 +196,7 @@ public class CreateRoomScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(UIStyles.Colors.BACKGROUND.r, UIStyles.Colors.BACKGROUND.g,
-                UIStyles.Colors.BACKGROUND.b, UIStyles.Colors.BACKGROUND.a);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(delta);

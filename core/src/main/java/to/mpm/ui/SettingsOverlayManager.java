@@ -12,24 +12,34 @@ import to.mpm.ui.components.SettingsOverlay;
 
 /**
  * Controlador responsable de gestionar la superposición de ajustes.
- * Mantiene su propio stage y un InputMultiplexer para integrarse con la pantalla activa.
+ * <p>
+ * Mantiene su propio stage y un InputMultiplexer para integrarse con la
+ * pantalla activa.
  */
 public class SettingsOverlayManager {
-    private static final Color OVERLAY_COLOR = new Color(0f, 0f, 0f, 0.7f); //!< color de la capa de oscurecimiento
-    private final Stage overlayStage; //!< stage dedicado para el overlay
-    private final ShapeRenderer dimRenderer; //!< renderer para la capa oscura de fondo
-    private final SettingsOverlay overlay; //!< componente visual de ajustes
-    private final InputMultiplexer inputMultiplexer; //!< multiplexer compartido con la pantalla activa
-    private Stage activeStage; //!< stage actual de la pantalla principal
+    /** Color de la capa de oscurecimiento. */
+    private static final Color OVERLAY_COLOR = new Color(0f, 0f, 0f, 0.7f);
+    /** Stage dedicado para el overlay. */
+    private final Stage overlayStage;
+    /** Renderer para la capa oscura de fondo. */
+    private final ShapeRenderer dimRenderer;
+    /** Componente visual de ajustes. */
+    private final SettingsOverlay overlay;
+    /** Multiplexer compartido con la pantalla activa. */
+    private final InputMultiplexer inputMultiplexer;
+    /** Stage actual de la pantalla principal. */
+    private Stage activeStage;
 
     /**
      * Construye el administrador de la superposición utilizando el skin compartido.
+     *
+     * @param game referencia al juego principal
      */
-    public SettingsOverlayManager() {
+    public SettingsOverlayManager(to.mpm.Main game) {
         Skin skin = UISkinProvider.obtain();
         overlayStage = new Stage(new ScreenViewport());
         dimRenderer = new ShapeRenderer();
-        overlay = new SettingsOverlay(overlayStage, skin);
+        overlay = new SettingsOverlay(game, overlayStage, skin);
         inputMultiplexer = new InputMultiplexer();
         inputMultiplexer.addProcessor(overlayStage);
     }
@@ -77,7 +87,7 @@ public class SettingsOverlayManager {
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         dimRenderer.begin(ShapeRenderer.ShapeType.Filled);
-    dimRenderer.setColor(OVERLAY_COLOR);
+        dimRenderer.setColor(OVERLAY_COLOR);
         dimRenderer.rect(0f, 0f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         dimRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
@@ -122,6 +132,9 @@ public class SettingsOverlayManager {
         return overlay.isVisible();
     }
 
+    /**
+     * Reconstruye la configuración del InputMultiplexer.
+     */
     private void rebuildInputPipeline() {
         inputMultiplexer.clear();
         inputMultiplexer.addProcessor(overlayStage);

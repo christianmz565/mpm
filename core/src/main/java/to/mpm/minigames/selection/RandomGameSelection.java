@@ -4,42 +4,43 @@ import to.mpm.minigames.MinigameType;
 import java.util.Random;
 
 /**
- * Random game selection strategy.
- * Selects a random minigame from all available minigames that support the given player count.
+ * Utilidad para la selección aleatoria de minijuegos.
+ * <p>
+ * Selecciona un minijuego aleatorio de todos los minijuegos disponibles que
+ * soportan la cantidad dada de jugadores.
  */
-public class RandomGameSelection implements GameSelectionStrategy {
-    private final Random random;
+public class RandomGameSelection {
+    private static final Random random = new Random();
 
-    public RandomGameSelection() {
-        this.random = new Random();
-    }
-
-    @Override
-    public MinigameType selectGame(int playerCount) {
+    /**
+     * Selecciona un minijuego aleatorio adecuado para la cantidad dada de
+     * jugadores.
+     * <p>
+     * Excluye THE_FINALE de la selección aleatoria.
+     *
+     * @param playerCount número de jugadores en el juego
+     * @return el tipo de minijuego seleccionado
+     */
+    public static MinigameType selectGame(int playerCount) {
         MinigameType[] allGames = MinigameType.values();
-        
-        // Filter games that support the player count
+
         MinigameType[] validGames = new MinigameType[allGames.length];
         int validCount = 0;
-        
+
         for (MinigameType game : allGames) {
+            if (game == MinigameType.THE_FINALE) {
+                continue;
+            }
             if (playerCount >= game.getMinPlayers() && playerCount <= game.getMaxPlayers()) {
                 validGames[validCount++] = game;
             }
         }
-        
+
         if (validCount == 0) {
-            // Fallback: return first game if no games support this player count
             return allGames[0];
         }
-        
-        // Select random game from valid games
+
         int randomIndex = random.nextInt(validCount);
         return validGames[randomIndex];
-    }
-
-    @Override
-    public String getStrategyName() {
-        return "Random Selection";
     }
 }

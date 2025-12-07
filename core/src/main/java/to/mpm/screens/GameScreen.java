@@ -2,19 +2,28 @@ package to.mpm.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
+import to.mpm.minigames.GameConstants;
 import to.mpm.minigames.Minigame;
 import to.mpm.minigames.MinigameFactory;
 import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
+import to.mpm.network.Packets;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
 
@@ -22,14 +31,56 @@ import to.mpm.ui.UISkinProvider;
  * Pantalla principal de juego que ejecuta el minijuego seleccionado.
  */
 public class GameScreen implements Screen {
-    private final Main game; //!< instancia del juego principal
-    private final MinigameType minigameType; //!< tipo de minijuego a ejecutar
-    private Minigame currentMinigame; //!< instancia del minijuego actual
-    private SpriteBatch batch; //!< lote de sprites para renderizado
-    private ShapeRenderer shapeRenderer; //!< renderizador de formas
-    private Stage uiStage; //!< stage para la superposición de UI
-    private Skin skin; //!< skin para estilizar componentes de UI
-    private Label scoreLabel; //!< etiqueta que muestra la puntuación del jugador
+    /** Instancia del juego principal. */
+    private final Main game;
+    /** Tipo de minijuego a ejecutar. */
+    private final MinigameType minigameType;
+    /** Indica si este es el minijuego final. */
+    private final boolean isFinale;
+    /** Instancia del minijuego actual. */
+    private Minigame currentMinigame;
+    /** Lote de sprites para renderizado. */
+    private SpriteBatch batch;
+    /** Renderizador de formas. */
+    private ShapeRenderer shapeRenderer;
+    /** Stage para la superposición de UI. */
+    private Stage uiStage;
+    /** Skin para estilizar componentes de UI. */
+    private Skin skin;
+    /** Etiqueta que muestra la puntuación del jugador. */
+    private Label scoreLabel;
+    /** Etiqueta que muestra el temporizador. */
+    private Label timerLabel;
+    /** Etiqueta que muestra la ronda actual. */
+    private Label roundLabel;
+    /** Temporizador del juego en segundos. */
+    private float gameTimer;
+    /** Indica si el juego ha terminado. */
+    private boolean gameEnded = false;
+    /** Ronda en curso (1-based). */
+    private final int currentRound;
+    /** Total de rondas configuradas. */
+    private final int totalRounds;
+    /** Textura para el overlay de scanlines retro. */
+    private Texture scanlineOverlay;
+    /** Desplazamiento vertical del overlay de scanlines. */
+    private float scanlineOffset = 0f;
+    /** Tiempo acumulado para movimiento del overlay. */
+    private float scanlineTimer = 0f;
+    /** Intervalo para cambio aleatorio del offset. */
+    private float scanlineChangeInterval = 2f;
+    /** Fuente personalizada para la UI. */
+    private BitmapFont customFont;
+
+    /** Manejador de paquete para iniciar el juego. */
+    private StartGamePacketHandler startGameHandler;
+    /** Manejador de paquete para mostrar el marcador. */
+    private ShowScoreboardPacketHandler showScoreboardHandler;
+    /** Manejador de paquete para mostrar resultados. */
+    private ShowResultsPacketHandler showResultsHandler;
+
+
+
     /**
      * Construye una nueva pantalla de juego.
      *
@@ -37,8 +88,19 @@ public class GameScreen implements Screen {
      * @param minigameType tipo de minijuego a ejecutar
      */
     public GameScreen(Main game, MinigameType minigameType) {
+        this(game, minigameType, 0, 0);
+    }
+
+    /**
+     * Construye una nueva pantalla de juego con contexto de ronda.
+     */
+    public GameScreen(Main game, MinigameType minigameType, int currentRound, int totalRounds) {
         this.game = game;
         this.minigameType = minigameType;
+        this.currentRound = currentRound;
+        this.totalRounds = totalRounds;
+        this.isFinale = (minigameType == MinigameType.THE_FINALE);
+        this.gameTimer = isFinale ? GameConstants.TheFinale.GAME_DURATION : GameConstants.Timing.DEFAULT_GAME_DURATION;
     }
 
     /**
@@ -49,36 +111,92 @@ public class GameScreen implements Screen {
         batch = game.batch;
         shapeRenderer = new ShapeRenderer();
 
+        try {
+            scanlineOverlay = new Texture(Gdx.files.internal("sprites/overlay.png"));
+        } catch (Exception e) {
+            Gdx.app.log("GameScreen", "Scanline overlay not found: " + e.getMessage());
+        }
+
+        customFont = UIStyles.Fonts.loadSixtyfour(26, Color.WHITE);
+
         uiStage = new Stage(new ScreenViewport());
-    skin = UISkinProvider.obtain();
-    game.getSettingsOverlayManager().attachStage(uiStage);
+        skin = UISkinProvider.obtain();
+        game.getSettingsOverlayManager().attachStage(uiStage);
 
         Table uiRoot = new Table();
         uiRoot.setFillParent(true);
-        uiRoot.top().right();
         uiStage.addActor(uiRoot);
 
-        Table scoreContainer = new Table(skin);
-        scoreContainer.pad(UIStyles.Spacing.MEDIUM);
+        int roundToDisplay = this.currentRound;
+        int totalRoundsToDisplay = this.totalRounds;
+        to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+        if ((roundToDisplay <= 0 || totalRoundsToDisplay <= 0) && flowManager.isInitialized()) {
+            roundToDisplay = flowManager.getCurrentRound();
+            totalRoundsToDisplay = flowManager.getTotalRounds();
+        }
 
-        Table scoreContent = new Table();
-        scoreLabel = new Label("0 pts", skin);
-        scoreLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
-        scoreLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-        scoreContent.add(scoreLabel).row();
+        if (!isFinale) {
+            Table topBar = new Table();
+            topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 1.0f));
+            topBar.pad(UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.SMALL, UIStyles.Spacing.MEDIUM);
 
-        Label incrementLabel = new Label("+0\n+0\n+0\n+0", skin);
-        incrementLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
-        incrementLabel.setColor(UIStyles.Colors.SECONDARY);
-        incrementLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
-        scoreContent.add(incrementLabel).padTop(UIStyles.Spacing.TINY).right();
+            Label.LabelStyle whiteStyle = new Label.LabelStyle();
+            whiteStyle.font = customFont;
+            whiteStyle.fontColor = Color.WHITE;
 
-        scoreContainer.add(scoreContent);
-        uiRoot.add(scoreContainer).pad(UIStyles.Spacing.MEDIUM);
+            scoreLabel = new Label("0", whiteStyle);
+            scoreLabel.setAlignment(Align.center);
+            topBar.add(scoreLabel).expandX().center();
+
+            uiRoot.add(topBar).expandX().fillX().top().row();
+
+            Table infoBar = new Table();
+            infoBar.pad(UIStyles.Spacing.TINY, UIStyles.Spacing.MEDIUM, UIStyles.Spacing.TINY, UIStyles.Spacing.MEDIUM);
+
+            Label.LabelStyle blackStyle = new Label.LabelStyle();
+            blackStyle.font = customFont;
+            blackStyle.fontColor = Color.BLACK;
+
+            timerLabel = new Label("TIEMPO 60", blackStyle);
+            timerLabel.setAlignment(Align.left);
+            infoBar.add(timerLabel).expandX().left();
+
+            if (roundToDisplay > 0 && totalRoundsToDisplay > 0) {
+                roundLabel = new Label("RONDA " + roundToDisplay + "/" + totalRoundsToDisplay, blackStyle);
+                roundLabel.setAlignment(Align.right);
+                infoBar.add(roundLabel).expandX().right();
+            }
+
+            uiRoot.add(infoBar).expandX().fillX().top().row();
+        } else {
+            Table topBar = new Table();
+            topBar.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 0.4f));
+            topBar.pad(UIStyles.Spacing.SMALL);
+
+            Label finaleLabel = new Label("LA FINAL", skin);
+            com.badlogic.gdx.graphics.g2d.BitmapFont finaleFont = skin.getFont("sixtyfour-32");
+            Label.LabelStyle finaleStyle = new Label.LabelStyle(finaleFont, UIStyles.Colors.SECONDARY);
+            finaleLabel.setStyle(finaleStyle);
+            topBar.add(finaleLabel).expandX().center();
+
+            uiRoot.add(topBar).expandX().fillX().top().row();
+        }
+
+        uiRoot.add().expand();
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         currentMinigame = MinigameFactory.createMinigame(minigameType, localPlayerId);
         currentMinigame.initialize();
+
+        NetworkManager networkManager = NetworkManager.getInstance();
+        startGameHandler = new StartGamePacketHandler();
+        networkManager.registerClientHandler(startGameHandler);
+
+        showScoreboardHandler = new ShowScoreboardPacketHandler();
+        networkManager.registerClientHandler(showScoreboardHandler);
+
+        showResultsHandler = new ShowResultsPacketHandler();
+        networkManager.registerClientHandler(showResultsHandler);
 
         Gdx.app.log("GameScreen", "Started minigame: " + minigameType.getDisplayName());
     }
@@ -90,18 +208,45 @@ public class GameScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        currentMinigame.handleInput(delta);
+        if (gameEnded) {
+            Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            uiStage.act(delta);
+            uiStage.draw();
+            return;
+        }
 
+        currentMinigame.handleInput(delta);
         currentMinigame.update(delta);
 
-        int localPlayerId = NetworkManager.getInstance().getMyId();
-        int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
-        scoreLabel.setText(currentScore + " pts");
+        if (!isFinale) {
+            gameTimer -= delta;
+            if (timerLabel != null) {
+                int seconds = Math.max(0, (int) Math.ceil(gameTimer));
+                timerLabel.setText("TIEMPO " + seconds);
+            }
+        }
 
-        if (currentMinigame.isFinished()) {
-            // TODO: Go to results screen
-            game.setScreen(new MainMenuScreen(game));
-            dispose();
+        if (!isFinale && scoreLabel != null) {
+            int localPlayerId = NetworkManager.getInstance().getMyId();
+            int currentScore = currentMinigame.getScores().getOrDefault(localPlayerId, 0);
+            scoreLabel.setText(String.valueOf(currentScore));
+        }
+
+        if (!isFinale) {
+            scanlineTimer += delta;
+            if (scanlineTimer >= scanlineChangeInterval) {
+                scanlineTimer = 0f;
+                scanlineChangeInterval = 1f + (float) Math.random() * 3f;
+                scanlineOffset = (float) (Math.random() * 10f - 5f);
+            }
+        }
+
+        boolean timeUp = !isFinale && gameTimer <= 0;
+        boolean minigameFinished = currentMinigame.isFinished();
+
+        if (timeUp || minigameFinished) {
+            endGame();
             return;
         }
 
@@ -109,9 +254,63 @@ public class GameScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         currentMinigame.render(batch, shapeRenderer);
-        
+
+        if (scanlineOverlay != null) {
+            batch.begin();
+            int screenWidth = Gdx.graphics.getWidth();
+            int screenHeight = Gdx.graphics.getHeight();
+            float y = scanlineOffset;
+            while (y < screenHeight) {
+                batch.draw(scanlineOverlay, 0, y, screenWidth, scanlineOverlay.getHeight());
+                y += scanlineOverlay.getHeight();
+            }
+            batch.end();
+        }
+
         uiStage.act(delta);
         uiStage.draw();
+    }
+
+    /**
+     * Termina el juego actual y maneja la transición a la siguiente pantalla.
+     * <p>
+     * Solo el host maneja la lógica de flujo del juego y envía los paquetes
+     * correspondientes.
+     */
+    private void endGame() {
+        if (gameEnded) {
+            return;
+        }
+        gameEnded = true;
+
+        java.util.Map<Integer, Integer> roundScores = currentMinigame.getScores();
+        to.mpm.minigames.manager.GameFlowManager flowManager = to.mpm.minigames.manager.GameFlowManager.getInstance();
+
+        if (NetworkManager.getInstance().isHost()) {
+            flowManager.endRound(roundScores);
+
+            if (flowManager.isGameComplete()) {
+                to.mpm.minigames.manager.ManagerPackets.ShowResults resultsPacket = new to.mpm.minigames.manager.ManagerPackets.ShowResults(
+                        flowManager.getTotalScores());
+                NetworkManager.getInstance().broadcastFromHost(resultsPacket);
+
+                game.setScreen(new ResultsScreen(game, flowManager.getTotalScores()));
+            } else {
+                to.mpm.minigames.manager.ManagerPackets.ShowScoreboard scoreboardPacket = new to.mpm.minigames.manager.ManagerPackets.ShowScoreboard(
+                        flowManager.getCurrentRound(),
+                        flowManager.getTotalRounds(),
+                        flowManager.getTotalScores());
+                NetworkManager.getInstance().broadcastFromHost(scoreboardPacket);
+
+                int localPlayerId = NetworkManager.getInstance().getMyId();
+                game.setScreen(new ScoreboardScreen(game, flowManager.getTotalScores(),
+                        flowManager.getCurrentRound(), flowManager.getTotalRounds(), localPlayerId));
+            }
+
+            dispose();
+        } else {
+            Gdx.app.log("GameScreen", "Game ended, waiting for host instructions");
+        }
     }
 
     /**
@@ -162,8 +361,87 @@ public class GameScreen implements Screen {
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
         }
+        if (scanlineOverlay != null) {
+            scanlineOverlay.dispose();
+        }
+        if (customFont != null) {
+            customFont.dispose();
+        }
+        if (startGameHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(startGameHandler);
+            startGameHandler = null;
+        }
+        if (showScoreboardHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(showScoreboardHandler);
+            showScoreboardHandler = null;
+        }
+        if (showResultsHandler != null) {
+            NetworkManager.getInstance().unregisterClientHandler(showResultsHandler);
+            showResultsHandler = null;
+        }
         if (uiStage != null) {
             uiStage.dispose();
         }
     }
+
+    /**
+     * Cambia a la pantalla de marcador cuando el host lo solicita.
+     */
+    private final class ShowScoreboardPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ShowScoreboard.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ShowScoreboard showScoreboard) {
+                Gdx.app.log("GameScreen", "Received ShowScoreboard for round " + showScoreboard.currentRound);
+                int localPlayerId = NetworkManager.getInstance().getMyId();
+                game.setScreen(new ScoreboardScreen(game, showScoreboard.allPlayerScores,
+                        showScoreboard.currentRound, showScoreboard.totalRounds, localPlayerId));
+                dispose();
+            }
+        }
+    }
+
+    /**
+     * Cambia a la pantalla de resultados cuando finaliza la partida.
+     */
+    private final class ShowResultsPacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(to.mpm.minigames.manager.ManagerPackets.ShowResults.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof to.mpm.minigames.manager.ManagerPackets.ShowResults showResults) {
+                Gdx.app.log("GameScreen", "Received ShowResults packet");
+                game.setScreen(new ResultsScreen(game, showResults.finalScores));
+                dispose();
+            }
+        }
+    }
+
+    /**
+     * Manejador de paquetes para iniciar el juego.
+     */
+    private final class StartGamePacketHandler implements ClientPacketHandler {
+        @Override
+        public java.util.Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return java.util.List.of(Packets.StartGame.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.StartGame startGame) {
+                int roundNumber = startGame.currentRound > 0 ? startGame.currentRound : 1;
+                int roundsTotal = startGame.totalRounds > 0 ? startGame.totalRounds : 1;
+                game.setScreen(
+                        new MinigameIntroScreen(game, MinigameType.valueOf(startGame.minigameType), roundNumber, roundsTotal));
+            }
+        }
+    }
+
 }

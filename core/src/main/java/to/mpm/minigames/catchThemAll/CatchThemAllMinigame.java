@@ -1,260 +1,198 @@
 package to.mpm.minigames.catchThemAll;
 
-import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.IntMap;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import to.mpm.minigames.GameConstants;
 import to.mpm.minigames.Minigame;
 import to.mpm.minigames.catchThemAll.entities.Duck;
-import to.mpm.minigames.catchThemAll.entities.DuckSpawner;
-import to.mpm.minigames.catchThemAll.entities.Player;
+import to.mpm.minigames.catchThemAll.game.GameLoop;
+import to.mpm.minigames.catchThemAll.game.GameState;
+import to.mpm.minigames.catchThemAll.game.PacketHandlers;
 import to.mpm.minigames.catchThemAll.input.InputHandler;
-import to.mpm.minigames.catchThemAll.network.NetworkHandler;
-import to.mpm.minigames.catchThemAll.physics.CatchDetector;
-import to.mpm.minigames.catchThemAll.physics.CollisionHandler;
 import to.mpm.minigames.catchThemAll.rendering.GameRenderer;
 import to.mpm.network.NetworkManager;
-import to.mpm.network.Packets;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * Main minigame class for Catch Them All.
- * Coordinates between input, physics, networking, and rendering modules.
+ * Minijuego principal de Atrapa a Todos.
+ * <p>
+ * Delega responsabilidades a clases especializadas en la carpeta game/:
+ * <ul>
+ * <li>GameState: gestiona jugadores, patos y puntuaciones</li>
+ * <li>GameLoop: maneja la lógica de actualización para host/cliente</li>
+ * <li>PacketHandlers: procesa paquetes de red</li>
+ * </ul>
  */
 public class CatchThemAllMinigame implements Minigame {
-    private static final float[][] PLAYER_COLORS = {
-            {1f, 0.2f, 0.2f},
-            {0.2f, 0.2f, 1f},
-            {0.2f, 1f, 0.2f},
-            {1f, 1f, 0.2f},
-            {1f, 0.2f, 1f},
-            {0.2f, 1f, 1f},
-    };
+    /** Ancho virtual de la pantalla de juego */
+    private static final float VIRTUAL_WIDTH = GameConstants.Screen.WIDTH;
+    /** Alto virtual de la pantalla de juego */
+    private static final float VIRTUAL_HEIGHT = GameConstants.Screen.HEIGHT;
 
-    private final int localPlayerId;
-    private Player localPlayer;
-    private final IntMap<Player> players = new IntMap<>();
-    private final List<Duck> ducks = new ArrayList<>();
-    private DuckSpawner duckSpawner;
-    private boolean finished = false;
-    private final Map<Integer, Integer> scores = new HashMap<>();
+    /** Estado del juego que contiene jugadores, patos y puntuaciones */
+    private final GameState state;
+    /** Cámara ortográfica para el renderizado 2D */
+    private OrthographicCamera camera;
+    /** Viewport para escalar la vista del juego */
+    private Viewport viewport;
+    /** Manejador de paquetes del cliente */
+    private PacketHandlers.ClientHandler clientHandler;
+    /** Retransmisor de paquetes del servidor */
+    private PacketHandlers.ServerRelay serverRelay;
 
+    /**
+     * Constructor del minijuego Atrapa a Todos.
+     *
+     * @param localPlayerId identificador del jugador local
+     */
     public CatchThemAllMinigame(int localPlayerId) {
-        this.localPlayerId = localPlayerId;
+        this.state = new GameState(localPlayerId);
     }
 
+    /**
+     * Inicializa el minijuego configurando la cámara, viewport,
+     * renderizador, jugador local y manejadores de red.
+     */
     @Override
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
 
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
+        viewport.apply();
+        camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
+        camera.update();
+
         GameRenderer.initialize();
-
-        scores.put(localPlayerId, 0);
-
-        float[] color = PLAYER_COLORS[localPlayerId % PLAYER_COLORS.length];
-        float startX = 100 + (localPlayerId * 80);
-        localPlayer = new Player(
-                true,
-                startX,
-                Player.GROUND_Y,
-                color[0], color[1], color[2]
-        );
-        players.put(localPlayerId, localPlayer);
+        state.createLocalPlayer();
 
         nm.registerAdditionalClasses(
-            Duck.DuckType.class,
-            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class,
-            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class,
-            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class,
-            to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class
-        );
+                Duck.DuckType.class,
+                to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class,
+                to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class,
+                to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class,
+                to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class);
 
         if (nm.isHost()) {
-            duckSpawner = new DuckSpawner();
-            Gdx.app.log("CatchThemAll", "Duck spawner initialized (host mode)");
+            state.initializeDuckSpawner();
         }
 
-        nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition);
-        nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
-        nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
-        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned.class, this::onDuckSpawned);
-        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate.class, this::onDuckUpdate);
-        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved.class, this::onDuckRemoved);
-        nm.registerHandler(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate.class, this::onScoreUpdate);
-        
-        Gdx.app.log("CatchThemAll", "Game initialized for player " + localPlayerId);
-    }
+        clientHandler = new PacketHandlers.ClientHandler(state);
+        nm.registerClientHandler(clientHandler);
 
-    private void onPlayerJoined(Packets.PlayerJoined packet) {
-        if (packet.playerId == localPlayerId) return;
-        if (players.containsKey(packet.playerId)) return;
-        
-        scores.put(packet.playerId, 0);
-        
-        float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
-        float startX = 100 + (packet.playerId * 80);
-        Player remote = new Player(false, startX, Player.GROUND_Y, color[0], color[1], color[2]);
-        players.put(packet.playerId, remote);
-    }
-
-    private void onPlayerLeft(Packets.PlayerLeft packet) {
-        if (packet.playerId == localPlayerId) return;
-        players.remove(packet.playerId);
-    }
-
-    private void onPlayerPosition(Packets.PlayerPosition packet) {
-        if (packet.playerId == localPlayerId) return;
-
-        Player remote = players.get(packet.playerId);
-        if (remote == null) {
-            float[] color = PLAYER_COLORS[packet.playerId % PLAYER_COLORS.length];
-            remote = new Player(false, packet.x, packet.y, color[0], color[1], color[2]);
-            players.put(packet.playerId, remote);
-        } else {
-            remote.setPosition(packet.x, packet.y);
+        if (nm.isHost()) {
+            serverRelay = new PacketHandlers.ServerRelay();
+            nm.registerServerHandler(serverRelay);
         }
     }
 
-    private void onDuckSpawned(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckSpawned packet) {
-        Duck.DuckType type = Duck.DuckType.valueOf(packet.duckType);
-        Duck duck = new Duck(packet.duckId, packet.x, packet.y, type);
-        ducks.add(duck);
-        Gdx.app.log("CatchThemAll", "Client: Duck spawned - ID: " + packet.duckId + ", Type: " + packet.duckType);
-    }
-
-    private void onDuckUpdate(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckUpdate packet) {
-        for (Duck duck : ducks) {
-            if (duck.id == packet.duckId) {
-                duck.setPosition(packet.x, packet.y);
-                break;
-            }
-        }
-    }
-
-    private void onDuckRemoved(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.DuckRemoved packet) {
-        ducks.removeIf(duck -> duck.id == packet.duckId);
-        Gdx.app.log("CatchThemAll", "Client: Duck removed - ID: " + packet.duckId);
-    }
-
-    private void onScoreUpdate(to.mpm.minigames.catchThemAll.network.CatchThemAllPackets.ScoreUpdate packet) {
-        scores.put(packet.playerId, packet.score);
-        Gdx.app.log("CatchThemAll", "Client: Score update - Player " + packet.playerId + ": " + packet.score);
-    }
-
+    /**
+     * Actualiza la lógica del juego según el rol (host o cliente).
+     *
+     * @param delta tiempo transcurrido desde la última actualización en segundos
+     */
     @Override
     public void update(float delta) {
-        localPlayer.update();
-        
-        for (Duck duck : ducks) {
-            duck.update();
-        }
-        
         if (NetworkManager.getInstance().isHost()) {
-            if (duckSpawner != null) {
-                List<Duck> newDucks = duckSpawner.update(delta);
-                for (Duck duck : newDucks) {
-                    ducks.add(duck);
-                    NetworkHandler.sendDuckSpawned(duck);
-                    Gdx.app.log("CatchThemAll", "Host: Duck spawned - ID: " + duck.id + ", Type: " + duck.type);
-                }
-            }
-            
-            CollisionHandler.handlePlayerCollisions(players);
-            
-            Map<Integer, Player> playersMap = new HashMap<>();
-            for (IntMap.Entry<Player> entry : players) {
-                playersMap.put(entry.key, entry.value);
-            }
-            
-            List<Duck> ducksBeforeCatch = new ArrayList<>(ducks);
-            Map<Integer, Integer> pointsEarned = CatchDetector.detectCatches(ducks, playersMap);
-            
-            for (Duck duck : ducksBeforeCatch) {
-                if (duck.isCaught() && !ducks.contains(duck)) {
-                    NetworkHandler.sendDuckRemoved(duck);
-                    Gdx.app.log("CatchThemAll", "Host: Duck caught - ID: " + duck.id);
-                }
-            }
-            
-            for (Map.Entry<Integer, Integer> entry : pointsEarned.entrySet()) {
-                int playerId = entry.getKey();
-                int points = entry.getValue();
-                int newScore = scores.getOrDefault(playerId, 0) + points;
-                scores.put(playerId, newScore);
-                
-                NetworkHandler.sendScoreUpdate(playerId, newScore);
-                
-                Gdx.app.log("CatchThemAll", "Player " + playerId + " earned " + points + " points! Total: " + newScore);
-            }
-            
-            List<Duck> ducksBeforeGroundRemoval = new ArrayList<>(ducks);
-            int removed = CatchDetector.removeGroundedDucks(ducks);
-            
-            if (removed > 0) {
-                for (Duck duck : ducksBeforeGroundRemoval) {
-                    if (!ducks.contains(duck)) {
-                        NetworkHandler.sendDuckRemoved(duck);
-                    }
-                }
-                Gdx.app.log("CatchThemAll", "Removed " + removed + " grounded ducks");
-            }
-            
-            NetworkHandler.sendDuckUpdates(ducks);
+            GameLoop.updateHost(delta, state);
+        } else if (state.getLocalPlayer() != null) {
+            GameLoop.updateClient(delta, state);
         }
-        
-        NetworkHandler.sendPlayerPosition(localPlayerId, localPlayer);
     }
 
+    /**
+     * Renderiza los elementos del juego aplicando el viewport y la cámara.
+     *
+     * @param batch renderizador de sprites para dibujar texturas
+     * @param shapeRenderer renderizador de formas geométricas
+     */
     @Override
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
-        GameRenderer.render(batch, shapeRenderer, players, ducks, scores, PLAYER_COLORS, localPlayerId);
+        viewport.apply();
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        batch.setProjectionMatrix(camera.combined);
+
+        GameRenderer.render(batch, shapeRenderer, state.getPlayers(), state.getDucks(),
+                state.getScores(), GameState.PLAYER_COLORS, state.getLocalPlayerId());
     }
 
+    /**
+     * Maneja la entrada del jugador local.
+     * Los espectadores no procesan entrada.
+     *
+     * @param delta tiempo transcurrido desde la última actualización en segundos
+     */
     @Override
     public void handleInput(float delta) {
-        InputHandler.handleInput(localPlayer, delta);
+        if (state.getLocalPlayer() != null) {
+            InputHandler.handleInput(state.getLocalPlayer(), delta);
+        }
     }
 
+    /**
+     * Verifica si el minijuego ha terminado.
+     *
+     * @return true si el juego ha finalizado, false en caso contrario
+     */
     @Override
     public boolean isFinished() {
-        return finished;
+        return state.isFinished();
     }
 
+    /**
+     * Obtiene las puntuaciones actuales de todos los jugadores.
+     *
+     * @return mapa con identificador de jugador como clave y puntuación como valor
+     */
     @Override
     public Map<Integer, Integer> getScores() {
-        return scores;
+        return state.getScores();
     }
 
+    /**
+     * Obtiene el identificador del jugador ganador.
+     *
+     * @return identificador del ganador
+     */
     @Override
     public int getWinnerId() {
-        int winnerId = -1;
-        int maxScore = Integer.MIN_VALUE;
-        
-        for (Map.Entry<Integer, Integer> entry : scores.entrySet()) {
-            if (entry.getValue() > maxScore) {
-                maxScore = entry.getValue();
-                winnerId = entry.getKey();
-            }
-        }
-        
-        return winnerId;
+        return state.getWinnerId();
     }
 
+    /**
+     * Libera los recursos utilizados por el minijuego.
+     * Desregistra los manejadores de red y resetea el estado.
+     */
     @Override
     public void dispose() {
-        players.clear();
-        ducks.clear();
-        if (duckSpawner != null) {
-            duckSpawner.reset();
+        NetworkManager nm = NetworkManager.getInstance();
+        if (clientHandler != null) {
+            nm.unregisterClientHandler(clientHandler);
+            clientHandler = null;
         }
+        if (serverRelay != null) {
+            nm.unregisterServerHandler(serverRelay);
+            serverRelay = null;
+        }
+
+        state.reset();
         GameRenderer.dispose();
     }
 
+    /**
+     * Ajusta el viewport cuando cambia el tamaño de la ventana.
+     *
+     * @param width nuevo ancho de la ventana en píxeles
+     * @param height nuevo alto de la ventana en píxeles
+     */
     @Override
     public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        camera.position.set(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, 0);
+        camera.update();
     }
 }

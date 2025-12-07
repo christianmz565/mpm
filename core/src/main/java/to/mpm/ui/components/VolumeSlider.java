@@ -11,16 +11,22 @@ import to.mpm.ui.UIStyles;
 /**
  * Constructor de controles deslizantes de volumen con etiqueta y visualización
  * de porcentaje.
- * Proporciona una interfaz consistente para ajustar valores de volumen.
  */
 public class VolumeSlider {
-    private final Skin skin; //!< skin para renderizar componentes UI
-    private float initialValue = 0.25f; //!< valor inicial del deslizador (25% por defecto)
-    private float min = 0f; //!< valor mínimo del rango
-    private float max = 1f; //!< valor máximo del rango
-    private float stepSize = 0.01f; //!< incremento entre valores
-    private float width = 300f; //!< ancho del deslizador en píxeles
-    private ChangeListener listener; //!< listener para cambios de valor
+    /** Skin para renderizar componentes UI. */
+    private final Skin skin;
+    /** Valor inicial del deslizador (25% por defecto). */
+    private float initialValue = 0.25f;
+    /** Valor mínimo del rango. */
+    private float min = 0f;
+    /** Valor máximo del rango. */
+    private float max = 1f;
+    /** Incremento entre valores. */
+    private float stepSize = 0.01f;
+    /** Ancho del deslizador en píxeles. */
+    private float width = 300f;
+    /** Listener para cambios de valor. */
+    private ChangeListener listener;
 
     /**
      * Construye un nuevo VolumeSlider con el skin especificado.
@@ -97,7 +103,6 @@ public class VolumeSlider {
 
     /**
      * Construye y devuelve una tabla con el deslizador de volumen completo.
-     * Incluye etiqueta de título, deslizador y visualización de porcentaje.
      *
      * @return tabla contenedora con todos los componentes configurados
      */
@@ -105,7 +110,7 @@ public class VolumeSlider {
         Table container = new Table();
 
         Label volumeLabel = new Label("Volumen", skin);
-        volumeLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+        volumeLabel.setStyle(new Label.LabelStyle(skin.getFont("sixtyfour-24"), com.badlogic.gdx.graphics.Color.WHITE));
         container.add(volumeLabel).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Slider slider = new Slider(min, max, stepSize, false, skin);

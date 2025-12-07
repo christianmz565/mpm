@@ -1,40 +1,35 @@
 package to.mpm.network;
 
 import com.badlogic.gdx.Gdx;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryonet.Client;
-import com.esotericsoftware.kryonet.Connection;
-import com.esotericsoftware.kryonet.Listener;
-import com.esotericsoftware.kryonet.Server;
+import to.mpm.network.handlers.ClientPacketHandler;
+import to.mpm.network.handlers.ServerPacketHandler;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 /**
- * Gestor de red singleton que soporta un servidor host y múltiples clientes.
+ * Coordinador principal de la red.
+ * Maneja la lógica tanto del servidor como del cliente,
+ * y proporciona una interfaz unificada para enviar paquetes.
  */
 public class NetworkManager {
-    private static NetworkManager instance; //!< instancia singleton
-    private final ConcurrentHashMap<Class<?>, Consumer<Object>> packetHandlers; //!< manejadores de paquetes registrados
-    private final ConcurrentHashMap<Integer, String> connectedPlayers; //!< mapa de jugadores conectados (id -> nombre)
-    private final ConcurrentHashMap<Integer, Integer> connectionToPlayerId; //!< mapa de conexión KryoNet ID a player ID
-    private final AtomicInteger nextPlayerId; //!< contador para asignar IDs únicos de jugador
-    private Server server; //!< instancia de KryoNet Server
-    private Client client; //!< instancia de KryoNet Client
-    private boolean isHost; //!< true si está hospedando una partida
-    private int myId; //!< id del jugador local asignado
+    /** Instancia singleton. */
+    private static NetworkManager instance;
+    /** Instancia del servidor de red. */
+    private NetworkServer server;
+    /** Instancia del cliente de red. */
+    private NetworkClient client;
+    /** Indica si este es el host. */
+    private boolean isHost;
 
+    /**
+     * Constructor privado para el singleton.
+     */
     private NetworkManager() {
-        packetHandlers = new ConcurrentHashMap<>();
-        connectedPlayers = new ConcurrentHashMap<>();
-        connectionToPlayerId = new ConcurrentHashMap<>();
-        nextPlayerId = new AtomicInteger(0);
     }
 
     /**
-     * Devuelve la instancia singleton del NetworkManager.
+     * Devuelve la instancia singleton de NetworkManager.
      *
      * @return instancia singleton
      */
@@ -46,292 +41,192 @@ public class NetworkManager {
     }
 
     /**
-     * Registra las clases de Kryo para la serialización usadas por la capa de red.
+     * Inicia un juego como host con un nombre de jugador personalizado.
+     * <p>
+     * Crea tanto un NetworkServer como un NetworkClient (para el host).
      *
-     * @param kryo instancia de Kryo
+     * @param hostPlayerName el nombre del jugador host
+     * @param port           el puerto en el que escuchar
+     * @throws IOException si el servidor no puede iniciarse
      */
-    private void registerClasses(Kryo kryo) {
-        kryo.register(Packets.PlayerJoinRequest.class);
-        kryo.register(Packets.PlayerJoinResponse.class);
-        kryo.register(Packets.PlayerJoined.class);
-        kryo.register(Packets.PlayerLeft.class);
-        kryo.register(Packets.StartGame.class);
-        kryo.register(Packets.SyncUpdate.class);
-        kryo.register(Packets.PlayerPosition.class);
-        kryo.register(Packets.RPC.class);
-        kryo.register(Packets.Ping.class);
-        kryo.register(Packets.Pong.class);
-        kryo.register(Object[].class);
-    }
-    
-    /**
-     * Registra clases adicionales para la serialización de Kryo.
-     * Estas clases deben ser consistentes entre el servidor y todos los clientes.
-     * 
-     * @param classes clases adicionales a registrar
-     */
-    public void registerAdditionalClasses(Class<?>... classes) {
-        Kryo kryo = null;
+    public void hostGame(String hostPlayerName, int port) throws IOException {
         if (server != null) {
-            kryo = server.getKryo();
-        } else if (client != null) {
-            kryo = client.getKryo();
-        }
-        
-        if (kryo != null) {
-            for (Class<?> clazz : classes) {
-                kryo.register(clazz);
-                Gdx.app.log("NetworkManager", "Registered class: " + clazz.getName());
-            }
-        }
-    }
-
-    /**
-     * Inicia el servidor hospedando una partida en el puerto configurado.
-     * Esto enlazará un {@link Server} de KryoNet y escuchará conexiones entrantes.
-     *
-     * @throws IOException si el servidor falla al iniciarse
-     */
-    public void hostGame() throws IOException {
-        if (server != null) {
-            Gdx.app.log("NetworkManager", "El servidor ya está en ejecución");
+            Gdx.app.log("NetworkManager", "Server is already running");
             return;
         }
 
         isHost = true;
-        myId = nextPlayerId.getAndIncrement();
-        connectedPlayers.put(myId, "Host");
 
-        server = new Server(NetworkConfig.UDP_BUFFER_SIZE, NetworkConfig.UDP_BUFFER_SIZE);
-        registerClasses(server.getKryo());
+        server = new NetworkServer();
+        server.start(port);
 
-        server.addListener(new Listener() {
-            @Override
-            public void received(Connection connection, Object object) {
-                if (object instanceof Packets.PlayerJoinRequest) {
-                    handlePlayerJoinRequest(connection, (Packets.PlayerJoinRequest) object);
-                } else {
-                    if (object instanceof Packets.PlayerPosition || object instanceof Packets.SyncUpdate) {
-                        server.sendToAllExceptUDP(connection.getID(), object);
-                    }
-                    handlePacket(object, connection);
-                }
-            }
+        client = new NetworkClient();
+        client.connect("127.0.0.1", port, hostPlayerName);
 
-            @Override
-            public void connected(Connection connection) {
-                Gdx.app.log("NetworkManager", "Cliente conectado: " + connection.getRemoteAddressTCP());
-            }
-
-            @Override
-            public void disconnected(Connection connection) {
-                Integer playerId = connectionToPlayerId.remove(connection.getID());
-                if (playerId != null) {
-                    String playerName = connectedPlayers.remove(playerId);
-                    Gdx.app.log("NetworkManager", "Jugador desconectado: " + playerName + " (ID: " + playerId + ")");
-
-                    Packets.PlayerLeft leftPacket = new Packets.PlayerLeft();
-                    leftPacket.playerId = playerId;
-                    server.sendToAllUDP(leftPacket);
-
-                    handlePacket(leftPacket, connection);
-                }
-            }
-        });
-
-        try {
-            server.bind(NetworkConfig.DEFAULT_PORT, NetworkConfig.DEFAULT_PORT);
-            server.start();
-            Gdx.app.log("NetworkManager", "Servidor iniciado en el puerto " + NetworkConfig.DEFAULT_PORT);
-        } catch (IOException e) {
-            server = null;
-            isHost = false;
-            connectedPlayers.remove(myId);
-            nextPlayerId.decrementAndGet();
-            throw new IOException("No se pudo iniciar el servidor en el puerto " + NetworkConfig.DEFAULT_PORT + 
-                ". El puerto puede estar ya en uso. " + e.getMessage(), e);
-        }
+        Gdx.app.log("NetworkManager", "Hosting game on port " + port);
     }
 
     /**
-     * Conecta a un host como cliente.
-     * Envía un {@link Packets.PlayerJoinRequest} inicial después de conectarse.
+     * Se une a un juego como cliente.
      *
-     * @param host nombre de host o IP del host
-     * @param port número de puerto al que conectar
-     * @param playerName nombre del jugador para mostrar
-     * @throws IOException si el intento de conexión falla
+     * @param host       la dirección del servidor
+     * @param port       el puerto del servidor
+     * @param playerName el nombre del jugador local
+     * @throws IOException si la conexión falla
      */
     public void joinGame(String host, int port, String playerName) throws IOException {
+        if (client != null && client.isConnected()) {
+            Gdx.app.log("NetworkManager", "Already connected to a game");
+            return;
+        }
+
         isHost = false;
 
-        client = new Client(NetworkConfig.UDP_BUFFER_SIZE, NetworkConfig.UDP_BUFFER_SIZE);
-        registerClasses(client.getKryo());
+        client = new NetworkClient();
+        client.connect(host, port, playerName);
 
-        client.addListener(new Listener() {
-            @Override
-            public void received(Connection connection, Object object) {
-                if (object instanceof Packets.PlayerJoinResponse) {
-                    handlePlayerJoinResponse((Packets.PlayerJoinResponse) object);
-                } else {
-                    handlePacket(object, connection);
-                }
-            }
-
-            @Override
-            public void disconnected(Connection connection) {
-                Gdx.app.log("NetworkManager", "Desconectado del servidor");
-            }
-        });
-
-        client.start();
-        client.connect(NetworkConfig.TIMEOUT_MS, host, port, port);
-
-        Packets.PlayerJoinRequest joinRequest = new Packets.PlayerJoinRequest();
-        joinRequest.playerName = playerName != null ? playerName : "Player";
-        client.sendTCP(joinRequest);
-
-        Gdx.app.log("NetworkManager", "Conectado a " + host + ":" + port);
+        Gdx.app.log("NetworkManager", "Joined game at " + host + ":" + port);
     }
 
     /**
-     * Envía un paquete a los pares remotos. Si es host, envía a todos los clientes conectados. Si es cliente, envía al host
-     *
-     * @param packet un objeto que representa el paquete (una de las clases en {@link Packets})
+     * Envía un paquete a través de la red.
+     * <p>
+     * Si es host, envía a todos los clientes.
+     * <p>
+     * Si es cliente, envía al servidor.
+     * 
+     * @param packet el paquete a enviar
      */
-    public void sendPacket(Object packet) {
-        if (isHost && server != null) {
-            server.sendToAllUDP(packet);
-        } else if (client != null && client.isConnected()) {
-            client.sendUDP(packet);
+    public void sendPacket(NetworkPacket packet) {
+        if (client != null && client.isConnected()) {
+            client.send(packet);
         }
     }
 
     /**
-     * Registra un manejador que será llamado cuando se reciba un paquete de la clase {@code packetClass}.
-     * El manejador se ejecuta en el hilo de la aplicación de libGDX.
-     *
-     * @param packetClass clase del paquete
-     * @param handler     consumidor que acepta la instancia del paquete
-     * @param <T>         tipo de paquete
+     * Asegura que el cliente haya recibido un ID solicitando nuevamente el join si
+     * es necesario.
      */
-    @SuppressWarnings("unchecked")
-    public <T> void registerHandler(Class<T> packetClass, Consumer<T> handler) {
-        packetHandlers.put(packetClass, (Consumer<Object>) handler);
-    }
-
-    /**
-     * Maneja un paquete entrante despachándolo al manejador registrado en el hilo GDX.
-     *
-     * @param packet paquete recibido
-     * @param connection conexión desde la que se recibió el paquete
-     */
-    private void handlePacket(Object packet, Connection connection) {
-        Consumer<Object> handler = packetHandlers.get(packet.getClass());
-        if (handler != null) {
-            Gdx.app.postRunnable(() -> handler.accept(packet));
+    public void ensureJoinHandshake() {
+        if (client != null) {
+            client.resendJoinRequestIfNeeded();
         }
     }
 
     /**
-     * Maneja una solicitud de unión de jugador en el servidor.
-     * Asigna un ID único al jugador y notifica a todos los clientes.
-     *
-     * @param connection conexión del jugador que se une
-     * @param request solicitud de unión
+     * Permite que el host envíe un paquete directamente desde el servidor.
+     * 
+     * @param packet el paquete a enviar
      */
-    private void handlePlayerJoinRequest(Connection connection, Packets.PlayerJoinRequest request) {
-        int newPlayerId = nextPlayerId.getAndIncrement();
-        String playerName = request.playerName;
-
-        connectedPlayers.put(newPlayerId, playerName);
-        connectionToPlayerId.put(connection.getID(), newPlayerId);
-
-        Gdx.app.log("NetworkManager", "Jugador unido: " + playerName + " (ID: " + newPlayerId + ")");
-
-        Packets.PlayerJoinResponse response = new Packets.PlayerJoinResponse();
-        response.playerId = newPlayerId;
-        response.playerName = playerName;
-        connection.sendTCP(response);
-
-        Packets.PlayerJoined joinedPacket = new Packets.PlayerJoined();
-        joinedPacket.playerId = newPlayerId;
-        joinedPacket.playerName = playerName;
-
-        server.sendToAllExceptTCP(connection.getID(), joinedPacket);
-        handlePacket(joinedPacket, connection);
-
-        for (var entry : connectedPlayers.entrySet()) {
-            if (entry.getKey() != newPlayerId) {
-                Packets.PlayerJoined existingPlayer = new Packets.PlayerJoined();
-                existingPlayer.playerId = entry.getKey();
-                existingPlayer.playerName = entry.getValue();
-                connection.sendTCP(existingPlayer);
-            }
+    public void broadcastFromHost(NetworkPacket packet) {
+        if (isHost && server != null && server.isRunning()) {
+            server.broadcast(packet);
+        } else {
+            sendPacket(packet);
         }
     }
 
     /**
-     * Maneja la respuesta de unión de jugador en el cliente.
-     * Asigna el ID del jugador local.
-     *
-     * @param response respuesta del servidor
+     * Registra un handler del lado del cliente.
+     * 
+     * @param handler el handler a registrar
      */
-    private void handlePlayerJoinResponse(Packets.PlayerJoinResponse response) {
-        myId = response.playerId;
-        connectedPlayers.put(myId, response.playerName);
-        Gdx.app.log("NetworkManager", "ID asignado: " + myId + " (" + response.playerName + ")");
+    public void registerClientHandler(ClientPacketHandler handler) {
+        if (client != null) {
+            client.registerHandler(handler);
+        }
     }
 
     /**
-     * Desconecta y limpia recursos de red.
+     * Desregistra un handler del lado del cliente.
+     * 
+     * @param handler el handler a desregistrar
+     */
+    public void unregisterClientHandler(ClientPacketHandler handler) {
+        if (client != null) {
+            client.unregisterHandler(handler);
+        }
+    }
+
+    /**
+     * Registra un handler del lado del servidor (solo si somos host).
+     * 
+     * @param handler el handler a registrar
+     */
+    public void registerServerHandler(ServerPacketHandler handler) {
+        if (server != null) {
+            server.registerHandler(handler);
+        }
+    }
+
+    /**
+     * Desregistra un handler del lado del servidor.
+     * 
+     * @param handler el handler a desregistrar
+     */
+    public void unregisterServerHandler(ServerPacketHandler handler) {
+        if (server != null) {
+            server.unregisterHandler(handler);
+        }
+    }
+
+    /**
+     * Registra clases adicionales de Kryo para la serialización.
+     * 
+     * @param classes las clases a registrar
+     */
+    public void registerAdditionalClasses(Class<?>... classes) {
+        if (server != null) {
+            server.registerAdditionalClasses(classes);
+        }
+        if (client != null) {
+            client.registerAdditionalClasses(classes);
+        }
+    }
+
+    /**
+     * Desconecta de la red y limpia los recursos.
      */
     public void disconnect() {
         if (server != null) {
             server.stop();
             server = null;
         }
+
         if (client != null) {
-            client.stop();
+            client.disconnect();
             client = null;
         }
+
         isHost = false;
-        connectedPlayers.clear();
-        connectionToPlayerId.clear();
-        nextPlayerId.set(0);
-        Gdx.app.log("NetworkManager", "Desconectado");
+        Gdx.app.log("NetworkManager", "Disconnected");
     }
 
     /**
-     * Comprueba si esta instancia está hospedando la partida.
-     *
-     * @return true si es host, false si es cliente
+     * Verifica si este administrador de red es el host.
+     * 
+     * @return true si es host
      */
     public boolean isHost() {
         return isHost;
     }
 
     /**
-     * Obtiene el ID del jugador local asignado por esta instancia.
+     * Obtiene el ID del jugador local.
      *
-     * @return ID del jugador local
+     * @return el ID del jugador local, o -1 si no está conectado
      */
     public int getMyId() {
-        return myId;
+        return client != null ? client.getMyPlayerId() : -1;
     }
 
     /**
-     * Comprueba si hay una conexión activa.
-     * Para el host: true si hay clientes conectados. Para el cliente: true si está conectado al host.
+     * Verifica si hay una conexión activa.
      *
      * @return true si está conectado
      */
     public boolean isConnected() {
-        if (isHost) {
-            return server != null && server.getConnections().length > 0;
-        } else {
-            return client != null && client.isConnected();
-        }
+        return client != null && client.isConnected();
     }
 
     /**
@@ -340,15 +235,18 @@ public class NetworkManager {
      * @return mapa de ID de jugador a nombre de jugador
      */
     public ConcurrentHashMap<Integer, String> getConnectedPlayers() {
-        return connectedPlayers;
+        if (client != null) {
+            return client.getConnectedPlayers();
+        }
+        return new ConcurrentHashMap<>();
     }
 
     /**
-     * Obtiene el número de jugadores conectados (incluyendo el jugador local).
+     * Obtiene el número de jugadores conectados.
      *
      * @return número de jugadores
      */
     public int getPlayerCount() {
-        return connectedPlayers.size();
+        return getConnectedPlayers().size();
     }
 }

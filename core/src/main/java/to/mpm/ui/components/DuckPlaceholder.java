@@ -7,13 +7,17 @@ import to.mpm.ui.UIStyles;
 
 /**
  * Constructor de marcador de posición para la ilustración del pato.
+ * <p>
  * Será reemplazado con renderizado de sprites una vez que los recursos estén
  * listos.
  */
 public class DuckPlaceholder {
-    private final Skin skin; //!< skin para renderizar componentes UI
-    private float size = UIStyles.Sizes.DUCK_PLACEHOLDER_SIZE; //!< tamaño del marcador en píxeles
-    private String text = "cuac"; //!< texto a mostrar en el marcador
+    /** Skin para renderizar componentes UI. */
+    private final Skin skin;
+    /** Tamaño del marcador en píxeles. */
+    private float size = UIStyles.Sizes.DUCK_PLACEHOLDER_SIZE;
+    /** Texto a mostrar en el marcador. */
+    private String text = "cuac";
 
     /**
      * Construye un nuevo DuckPlaceholder con el skin especificado.
@@ -60,12 +64,12 @@ public class DuckPlaceholder {
         placeholderLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         placeholderLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
 
-    float contentWidth = size - (UIStyles.Spacing.MEDIUM * 2f);
-    container.add(placeholderLabel)
-        .width(contentWidth)
-        .center()
-        .expand()
-        .pad(UIStyles.Spacing.MEDIUM);
+        float contentWidth = size - (UIStyles.Spacing.MEDIUM * 2f);
+        container.add(placeholderLabel)
+                .width(contentWidth)
+                .center()
+                .expand()
+                .pad(UIStyles.Spacing.MEDIUM);
 
         return container;
     }

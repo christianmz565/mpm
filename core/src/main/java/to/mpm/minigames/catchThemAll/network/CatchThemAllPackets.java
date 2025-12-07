@@ -1,47 +1,72 @@
 package to.mpm.minigames.catchThemAll.network;
 
+import to.mpm.network.NetworkPacket;
+import to.mpm.network.Transports;
+
 /**
- * Network packets specific to the Catch Them All minigame.
- * Each minigame should have its own packet definitions to keep things decoupled.
+ * Paquetes de red específicos del minijuego Atrapa a Todos.
+ * <p>
+ * Cada minijuego debe tener sus propias definiciones de paquetes para mantener el desacople.
  */
 public class CatchThemAllPackets {
     
     /**
-     * Packet to notify clients that a new duck has spawned.
-     * Only sent by the host.
+     * Paquete para notificar a los clientes que un nuevo pato ha aparecido.
+     * Solo enviado por el host.
      */
-    public static class DuckSpawned {
-        public int duckId; //!< unique id of the duck
-        public float x; //!< initial x position
-        public float y; //!< initial y position
-        public String duckType; //!< type of duck (NEUTRAL, GOLDEN, BAD)
+    public static class DuckSpawned extends NetworkPacket {
+        /** ID único del pato. */
+        public int duckId;
+        /** Posición X inicial. */
+        public float x;
+        /** Posición Y inicial. */
+        public float y;
+        /** Tipo de pato (NEUTRAL, GOLDEN, BAD). */
+        public String duckType;
+
+        /** Constructor por defecto que prefiere UDP. */
+        public DuckSpawned() {
+            preferTransport(Transports.UDP);
+        }
     }
     
     /**
-     * Packet to update a duck's position.
-     * Sent periodically by the host to keep clients in sync.
+     * Paquete para actualizar la posición de un pato.
+     * Enviado periódicamente por el host para mantener sincronizados a los clientes.
      */
-    public static class DuckUpdate {
-        public int duckId; //!< id of the duck
-        public float x; //!< new x position
-        public float y; //!< new y position
+    public static class DuckUpdate extends NetworkPacket {
+        /** ID del pato. */
+        public int duckId;
+        /** Nueva posición X. */
+        public float x;
+        /** Nueva posición Y. */
+        public float y;
+
+        /** Constructor por defecto que prefiere UDP. */
+        public DuckUpdate() {
+            preferTransport(Transports.UDP);
+        }
     }
     
     /**
-     * Packet to notify that a duck has been removed (caught or hit ground).
-     * Only sent by the host.
+     * Paquete para notificar que un pato ha sido removido (atrapado o cayó al suelo).
+     * Solo enviado por el host.
      */
-    public static class DuckRemoved {
-        public int duckId; //!< id of the duck that was removed
-        public int caughtByPlayerId; //!< id of player who caught it (-1 if it hit ground)
+    public static class DuckRemoved extends NetworkPacket {
+        /** ID del pato que fue removido. */
+        public int duckId;
+        /** ID del jugador que lo atrapó (-1 si cayó al suelo). */
+        public int caughtByPlayerId;
     }
     
     /**
-     * Packet to update a player's score.
-     * Only sent by the host when scores change.
+     * Paquete para actualizar la puntuación de un jugador.
+     * Solo enviado por el host cuando cambian las puntuaciones.
      */
-    public static class ScoreUpdate {
-        public int playerId; //!< id of the player
-        public int score; //!< current score of the player
+    public static class ScoreUpdate extends NetworkPacket {
+        /** ID del jugador. */
+        public int playerId;
+        /** Puntuación actual del jugador. */
+        public int score;
     }
 }
