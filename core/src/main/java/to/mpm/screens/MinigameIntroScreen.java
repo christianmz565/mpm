@@ -85,11 +85,11 @@ public class MinigameIntroScreen implements Screen {
 
         Table mainContainer = new Table();
         mainContainer.setFillParent(true);
-        mainContainer.setBackground(UIStyles.createSemiTransparentBackground(0.1f, 0.1f, 0.15f, 0.95f));
+        mainContainer.setBackground(UIStyles.createSemiTransparentBackground(0f, 0f, 0f, 1f));
         stage.addActor(mainContainer);
 
         Table contentContainer = new Table();
-        contentContainer.setBackground(UIStyles.createSemiTransparentBackground(0.2f, 0.2f, 0.25f, 0.9f));
+        contentContainer.setBackground(UIStyles.createSemiTransparentBackground(0.5f, 0.5f, 0.5f, 0.35f));
         contentContainer.pad(UIStyles.Spacing.LARGE);
 
         float screenWidth = Gdx.graphics.getWidth();
