@@ -14,7 +14,12 @@ import to.mpm.minigames.eggThief.network.NetworkHandler;
 import to.mpm.minigames.eggThief.physics.CollisionDetector;
 import to.mpm.minigames.eggThief.rendering.GameRenderer;
 import to.mpm.network.NetworkManager;
+import to.mpm.network.NetworkPacket;
 import to.mpm.network.Packets;
+import to.mpm.network.handlers.ClientPacketContext;
+import to.mpm.network.handlers.ClientPacketHandler;
+import to.mpm.network.handlers.ServerPacketContext;
+import to.mpm.network.handlers.ServerPacketHandler;
 
 import java.util.*;
 
@@ -75,23 +80,30 @@ public class EggThiefMinigame implements Minigame {
 
     // -------------------- Network handlers --------------------
 
+    private EggThiefClientHandler clientHandler;
+    private EggThiefServerHandler serverHandler;
+
     private void registerNetworkHandlers() {
         NetworkManager nm = NetworkManager.getInstance();
-
-        nm.registerHandler(Packets.PlayerPosition.class, this::onPlayerPosition);
-        nm.registerHandler(Packets.PlayerJoined.class, this::onPlayerJoined);
-        nm.registerHandler(Packets.PlayerLeft.class, this::onPlayerLeft);
 
         nm.registerAdditionalClasses(
                 to.mpm.minigames.eggThief.network.EggThiefPackets.EggSpawned.class,
                 to.mpm.minigames.eggThief.network.EggThiefPackets.EggUpdate.class,
                 to.mpm.minigames.eggThief.network.EggThiefPackets.EggRemoved.class,
-                to.mpm.minigames.eggThief.network.EggThiefPackets.ScoreUpdate.class);
+                to.mpm.minigames.eggThief.network.EggThiefPackets.ScoreUpdate.class,
+                to.mpm.minigames.eggThief.network.EggThiefPackets.DuckUpdate.class,
+                to.mpm.minigames.eggThief.network.EggThiefPackets.EggCollected.class,
+                to.mpm.minigames.eggThief.network.EggThiefPackets.EggStolen.class,
+                to.mpm.minigames.eggThief.network.EggThiefPackets.EggsDelivered.class,
+                to.mpm.minigames.eggThief.network.EggThiefPackets.GameTimerUpdate.class);
 
-        nm.registerHandler(to.mpm.minigames.eggThief.network.EggThiefPackets.EggSpawned.class, this::onEggSpawned);
-        nm.registerHandler(to.mpm.minigames.eggThief.network.EggThiefPackets.EggUpdate.class, this::onEggUpdate);
-        nm.registerHandler(to.mpm.minigames.eggThief.network.EggThiefPackets.EggRemoved.class, this::onEggRemoved);
-        nm.registerHandler(to.mpm.minigames.eggThief.network.EggThiefPackets.ScoreUpdate.class, this::onScoreUpdate);
+        clientHandler = new EggThiefClientHandler();
+        nm.registerClientHandler(clientHandler);
+
+        if (nm.isHost()) {
+            serverHandler = new EggThiefServerHandler();
+            nm.registerServerHandler(serverHandler);
+        }
     }
 
     private void onPlayerPosition(Packets.PlayerPosition packet) {
@@ -266,5 +278,68 @@ public class EggThiefMinigame implements Minigame {
     @Override
     public void resize(int width, int height) {
         // Not needed
+    }
+
+    // -------------------- Network Handler Classes --------------------
+
+    private class EggThiefClientHandler implements ClientPacketHandler {
+        @Override
+        public Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return List.of(
+                    Packets.PlayerPosition.class,
+                    Packets.PlayerJoined.class,
+                    Packets.PlayerLeft.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggSpawned.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggUpdate.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggRemoved.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.ScoreUpdate.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.DuckUpdate.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggCollected.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggStolen.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggsDelivered.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.GameTimerUpdate.class);
+        }
+
+        @Override
+        public void handle(ClientPacketContext context, NetworkPacket packet) {
+            if (packet instanceof Packets.PlayerPosition p) {
+                onPlayerPosition(p);
+            } else if (packet instanceof Packets.PlayerJoined p) {
+                onPlayerJoined(p);
+            } else if (packet instanceof Packets.PlayerLeft p) {
+                onPlayerLeft(p);
+            } else if (packet instanceof to.mpm.minigames.eggThief.network.EggThiefPackets.EggSpawned p) {
+                onEggSpawned(p);
+            } else if (packet instanceof to.mpm.minigames.eggThief.network.EggThiefPackets.EggUpdate p) {
+                onEggUpdate(p);
+            } else if (packet instanceof to.mpm.minigames.eggThief.network.EggThiefPackets.EggRemoved p) {
+                onEggRemoved(p);
+            } else if (packet instanceof to.mpm.minigames.eggThief.network.EggThiefPackets.ScoreUpdate p) {
+                onScoreUpdate(p);
+            }
+        }
+    }
+
+    private class EggThiefServerHandler implements ServerPacketHandler {
+        @Override
+        public Collection<Class<? extends NetworkPacket>> receivablePackets() {
+            return List.of(
+                    Packets.PlayerPosition.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.DuckUpdate.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggSpawned.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggUpdate.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggRemoved.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.ScoreUpdate.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggCollected.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggStolen.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.EggsDelivered.class,
+                    to.mpm.minigames.eggThief.network.EggThiefPackets.GameTimerUpdate.class);
+        }
+
+        @Override
+        public void handle(ServerPacketContext context, NetworkPacket packet) {
+            // Broadcast all packets to other clients
+            context.broadcastExceptSender(packet);
+        }
     }
 }
