@@ -22,6 +22,12 @@ public class ScoreItem {
     private int score;
     /** Indica si el elemento debe resaltarse. */
     private boolean isHighlighted = false;
+    /** Tamaño de fuente para el rango (null para usar predeterminado). */
+    private Integer rankFontSize = null;
+    /** Tamaño de fuente para el nombre (null para usar predeterminado). */
+    private Integer nameFontSize = null;
+    /** Tamaño de fuente para la puntuación (null para usar predeterminado). */
+    private Integer scoreFontSize = null;
 
     /**
      * Construye un nuevo ScoreItem con el skin especificado.
@@ -77,6 +83,39 @@ public class ScoreItem {
     }
 
     /**
+     * Establece el tamaño de fuente para el rango.
+     *
+     * @param fontSize tamaño de fuente en píxeles
+     * @return esta instancia para encadenamiento de métodos
+     */
+    public ScoreItem rankFontSize(int fontSize) {
+        this.rankFontSize = fontSize;
+        return this;
+    }
+
+    /**
+     * Establece el tamaño de fuente para el nombre del jugador.
+     *
+     * @param fontSize tamaño de fuente en píxeles
+     * @return esta instancia para encadenamiento de métodos
+     */
+    public ScoreItem nameFontSize(int fontSize) {
+        this.nameFontSize = fontSize;
+        return this;
+    }
+
+    /**
+     * Establece el tamaño de fuente para la puntuación.
+     *
+     * @param fontSize tamaño de fuente en píxeles
+     * @return esta instancia para encadenamiento de métodos
+     */
+    public ScoreItem scoreFontSize(int fontSize) {
+        this.scoreFontSize = fontSize;
+        return this;
+    }
+
+    /**
      * Construye y devuelve una tabla con el elemento de puntuación completo.
      *
      * @return tabla contenedora con todos los componentes configurados
@@ -89,7 +128,10 @@ public class ScoreItem {
         }
 
         Label rankLabel = new Label(getRankText(rank != null ? rank : 0), skin);
-        rankLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
+        String rankFontName = rankFontSize != null ? "sixtyfour-" + rankFontSize : "sixtyfour-32";
+        com.badlogic.gdx.graphics.g2d.BitmapFont rankFont = skin.getFont(rankFontName);
+        Label.LabelStyle rankStyle = new Label.LabelStyle(rankFont, com.badlogic.gdx.graphics.Color.WHITE);
+        rankLabel.setStyle(rankStyle);
         rankLabel.setAlignment(Align.center);
         container.add(rankLabel)
                 .width(80f)
@@ -99,7 +141,10 @@ public class ScoreItem {
                 .center();
 
         Label nameLabel = new Label(playerName != null ? playerName : "Player", skin);
-        nameLabel.setFontScale(UIStyles.Typography.SUBTITLE_SCALE);
+        String nameFontName = nameFontSize != null ? "sixtyfour-" + nameFontSize : "sixtyfour-24";
+        com.badlogic.gdx.graphics.g2d.BitmapFont nameFont = skin.getFont(nameFontName);
+        Label.LabelStyle nameStyle = new Label.LabelStyle(nameFont, com.badlogic.gdx.graphics.Color.WHITE);
+        nameLabel.setStyle(nameStyle);
         nameLabel.setAlignment(Align.center);
         container.add(nameLabel)
                 .expand()
@@ -110,7 +155,10 @@ public class ScoreItem {
                 .padBottom(UIStyles.Spacing.MEDIUM);
 
         Label scoreLabel = new Label(String.format("%d", score), skin);
-        scoreLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
+        String scoreFontName = scoreFontSize != null ? "sixtyfour-" + scoreFontSize : "sixtyfour-32";
+        com.badlogic.gdx.graphics.g2d.BitmapFont scoreFont = skin.getFont(scoreFontName);
+        Label.LabelStyle scoreStyle = new Label.LabelStyle(scoreFont, com.badlogic.gdx.graphics.Color.WHITE);
+        scoreLabel.setStyle(scoreStyle);
         scoreLabel.setAlignment(Align.center);
         container.add(scoreLabel)
                 .width(150f)

@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
@@ -36,8 +37,9 @@ public class TheFinaleMinigame implements Minigame {
     private static final float GAME_DURATION = GameConstants.TheFinale.GAME_DURATION;
     private static final float VIRTUAL_WIDTH = GameConstants.Screen.WIDTH;
     private static final float VIRTUAL_HEIGHT = GameConstants.Screen.HEIGHT;
-    private static final float HEALTH_PACK_SPAWN_MIN = 10f; // Mínimo tiempo entre spawns
-    private static final float HEALTH_PACK_SPAWN_MAX = 15f; // Máximo tiempo entre spawns
+    private static final float HEALTH_PACK_SPAWN_MIN = 10f;
+    private static final float HEALTH_PACK_SPAWN_MAX = 15f;
+    private static final float PARTICLES_SCROLL_SPEED = 20f;
 
     private final int localPlayerId;
     private final boolean isSpectator;
@@ -56,7 +58,9 @@ public class TheFinaleMinigame implements Minigame {
     private int nextHealthPackId;
     private boolean finished;
     private int winnerId = -1;
+    private float particlesOffsetY;
 
+    private FinaleSpriteManager spriteManager;
     private FinaleClientHandler clientHandler;
     private FinaleServerHandler serverHandler;
 
@@ -68,11 +72,15 @@ public class TheFinaleMinigame implements Minigame {
         this.healthPackSpawnTimer = random.nextFloat() * (HEALTH_PACK_SPAWN_MAX - HEALTH_PACK_SPAWN_MIN)
                 + HEALTH_PACK_SPAWN_MIN;
         this.nextHealthPackId = 0;
+        this.particlesOffsetY = 0f;
     }
 
     @Override
     public void initialize() {
         NetworkManager nm = NetworkManager.getInstance();
+
+        spriteManager = FinaleSpriteManager.getInstance();
+        spriteManager.loadSprites();
 
         camera = new OrthographicCamera();
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
@@ -117,6 +125,15 @@ public class TheFinaleMinigame implements Minigame {
 
         if (shootCooldown > 0) {
             shootCooldown -= delta;
+        }
+
+        Texture particlesTexture = spriteManager.getParticles();
+        if (particlesTexture != null) {
+            float particlesHeight = (float) particlesTexture.getHeight() * (VIRTUAL_WIDTH / particlesTexture.getWidth());
+            particlesOffsetY += PARTICLES_SCROLL_SPEED * delta;
+            if (particlesOffsetY >= particlesHeight) {
+                particlesOffsetY = 0f;
+            }
         }
 
         for (IntMap.Entry<Duck> entry : ducks) {
@@ -226,21 +243,115 @@ public class TheFinaleMinigame implements Minigame {
         shapeRenderer.setProjectionMatrix(camera.combined);
         batch.setProjectionMatrix(camera.combined);
 
+        batch.begin();
+
+        Texture bg = spriteManager.getBackground();
+        if (bg != null) {
+            batch.setColor(1f, 1f, 1f, 0.65f);
+            batch.draw(bg, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+            batch.setColor(Color.WHITE);
+        } else {
+            batch.end();
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(0.15f, 0.15f, 0.2f, 1f);
+            shapeRenderer.rect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+            shapeRenderer.end();
+            batch.begin();
+        }
+
+        Texture particles = spriteManager.getParticles();
+        if (particles != null) {
+            float particlesWidth = VIRTUAL_WIDTH;
+            float particlesHeight = (float) particles.getHeight() * (particlesWidth / particles.getWidth());
+
+            batch.draw(particles, 0, -particlesOffsetY, particlesWidth, particlesHeight);
+            batch.draw(particles, 0, particlesHeight - particlesOffsetY, particlesWidth, particlesHeight);
+        }
+
+        Texture playerTexture = spriteManager.getPlayer();
+        boolean usePlayerSprite = playerTexture != null;
+
+        if (usePlayerSprite) {
+            for (IntMap.Entry<Duck> entry : ducks) {
+                Duck duck = entry.value;
+                if (!duck.isAlive())
+                    continue;
+
+                if (duck.isInvulnerable() && (System.currentTimeMillis() / 100) % 2 == 0) {
+                    continue;
+                }
+
+                float baseSize = duck.getRadius() * 2;
+                float aspectRatio = (float) playerTexture.getWidth() / playerTexture.getHeight();
+                float width = baseSize * aspectRatio;
+                float height = baseSize;
+                batch.setColor(duck.color);
+                batch.draw(playerTexture,
+                        duck.position.x - width / 2, duck.position.y - height / 2,
+                        width / 2, height / 2,
+                        width, height,
+                        1f, 1f,
+                        duck.getRotation(),
+                        0, 0,
+                        playerTexture.getWidth(), playerTexture.getHeight(),
+                        false, false);
+                batch.setColor(Color.WHITE);
+            }
+        }
+
+        Texture healTexture = spriteManager.getHeal();
+        boolean useHealSprite = healTexture != null;
+
+        if (useHealSprite) {
+            for (IntMap.Entry<HealthPack> entry : healthPacks) {
+                HealthPack hp = entry.value;
+                if (hp.isActive()) {
+                    float size = hp.getRadius() * 2;
+                    batch.setColor(hp.getRenderColor());
+                    batch.draw(healTexture,
+                            hp.position.x - size / 2, hp.position.y - size / 2,
+                            size, size);
+                    batch.setColor(Color.WHITE);
+                }
+            }
+        }
+
+        if (!isSpectator && localDuck != null && localDuck.isAlive()) {
+            Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+            viewport.unproject(mousePos);
+
+            Texture crosshairTexture = spriteManager.getCrosshair();
+            if (crosshairTexture != null) {
+                float crosshairSize = 20f;
+                batch.draw(crosshairTexture,
+                        mousePos.x - crosshairSize / 2, mousePos.y - crosshairSize / 2,
+                        crosshairSize, crosshairSize);
+            }
+        }
+
+        batch.end();
+
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(0.15f, 0.15f, 0.2f, 1f);
-        shapeRenderer.rect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+        if (!usePlayerSprite) {
+            for (IntMap.Entry<Duck> entry : ducks) {
+                Duck duck = entry.value;
+                if (!duck.isAlive())
+                    continue;
+
+                if (duck.isInvulnerable() && (System.currentTimeMillis() / 100) % 2 == 0) {
+                    continue;
+                }
+
+                shapeRenderer.setColor(duck.color);
+                shapeRenderer.circle(duck.position.x, duck.position.y, duck.getRadius());
+            }
+        }
 
         for (IntMap.Entry<Duck> entry : ducks) {
             Duck duck = entry.value;
             if (!duck.isAlive())
                 continue;
-
-            if (duck.isInvulnerable() && (System.currentTimeMillis() / 100) % 2 == 0) {
-                continue;
-            }
-
-            shapeRenderer.setColor(duck.color);
-            shapeRenderer.circle(duck.position.x, duck.position.y, duck.getRadius());
 
             float barWidth = 40f;
             float barHeight = 5f;
@@ -261,35 +372,40 @@ public class TheFinaleMinigame implements Minigame {
             }
         }
 
-        for (IntMap.Entry<HealthPack> entry : healthPacks) {
-            HealthPack hp = entry.value;
-            if (hp.isActive()) {
-                shapeRenderer.setColor(hp.getRenderColor());
-                shapeRenderer.circle(hp.position.x, hp.position.y, hp.getRadius());
+        if (!useHealSprite) {
+            for (IntMap.Entry<HealthPack> entry : healthPacks) {
+                HealthPack hp = entry.value;
+                if (hp.isActive()) {
+                    shapeRenderer.setColor(hp.getRenderColor());
+                    shapeRenderer.circle(hp.position.x, hp.position.y, hp.getRadius());
 
-                shapeRenderer.setColor(Color.WHITE);
-                float crossSize = hp.getRadius() * 0.6f;
-                shapeRenderer.rectLine(hp.position.x - crossSize, hp.position.y,
-                        hp.position.x + crossSize, hp.position.y, 2f);
-                shapeRenderer.rectLine(hp.position.x, hp.position.y - crossSize,
-                        hp.position.x, hp.position.y + crossSize, 2f);
+                    shapeRenderer.setColor(Color.WHITE);
+                    float crossSize = hp.getRadius() * 0.6f;
+                    shapeRenderer.rectLine(hp.position.x - crossSize, hp.position.y,
+                            hp.position.x + crossSize, hp.position.y, 2f);
+                    shapeRenderer.rectLine(hp.position.x, hp.position.y - crossSize,
+                            hp.position.x, hp.position.y + crossSize, 2f);
+                }
             }
         }
 
         shapeRenderer.end();
 
         if (!isSpectator && localDuck != null && localDuck.isAlive()) {
-            Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
-            viewport.unproject(mousePos);
+            Texture crosshairTexture = spriteManager.getCrosshair();
+            if (crosshairTexture == null) {
+                Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+                viewport.unproject(mousePos);
 
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-            shapeRenderer.setColor(Color.WHITE);
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+                shapeRenderer.setColor(Color.WHITE);
 
-            float crossSize = 10f;
-            shapeRenderer.line(mousePos.x - crossSize, mousePos.y, mousePos.x + crossSize, mousePos.y);
-            shapeRenderer.line(mousePos.x, mousePos.y - crossSize, mousePos.x, mousePos.y + crossSize);
+                float crossSize = 10f;
+                shapeRenderer.line(mousePos.x - crossSize, mousePos.y, mousePos.x + crossSize, mousePos.y);
+                shapeRenderer.line(mousePos.x, mousePos.y - crossSize, mousePos.x, mousePos.y + crossSize);
 
-            shapeRenderer.end();
+                shapeRenderer.end();
+            }
         }
     }
 
@@ -316,6 +432,15 @@ public class TheFinaleMinigame implements Minigame {
         if (dx != 0 || dy != 0) {
             localDuck.move(dx, dy, delta);
         }
+
+        Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+        viewport.unproject(mousePos);
+
+        float angleRad = (float) Math.atan2(
+                mousePos.y - localDuck.position.y,
+                mousePos.x - localDuck.position.x);
+        float angleDeg = (float) Math.toDegrees(angleRad) - 90f;
+        localDuck.setRotation(angleDeg);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && shootCooldown <= 0) {
             shoot();
@@ -364,6 +489,7 @@ public class TheFinaleMinigame implements Minigame {
         packet.x = localDuck.position.x;
         packet.y = localDuck.position.y;
         packet.hits = localDuck.getHits();
+        packet.rotation = localDuck.getRotation();
         NetworkManager.getInstance().sendPacket(packet);
     }
 
@@ -547,6 +673,7 @@ public class TheFinaleMinigame implements Minigame {
         }
 
         duck.setPosition(state.x, state.y);
+        duck.setRotation(state.rotation);
 
         if (state.hits <= duck.getHits()) {
             duck.setHits(state.hits);

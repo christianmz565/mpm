@@ -58,7 +58,9 @@ public class SettingsOverlay {
         settingsPanel.pad(UIStyles.Spacing.LARGE);
 
         Label titleLabel = new Label("Ajustes", skin);
-        titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
+        com.badlogic.gdx.graphics.g2d.BitmapFont titleFont = skin.getFont("sixtyfour-32");
+        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
+        titleLabel.setStyle(titleStyle);
         titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
         settingsPanel.add(titleLabel).padBottom(UIStyles.Spacing.LARGE).row();
 

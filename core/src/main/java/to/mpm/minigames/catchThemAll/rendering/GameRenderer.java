@@ -13,7 +13,7 @@ import to.mpm.minigames.catchThemAll.entities.Player;
 import java.util.List;
 
 /**
- * Handles all rendering for the Catch Them All minigame.
+ * Maneja todo el renderizado para el minijuego Atrapa a Todos.
  */
 public class GameRenderer {
     private static final float SCREEN_WIDTH = 640f;
@@ -22,9 +22,12 @@ public class GameRenderer {
     
     private static BitmapFont font;
     private static SpriteManager spriteManager;
+    private static CloudsLayer cloudsLayer;
     
     /**
-     * Initialize the renderer (call once).
+     * Inicializa el renderizador.
+     * <p>
+     * Debe llamarse una sola vez al inicio del minijuego.
      */
     public static void initialize() {
         if (font == null) {
@@ -41,10 +44,14 @@ public class GameRenderer {
         
         spriteManager = SpriteManager.getInstance();
         spriteManager.loadSprites();
+        
+        cloudsLayer = new CloudsLayer(SCREEN_WIDTH, SCREEN_HEIGHT);
     }
     
     /**
-     * Dispose resources (call when done).
+     * Libera los recursos del renderizador.
+     * <p>
+     * Debe llamarse al finalizar el minijuego.
      */
     public static void dispose() {
         if (font != null) {
@@ -56,15 +63,31 @@ public class GameRenderer {
     }
     
     /**
-     * Render the game (players, ground, baskets, ducks, etc).
+     * Actualiza los elementos del renderizador.
+     * <p>
+     * Incluye efectos como el desplazamiento de las nubes.
      * 
-     * @param batch SpriteBatch for sprite rendering
-     * @param shapeRenderer ShapeRenderer for geometric shapes
-     * @param players map of all active players
-     * @param ducks list of all active ducks
-     * @param scores map of player IDs to scores
-     * @param playerColors array of player colors
-     * @param localPlayerId ID of the local player
+     * @param delta tiempo transcurrido desde el último frame en segundos
+     */
+    public static void update(float delta) {
+        if (cloudsLayer != null && spriteManager != null && spriteManager.isLoaded()) {
+            Texture clouds = spriteManager.getClouds();
+            cloudsLayer.update(delta, clouds);
+        }
+    }
+    
+    /**
+     * Renderiza el juego completo.
+     * <p>
+     * Incluye fondo, nubes, jugadores, patos y puntuaciones.
+     * 
+     * @param batch el SpriteBatch para renderizar sprites
+     * @param shapeRenderer el ShapeRenderer para formas geométricas
+     * @param players mapa de todos los jugadores activos
+     * @param ducks lista de todos los patos activos
+     * @param scores mapa de identificadores de jugador a puntuaciones
+     * @param playerColors arreglo de colores de jugadores
+     * @param localPlayerId identificador del jugador local
      */
     public static void render(SpriteBatch batch, ShapeRenderer shapeRenderer, IntMap<Player> players, List<Duck> ducks, 
                              java.util.Map<Integer, Integer> scores, float[][] playerColors, int localPlayerId) {
@@ -77,9 +100,9 @@ public class GameRenderer {
                 batch.draw(bg, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
             }
             
-            Texture floor = spriteManager.getFloor();
-            if (floor != null) {
-                batch.draw(floor, 0, 0, SCREEN_WIDTH, GROUND_Y);
+            if (cloudsLayer != null) {
+                Texture clouds = spriteManager.getClouds();
+                cloudsLayer.render(batch, clouds);
             }
         }
         
@@ -107,7 +130,10 @@ public class GameRenderer {
     }
     
     /**
-     * Render a single duck using sprites.
+     * Renderiza un pato individual usando sprites.
+     * 
+     * @param batch el SpriteBatch para renderizar
+     * @param duck el pato a renderizar
      */
     private static void renderDuck(SpriteBatch batch, Duck duck) {
         if (duck.isCaught()) {
@@ -124,7 +150,10 @@ public class GameRenderer {
     }
     
     /**
-     * Render a single player with their basket using sprites.
+     * Renderiza un jugador individual con su canasta usando sprites.
+     * 
+     * @param batch el SpriteBatch para renderizar
+     * @param p el jugador a renderizar
      */
     private static void renderPlayer(SpriteBatch batch, Player p) {
         AnimatedSprite animation = p.getRunAnimation();

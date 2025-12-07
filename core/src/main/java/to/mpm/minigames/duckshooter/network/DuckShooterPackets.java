@@ -16,6 +16,7 @@ public class DuckShooterPackets {
         public float x;
         public float y;
         public int hits;
+        public float rotation;
 
         public DuckState() {
             preferTransport(Transports.UDP);

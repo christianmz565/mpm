@@ -5,16 +5,18 @@ import com.badlogic.gdx.graphics.Texture;
 import to.mpm.minigames.catchThemAll.entities.Duck;
 
 /**
- * Manages all sprites for the Catch Them All minigame.
- * Singleton pattern to ensure resources are loaded once.
+ * Gestiona todos los sprites para el minijuego Atrapa a Todos.
+ * <p>
+ * Usa el patrón Singleton para asegurar que los recursos se carguen una sola vez.
  */
 public class SpriteManager {
     private static SpriteManager instance;
     
     /** Textura del fondo. */
     private Texture background;
-    /** Textura del suelo. */
-    private Texture floor;
+    
+    /** Textura de las nubes. */
+    private Texture clouds;
     
     /** Frame 1 del jugador. */
     private Texture playerFrame1;
@@ -40,7 +42,9 @@ public class SpriteManager {
     }
     
     /**
-     * Get the singleton instance.
+     * Obtiene la instancia única del gestor de sprites.
+     * 
+     * @return la instancia del SpriteManager
      */
     public static SpriteManager getInstance() {
         if (instance == null) {
@@ -50,7 +54,7 @@ public class SpriteManager {
     }
     
     /**
-     * Load all sprites from assets.
+     * Carga todos los sprites desde los recursos.
      */
     public void loadSprites() {
         if (loaded) {
@@ -59,7 +63,7 @@ public class SpriteManager {
         
         try {
             background = new Texture(Gdx.files.internal("sprites/catchThemAll/background.png"));
-            floor = new Texture(Gdx.files.internal("sprites/catchThemAll/floor.png"));
+            clouds = new Texture(Gdx.files.internal("sprites/catchThemAll/clouds.png"));
             
             playerFrame1 = new Texture(Gdx.files.internal("sprites/catchThemAll/player-frame1.png"));
             playerFrame2 = new Texture(Gdx.files.internal("sprites/catchThemAll/player-frame2.png"));
@@ -79,7 +83,7 @@ public class SpriteManager {
     }
     
     /**
-     * Dispose all textures.
+     * Libera todas las texturas cargadas.
      */
     public void dispose() {
         if (!loaded) {
@@ -87,7 +91,7 @@ public class SpriteManager {
         }
         
         if (background != null) background.dispose();
-        if (floor != null) floor.dispose();
+        if (clouds != null) clouds.dispose();
         if (playerFrame1 != null) playerFrame1.dispose();
         if (playerFrame2 != null) playerFrame2.dispose();
         if (duckNeutral1 != null) duckNeutral1.dispose();
@@ -103,8 +107,9 @@ public class SpriteManager {
     
     /** Obtiene el fondo. */
     public Texture getBackground() { return background; }
-    /** Obtiene el suelo. */
-    public Texture getFloor() { return floor; }
+    
+    /** Obtiene las nubes. */
+    public Texture getClouds() { return clouds; }
     
     /** Obtiene el frame 1 del jugador. */
     public Texture getPlayerFrame1() { return playerFrame1; }
@@ -112,10 +117,11 @@ public class SpriteManager {
     public Texture getPlayerFrame2() { return playerFrame2; }
     
     /**
-     * Get duck frame by type and frame number.
-     * @param type Duck type
-     * @param frameIndex 0 or 1
-     * @return Texture for the requested frame
+     * Obtiene un frame de pato según su tipo y número de frame.
+     * 
+     * @param type tipo de pato
+     * @param frameIndex índice del frame (0 o 1)
+     * @return textura del frame solicitado
      */
     public Texture getDuckFrame(Duck.DuckType type, int frameIndex) {
         switch (type) {
@@ -130,6 +136,11 @@ public class SpriteManager {
         }
     }
     
+    /**
+     * Verifica si los sprites han sido cargados.
+     * 
+     * @return true si los sprites están cargados, false en caso contrario
+     */
     public boolean isLoaded() {
         return loaded;
     }

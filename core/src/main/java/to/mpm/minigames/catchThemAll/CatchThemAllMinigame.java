@@ -100,7 +100,7 @@ public class CatchThemAllMinigame implements Minigame {
         if (NetworkManager.getInstance().isHost()) {
             GameLoop.updateHost(delta, state);
         } else if (state.getLocalPlayer() != null) {
-            GameLoop.updateClient(state);
+            GameLoop.updateClient(delta, state);
         }
     }
 

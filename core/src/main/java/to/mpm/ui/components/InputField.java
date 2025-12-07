@@ -148,6 +148,12 @@ public class InputField {
      */
     public TextField buildField() {
         TextField textField = new TextField(defaultValue, skin);
+        
+        com.badlogic.gdx.graphics.g2d.BitmapFont inputFont = skin.getFont("sixtyfour-24");
+        TextField.TextFieldStyle fieldStyle = new TextField.TextFieldStyle(textField.getStyle());
+        fieldStyle.font = inputFont;
+        textField.setStyle(fieldStyle);
+        
         textField.setMessageText(messageText);
         if (filter != null) {
             textField.setTextFieldFilter(filter);

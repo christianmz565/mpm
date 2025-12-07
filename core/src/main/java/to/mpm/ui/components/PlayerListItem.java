@@ -103,18 +103,24 @@ public class PlayerListItem {
         container.add(roleIndicator).padLeft(UIStyles.Spacing.SMALL).padRight(UIStyles.Spacing.SMALL);
 
         Label nameLabel = new Label(playerName != null ? playerName : "Player", skin);
+        com.badlogic.gdx.graphics.g2d.BitmapFont nameFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle nameStyle = new Label.LabelStyle(nameFont, com.badlogic.gdx.graphics.Color.WHITE);
+        nameLabel.setStyle(nameStyle);
         container.add(nameLabel).expandX().left().padRight(UIStyles.Spacing.SMALL);
 
         if (role != null && !role.isEmpty()) {
             Label roleLabel = new Label(role, skin);
-            roleLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
-            roleLabel.setFontScale(UIStyles.Typography.SMALL_SCALE);
+            com.badlogic.gdx.graphics.g2d.BitmapFont roleFont = skin.getFont("sixtyfour-24");
+            Label.LabelStyle roleStyle = new Label.LabelStyle(roleFont, UIStyles.Colors.TEXT_SECONDARY);
+            roleLabel.setStyle(roleStyle);
             container.add(roleLabel).padRight(UIStyles.Spacing.SMALL);
         }
 
         if (score != null) {
             Label scoreLabel = new Label(String.format("%d", score), skin);
-            scoreLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+            com.badlogic.gdx.graphics.g2d.BitmapFont scoreFont = skin.getFont("sixtyfour-24");
+            Label.LabelStyle scoreStyle = new Label.LabelStyle(scoreFont, com.badlogic.gdx.graphics.Color.WHITE);
+            scoreLabel.setStyle(scoreStyle);
             container.add(scoreLabel).padRight(UIStyles.Spacing.MEDIUM);
         }
 
