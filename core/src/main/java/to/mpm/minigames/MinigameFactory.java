@@ -3,6 +3,7 @@ package to.mpm.minigames;
 import com.badlogic.gdx.Gdx;
 
 import to.mpm.minigames.catchThemAll.CatchThemAllMinigame;
+import to.mpm.minigames.dodgeRain.DodgeRainMinigame;
 import to.mpm.minigames.sumo.SumoMinigame;
 import to.mpm.minigames.theFinale.TheFinaleMinigame;
 
@@ -23,6 +24,8 @@ public class MinigameFactory {
                 return new CatchThemAllMinigame(localPlayerId);
             case SUMO:
                 return new SumoMinigame(localPlayerId);
+            case DODGE_RAIN:
+                return new DodgeRainMinigame(localPlayerId);
             case THE_FINALE:
                 return new TheFinaleMinigame(localPlayerId);
             default:
