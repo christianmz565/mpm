@@ -8,20 +8,26 @@ package to.mpm.minigames;
 public enum MinigameType {
     /** Minijuego de atrapar patos que caen. */
     CATCH_THEM_ALL(
-            "Atrapa a Todos",
-            "¡Atrapa los patos que caen con tu cesta! ¡Evita los patos malos!",
+            "Catch Them All",
+            "¡Atrapa los patos que caen con tu cesta! Los patos buenos te dan puntos, " +
+                    "pero cuidado con los patos malos.",
+            "A/D o Flechas Izquierda/Derecha para moverse",
             2, 6
     ),
     /** Minijuego de empujar patos fuera de la plataforma. */
     SUMO(
-            "Empujón de Estanque",
-            "¡Empuja a los otros patos fuera de la plataforma! El último pato en pie gana.",
+            "Pond Push",
+            "¡Empuja a los otros jugadores fuera de la plataforma! " +
+                    "Choca con otros jugadores para tirarlos al agua.",
+            "WASD o Flechas para moverse",
             2, 6
     ),
     /** Minijuego final del torneo. */
     THE_FINALE(
-            "La Final",
-            "¡Enfrentamiento final! ¡Solo compiten los mejores!",
+            "The Finale",
+            "¡El enfrentamiento final! " +
+                    "Dispara a otros patos para eliminarlos. ¡El último pato en pie es el campeón!",
+            "WASD para moverse, Ratón para apuntar, ESPACIO para disparar",
             2, 99
     );
 
@@ -29,6 +35,8 @@ public enum MinigameType {
     private final String displayName;
     /** Descripción del minijuego. */
     private final String description;
+    /** Descripción de los controles del minijuego. */
+    private final String controls;
     /** Número mínimo de jugadores requeridos. */
     private final int minPlayers;
     /** Número máximo de jugadores permitidos. */
@@ -39,12 +47,14 @@ public enum MinigameType {
      * 
      * @param displayName nombre del minijuego para mostrar en la UI
      * @param description descripción breve del minijuego
+     * @param controls    descripción de los controles del minijuego
      * @param minPlayers  número mínimo de jugadores requeridos
      * @param maxPlayers  número máximo de jugadores permitidos
      */
-    MinigameType(String displayName, String description, int minPlayers, int maxPlayers) {
+    MinigameType(String displayName, String description, String controls, int minPlayers, int maxPlayers) {
         this.displayName = displayName;
         this.description = description;
+        this.controls = controls;
         this.minPlayers = minPlayers;
         this.maxPlayers = maxPlayers;
     }
@@ -83,5 +93,14 @@ public enum MinigameType {
      */
     public int getMaxPlayers() {
         return maxPlayers;
+    }
+
+    /**
+     * Obtiene la descripción de los controles del minijuego.
+     * 
+     * @return descripción de los controles
+     */
+    public String getControls() {
+        return controls;
     }
 }

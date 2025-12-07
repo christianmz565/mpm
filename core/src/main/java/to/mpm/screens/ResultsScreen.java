@@ -211,16 +211,22 @@ public class ResultsScreen implements Screen {
         positionTable.pad(UIStyles.Spacing.MEDIUM);
 
         Label rankLabel = new Label(position + "° puesto", skin);
-        rankLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
+        com.badlogic.gdx.graphics.g2d.BitmapFont bodyFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle bodyStyle = new Label.LabelStyle(bodyFont, UIStyles.Colors.TEXT_PRIMARY);
+        rankLabel.setStyle(bodyStyle);
         positionTable.add(rankLabel).padBottom(UIStyles.Spacing.SMALL).row();
 
         Label nameLabel = new Label(result.getPlayerName(), skin);
-        nameLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+        com.badlogic.gdx.graphics.g2d.BitmapFont headingFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle headingStyle = new Label.LabelStyle(headingFont, UIStyles.Colors.TEXT_PRIMARY);
+        nameLabel.setStyle(headingStyle);
         positionTable.add(nameLabel).padBottom(UIStyles.Spacing.SMALL).row();
 
         Label scoreLabel = new Label(String.valueOf(result.getScore()), skin);
-        scoreLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
-        scoreLabel.setColor(position == 1 ? UIStyles.Colors.SECONDARY : UIStyles.Colors.TEXT_PRIMARY);
+        com.badlogic.gdx.graphics.g2d.BitmapFont titleFont = skin.getFont("sixtyfour-32");
+        com.badlogic.gdx.graphics.Color scoreColor = position == 1 ? UIStyles.Colors.SECONDARY : UIStyles.Colors.TEXT_PRIMARY;
+        Label.LabelStyle scoreStyle = new Label.LabelStyle(titleFont, scoreColor);
+        scoreLabel.setStyle(scoreStyle);
         positionTable.add(scoreLabel);
 
         return positionTable;
@@ -270,12 +276,15 @@ public class ResultsScreen implements Screen {
         winnerPanel.pad(UIStyles.Spacing.XLARGE);
 
         Label nameLabel = new Label(winner.getPlayerName(), skin);
-        nameLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
+        com.badlogic.gdx.graphics.g2d.BitmapFont titleFont = skin.getFont("sixtyfour-40");
+        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
+        nameLabel.setStyle(titleStyle);
         winnerPanel.add(nameLabel).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Label scoreLabel = new Label(String.valueOf(winner.getScore()), skin);
-        scoreLabel.setFontScale(UIStyles.Typography.TITLE_SCALE * 1.2f);
-        scoreLabel.setColor(UIStyles.Colors.SECONDARY);
+        com.badlogic.gdx.graphics.g2d.BitmapFont bigTitleFont = skin.getFont("sixtyfour-40");
+        Label.LabelStyle bigTitleStyle = new Label.LabelStyle(bigTitleFont, UIStyles.Colors.SECONDARY);
+        scoreLabel.setStyle(bigTitleStyle);
         winnerPanel.add(scoreLabel);
 
         spotlightTable.add(winnerPanel).size(400f);
@@ -358,8 +367,7 @@ public class ResultsScreen implements Screen {
                 break;
         }
 
-        Gdx.gl.glClearColor(UIStyles.Colors.BACKGROUND.r, UIStyles.Colors.BACKGROUND.g,
-                UIStyles.Colors.BACKGROUND.b, UIStyles.Colors.BACKGROUND.a);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(delta);

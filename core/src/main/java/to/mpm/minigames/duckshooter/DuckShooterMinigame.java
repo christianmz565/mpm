@@ -281,6 +281,7 @@ public class DuckShooterMinigame implements Minigame {
         packet.x = localDuck.position.x;
         packet.y = localDuck.position.y;
         packet.hits = localDuck.getHits();
+        packet.rotation = localDuck.getRotation();
         NetworkManager.getInstance().sendPacket(packet);
     }
 
@@ -415,6 +416,7 @@ public class DuckShooterMinigame implements Minigame {
         }
 
         duck.setPosition(state.x, state.y);
+        duck.setRotation(state.rotation);
 
         if (!NetworkManager.getInstance().isHost()) {
             duck.setHits(state.hits);

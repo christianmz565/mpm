@@ -3,6 +3,7 @@ package to.mpm.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -11,13 +12,12 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import to.mpm.Main;
 import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
-import to.mpm.ui.components.DuckPlaceholder;
 import to.mpm.ui.components.StyledButton;
 
 /**
  * Pantalla del menú principal de MicroPatosMania.
  * <p>
- * Muestra título, botones de crear/unirse/ajustes y la ilustración del pato.
+ * Muestra título y botones con estilo retro minimalista centrado.
  */
 public class MainMenuScreen implements Screen {
     /** Instancia del juego principal. */
@@ -50,52 +50,49 @@ public class MainMenuScreen implements Screen {
         stage.addActor(root);
 
         Table menuTable = new Table();
-        menuTable.top().left();
 
         Label titleLabel = new Label("MicroPatosMania", skin);
-        titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
-        titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
-        menuTable.add(titleLabel).left().padBottom(UIStyles.Spacing.XLARGE).row();
+        BitmapFont titleFont = skin.getFont("sixtyfour-32");
+        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
+        titleLabel.setStyle(titleStyle);
+        menuTable.add(titleLabel).padBottom(UIStyles.Spacing.XXLARGE).row();
 
         menuTable.add(
                 new StyledButton(skin)
                         .text("Crear")
-                        .width(250f)
-                        .height(60f)
+                        .width(350f)
+                        .height(80f)
                         .onClick(() -> {
                             game.setScreen(new CreateRoomScreen(game));
                             dispose();
                         })
                         .build())
-                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(350f, 80f).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         menuTable.add(
                 new StyledButton(skin)
                         .text("Unirse")
-                        .width(250f)
-                        .height(60f)
+                        .width(350f)
+                        .height(80f)
                         .onClick(() -> {
                             game.setScreen(new JoinLobbyScreen(game));
                             dispose();
                         })
                         .build())
-                .size(250f, 60f).left().padBottom(UIStyles.Spacing.MEDIUM).row();
+                .size(350f, 80f).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         menuTable.add(
                 new StyledButton(skin)
                         .text("Salir")
-                        .width(250f)
-                        .height(60f)
+                        .width(350f)
+                        .height(80f)
                         .onClick(() -> {
                             Gdx.app.exit();
                         })
                         .build())
-                .size(250f, 60f).left().row();
+                .size(350f, 80f).row();
 
-        Table duckTable = new DuckPlaceholder(skin).build();
-
-        root.add(menuTable).top().left().pad(UIStyles.Spacing.LARGE).expandY();
-        root.add(duckTable).expand();
+        root.add(menuTable).center();
     }
 
     /**
@@ -105,7 +102,7 @@ public class MainMenuScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(delta);

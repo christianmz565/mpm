@@ -18,6 +18,7 @@ public class Duck {
     private int hits;
     private boolean alive;
     private float invulnerabilityTimer;
+    private float rotation;
 
     public Duck(int playerId, float x, float y, Color color) {
         this.playerId = playerId;
@@ -26,6 +27,7 @@ public class Duck {
         this.hits = 3;
         this.alive = true;
         this.invulnerabilityTimer = 0f;
+        this.rotation = 0f;
     }
 
     public void update(float delta) {
@@ -94,5 +96,13 @@ public class Duck {
 
     public boolean isInvulnerable() {
         return invulnerabilityTimer > 0;
+    }
+
+    public float getRotation() {
+        return rotation;
+    }
+
+    public void setRotation(float rotation) {
+        this.rotation = rotation;
     }
 }

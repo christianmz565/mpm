@@ -110,7 +110,7 @@ public class VolumeSlider {
         Table container = new Table();
 
         Label volumeLabel = new Label("Volumen", skin);
-        volumeLabel.setFontScale(UIStyles.Typography.HEADING_SCALE);
+        volumeLabel.setStyle(new Label.LabelStyle(skin.getFont("sixtyfour-24"), com.badlogic.gdx.graphics.Color.WHITE));
         container.add(volumeLabel).padBottom(UIStyles.Spacing.MEDIUM).row();
 
         Slider slider = new Slider(min, max, stepSize, false, skin);

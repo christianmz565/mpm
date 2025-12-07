@@ -125,19 +125,21 @@ public class LobbyScreen implements Screen {
 
         TextButton backButton = new StyledButton(skin)
                 .text("< Volver")
-                .width(120f)
+                .width(150f)
                 .height(45f)
+                .fontSize(18)
                 .onClick(() -> {
                     NetworkManager.getInstance().disconnect();
                     game.setScreen(new MainMenuScreen(game));
                     dispose();
                 })
                 .build();
-        topBar.add(backButton).size(120f, 45f).left().width(150f);
+        topBar.add(backButton).size(150f, 45f).left();
 
         Label titleLabel = new Label("Sala", skin);
-        titleLabel.setFontScale(UIStyles.Typography.TITLE_SCALE);
-        titleLabel.setColor(UIStyles.Colors.TEXT_PRIMARY);
+        com.badlogic.gdx.graphics.g2d.BitmapFont titleFont = skin.getFont("sixtyfour-24");
+        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
+        titleLabel.setStyle(titleStyle);
         topBar.add(titleLabel).expandX().center();
 
         Table rightHeader = new Table();
@@ -153,11 +155,13 @@ public class LobbyScreen implements Screen {
             ipLabel = new Label("IP: " + serverIp, skin);
             portLabel = new Label("Puerto: " + serverPort, skin);
         }
-        ipLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
-        portLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
-        rightHeader.add(ipLabel).right().row();
-        rightHeader.add(portLabel).right().row();
-        topBar.add(rightHeader).right().width(150f);
+        com.badlogic.gdx.graphics.g2d.BitmapFont smallFont = skin.getFont("sixtyfour-12");
+        Label.LabelStyle smallStyle = new Label.LabelStyle(smallFont, UIStyles.Colors.TEXT_PRIMARY);
+        ipLabel.setStyle(smallStyle);
+        portLabel.setStyle(smallStyle);
+        rightHeader.add(ipLabel).right().padLeft(UIStyles.Spacing.SMALL).row();
+        rightHeader.add(portLabel).right().padLeft(UIStyles.Spacing.SMALL).row();
+        topBar.add(rightHeader).right().padRight(UIStyles.Spacing.SMALL);
 
         root.add(topBar).expandX().fillX().row();
 
@@ -172,30 +176,35 @@ public class LobbyScreen implements Screen {
         bottomRow.pad(UIStyles.Spacing.MEDIUM);
 
         spectatorButton = new StyledButton(skin)
-                .text("Modo Espectador")
-                .width(250f)
-                .height(60f)
+                .text("Modo\nEspectador")
+                .width(220f)
+                .height(70f)
+                .fontSize(18)
+                .wrapText()
                 .onClick(this::toggleSpectator)
                 .build();
-        bottomRow.add(spectatorButton).size(250f, 60f).padRight(UIStyles.Spacing.LARGE);
+        bottomRow.add(spectatorButton).size(220f, 70f).padRight(UIStyles.Spacing.LARGE);
 
         if (isHost) {
             startButton = new StyledButton(skin)
-                    .text("Iniciar Juego")
-                    .width(250f)
-                    .height(60f)
+                    .text("Iniciar\nJuego")
+                    .width(220f)
+                    .height(70f)
+                    .fontSize(18)
+                    .wrapText()
                     .disabled(true)
                     .onClick(this::startGame)
                     .build();
-            bottomRow.add(startButton).size(250f, 60f);
+            bottomRow.add(startButton).size(220f, 70f);
 
             root.add(bottomRow).bottom().pad(UIStyles.Spacing.LARGE).row();
         } else {
             root.add(bottomRow).bottom().pad(UIStyles.Spacing.LARGE).row();
 
             Label statusLabel = new Label("Esperando a que el anfitrión inicie el juego...", skin);
-            statusLabel.setFontScale(UIStyles.Typography.BODY_SCALE);
-            statusLabel.setColor(UIStyles.Colors.TEXT_SECONDARY);
+            com.badlogic.gdx.graphics.g2d.BitmapFont defaultFont = skin.getFont("sixtyfour-12");
+            Label.LabelStyle statusStyle = new Label.LabelStyle(defaultFont, UIStyles.Colors.TEXT_SECONDARY);
+            statusLabel.setStyle(statusStyle);
             root.add(statusLabel).bottom().padBottom(UIStyles.Spacing.MEDIUM).row();
         }
 
@@ -232,10 +241,10 @@ public class LobbyScreen implements Screen {
 
         if (isCurrentlySpectator) {
             spectators.remove(localPlayerId);
-            spectatorButton.setText("Modo Espectador");
+            spectatorButton.setText("Modo\nEspectador");
         } else {
             spectators.add(localPlayerId);
-            spectatorButton.setText("Modo Jugador");
+            spectatorButton.setText("Modo\nJugador");
         }
 
         Packets.SpectatorStatus packet = new Packets.SpectatorStatus();
@@ -292,7 +301,7 @@ public class LobbyScreen implements Screen {
 
         int localPlayerId = NetworkManager.getInstance().getMyId();
         if (packet.playerId == localPlayerId && spectatorButton != null) {
-            spectatorButton.setText(packet.isSpectator ? "Modo Jugador" : "Modo Espectador");
+            spectatorButton.setText(packet.isSpectator ? "Modo\nJugador" : "Modo\nEspectador");
         }
 
         updatePlayersList();
@@ -422,8 +431,7 @@ public class LobbyScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(UIStyles.Colors.BACKGROUND.r, UIStyles.Colors.BACKGROUND.g,
-                UIStyles.Colors.BACKGROUND.b, UIStyles.Colors.BACKGROUND.a);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(delta);

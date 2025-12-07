@@ -29,7 +29,9 @@
         in
         pkgs.mkShell {
           packages = (with pkgs; [
-            python312
+            (python312.withPackages (ps: with ps; [
+              pillow
+            ]))
             gradle
             jdk21
             doxygen

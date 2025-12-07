@@ -12,6 +12,7 @@ import to.mpm.Main;
 import to.mpm.minigames.MinigameType;
 import to.mpm.network.NetworkManager;
 import to.mpm.network.Packets;
+import to.mpm.ui.UIStyles;
 import to.mpm.ui.UISkinProvider;
 
 /**
@@ -50,19 +51,26 @@ public class MinigameSelectionScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
+        com.badlogic.gdx.graphics.g2d.BitmapFont titleFont = skin.getFont("sixtyfour-32");
+        com.badlogic.gdx.graphics.g2d.BitmapFont bodyFont = skin.getFont("sixtyfour-24");
+
         Label titleLabel = new Label("Elegir microjuego", skin);
-        titleLabel.setFontScale(1.5f);
+        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
+        titleLabel.setStyle(titleStyle);
         table.add(titleLabel).padBottom(30).colspan(2).row();
 
         if (isHost) {
             statusLabel = new Label("Seleccione un microjuego para jugar:", skin);
+            Label.LabelStyle bodyStyle = new Label.LabelStyle(bodyFont, UIStyles.Colors.TEXT_PRIMARY);
+            statusLabel.setStyle(bodyStyle);
             table.add(statusLabel).padBottom(20).colspan(2).row();
 
             for (MinigameType type : MinigameType.values()) {
                 Table gameRow = new Table();
 
                 Label nameLabel = new Label(type.getDisplayName(), skin);
-                nameLabel.setFontScale(1.2f);
+                Label.LabelStyle nameStyle = new Label.LabelStyle(bodyFont, UIStyles.Colors.TEXT_PRIMARY);
+                nameLabel.setStyle(nameStyle);
                 gameRow.add(nameLabel).width(200).padRight(20);
 
                 Label descLabel = new Label(type.getDescription(), skin);
@@ -95,6 +103,8 @@ public class MinigameSelectionScreen implements Screen {
 
         } else {
             statusLabel = new Label("Esperando a que el anfitrión seleccione el microjuego...", skin);
+            Label.LabelStyle clientStyle = new Label.LabelStyle(bodyFont, UIStyles.Colors.TEXT_PRIMARY);
+            statusLabel.setStyle(clientStyle);
             table.add(statusLabel).padBottom(30).colspan(2).row();
 
             TextButton backButton = new TextButton("Volver al lobby", skin);
@@ -143,7 +153,7 @@ public class MinigameSelectionScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(delta);
