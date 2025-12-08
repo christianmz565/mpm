@@ -125,7 +125,7 @@ public class ScoreboardScreen implements Screen {
         stage.addActor(root);
 
         roundLabel = new Label("¡Ronda " + currentRound + "/" + totalRounds + " Completada!", skin);
-        com.badlogic.gdx.graphics.g2d.BitmapFont titleFont = skin.getFont("sixtyfour-24");
+        com.badlogic.gdx.graphics.g2d.BitmapFont titleFont = skin.getFont("sixtyfour-20");
         Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, UIStyles.Colors.TEXT_PRIMARY);
         roundLabel.setStyle(titleStyle);
         roundLabel.setAlignment(Align.center);
@@ -186,9 +186,9 @@ public class ScoreboardScreen implements Screen {
                     .playerName(player.getPlayerName() + (isLocalPlayer ? " (Tú)" : ""))
                     .score(player.getScore())
                     .highlighted(isLocalPlayer)
-                    .rankFontSize(20)
-                    .nameFontSize(18)
-                    .scoreFontSize(20)
+                    .rankFontSize(16)
+                    .nameFontSize(14)
+                    .scoreFontSize(16)
                     .build();
 
             scoresContainer.add(scoreItem).fillX().expandX().padBottom(UIStyles.Spacing.LARGE).row();
