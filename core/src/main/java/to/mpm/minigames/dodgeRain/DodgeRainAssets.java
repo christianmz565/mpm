@@ -7,23 +7,42 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
+/**
+ * Gestiona los recursos del minijuego DodgeRain.
+ * <p>
+ * Carga y almacena todas las texturas, fuentes y otros recursos
+ * necesarios para el juego.
+ */
 public class DodgeRainAssets implements Disposable {
+  /** Textura de fondo del juego. */
   public Texture bgImage;
 
+  /** Textura del pato mirando a la derecha. */
   public Texture duckRight;
+  /** Textura del pato caminando mirando a la derecha. */
   public Texture duckRightStep;
+  /** Textura del pato enfadado mirando a la derecha. */
   public Texture duckRightUpset;
+  /** Textura del pato ralentizado mirando a la derecha. */
   public Texture duckRightRalent;
 
+  /** Textura del pato mirando a la izquierda. */
   public Texture duckLeft;
+  /** Textura del pato caminando mirando a la izquierda. */
   public Texture duckLeftStep;
+  /** Textura del pato enfadado mirando a la izquierda. */
   public Texture duckLeftUpset;
+  /** Textura del pato ralentizado mirando a la izquierda. */
   public Texture duckLeftRalent;
 
+  /** Lista de texturas de obstáculos. */
   public Array<Texture> obstacleTextures;
+  /** Fuente para renderizar texto. */
   public BitmapFont font;
 
-  // Load all assets
+  /**
+   * Carga todos los recursos del juego desde el sistema de archivos.
+   */
   public void load() {
     bgImage = new Texture(Gdx.files.internal("sprites/dodgeRain/bg.png"));
 
@@ -47,6 +66,9 @@ public class DodgeRainAssets implements Disposable {
     font.getData().setScale(2);
   }
 
+  /**
+   * Libera todos los recursos cargados.
+   */
   @Override
   public void dispose() {
     if (bgImage != null)
