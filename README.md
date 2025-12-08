@@ -15,7 +15,7 @@ Acceso directo a los documentos requeridos para la evaluación:
 
 | Documento | Descripción | Enlace |
 | :--- | :--- | :---: |
-| **📹 Video de Demostración** | Demostración de funcionalidad en YouTube/Drive. | [Ver Video](https://drive.google.com/file/d/1gVrajtwt88dHXRcPIsAJDocWJn-eexTq/view?usp=sharing) |
+| **📹 Video de Demostración** | Demostración de funcionalidad en YouTube/Drive. | [Ver Video](https://drive.google.com/file/d/1VPeEC09lpXtmAAQm2y5jAVR0zg-U3iIz/view?usp=sharing) |
 | **📄 Memoria Descriptiva** | Arquitectura detallada, diagramas y decisiones técnicas. | [Ver PDF](./MEMORIA_DESCRIPTIVA.pdf) |
 | **📖 Manual de Usuario** | Guía de instalación, interfaz y cómo jugar. | [Ver PDF](./MANUAL_DE_USUARIO.pdf) |
 
