@@ -38,7 +38,6 @@
             graphviz
             just
             steam-run
-            texlive.combined.scheme-full
           ]);
           buildInputs = with pkgs; [
             bashInteractive

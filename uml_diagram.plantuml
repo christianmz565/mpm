@@ -1,0 +1,1507 @@
+@startuml
+
+!theme plain
+left to right direction
+skinparam linetype ortho
+
+class AnimatedSprite {
+  + AnimatedSprite(Texture[], float): 
+  - currentFrameIndex: int
+  - paused: boolean
+  + reset(): void
+  + pause(): void
+  + getFrame(int): Texture
+  + resume(): void
+  + update(float): void
+   paused: boolean
+   currentFrame: Texture
+   frameCount: int
+   currentFrameIndex: int
+}
+class Animation {
+  + Animation(): 
+}
+enum AnimationState << enumeration >> {
+  - AnimationState(): 
+  + values(): AnimationState[]
+  + valueOf(String): AnimationState
+}
+class BallMovementClientHandler {
+  - BallMovementClientHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class BallMovementMinigame {
+  + BallMovementMinigame(int): 
+  - finished: boolean
+  + initialize(): void
+  + resize(int, int): void
+  - onPlayerJoined(PlayerJoined): void
+  - sendPlayerPosition(): void
+  - onPlayerPosition(PlayerPosition): void
+  - onPlayerLeft(PlayerLeft): void
+  + render(SpriteBatch, ShapeRenderer): void
+  + handleInput(float): void
+  + update(float): void
+  + dispose(): void
+   scores: Map<Integer, Integer>
+   winnerId: int
+   finished: boolean
+}
+class BallMovementServerRelay {
+  - BallMovementServerRelay(): 
+  + handle(ServerPacketContext, NetworkPacket): void
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+}
+class Borders {
+  + Borders(): 
+}
+class CatchDetector {
+  + CatchDetector(): 
+  + detectCatches(List<Duck>, Map<Integer, Player>): Map<Integer, Integer>
+  + removeGroundedDucks(List<Duck>): int
+}
+class CatchThemAll {
+  + CatchThemAll(): 
+}
+class CatchThemAllMinigame {
+  + CatchThemAllMinigame(int): 
+  + dispose(): void
+  + initialize(): void
+  + update(float): void
+  + handleInput(float): void
+  + render(SpriteBatch, ShapeRenderer): void
+  + resize(int, int): void
+   scores: Map<Integer, Integer>
+   winnerId: int
+   finished: boolean
+}
+class CatchThemAllPackets {
+  + CatchThemAllPackets(): 
+}
+class ClientDisconnected {
+  + ClientDisconnected(): 
+}
+class ClientHandler {
+  + ClientHandler(GameState): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  - handlePlayerPosition(PlayerPosition): void
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class ClientPacketContext {
+  + ClientPacketContext(NetworkClient): 
+  - client: NetworkClient
+  + send(NetworkPacket): void
+   client: NetworkClient
+   connectedPlayers: ConcurrentHashMap<Integer, String>
+   localPlayerId: int
+}
+interface ClientPacketHandler << interface >>
+class CloudInstance {
+  ~ CloudInstance(float, float): 
+}
+class CloudsLayer {
+  + CloudsLayer(float, float): 
+  + update(float, Texture): void
+  + render(SpriteBatch, Texture): void
+  + reset(): void
+}
+class CollisionDetector {
+  + CollisionDetector(): 
+  + checkEggCollection(Duck, Egg): boolean
+  + checkPlayerCollisions(Map<Integer, Duck>, StealCallback): void
+  + handleCollisions(Map<Integer, Duck>, List<Egg>, List<Nest>, Map<Integer, Integer>, StealCallback): void
+  + checkNestDelivery(Duck, Nest): boolean
+}
+class CollisionHandler {
+  + CollisionHandler(): 
+  - resolveHorizontalCollision(Player, Player, float, boolean, boolean, Rectangle, Rectangle): void
+  + handlePlayerCollisions(IntMap<Player>): void
+  - resolveCollision(Player, Player): void
+  - resolveVerticalCollision(Player, Player, Rectangle, Rectangle): void
+}
+class Colors {
+  + Colors(): 
+}
+class CreateRoomScreen {
+  + CreateRoomScreen(Main): 
+  - createRoom(): void
+  + resume(): void
+  + show(): void
+  + dispose(): void
+  + render(float): void
+  + hide(): void
+  + resize(int, int): void
+  + pause(): void
+}
+class DebugKeybinds {
+  + DebugKeybinds(Main): 
+  - switchScreen(Screen): void
+  + update(): void
+  + printHelp(): void
+  - handleKey(boolean, int, String, Runnable): boolean
+}
+class DodgeRainAssets {
+  + DodgeRainAssets(): 
+  + dispose(): void
+  + load(): void
+}
+class DodgeRainLogic {
+  + DodgeRainLogic(int, boolean): 
+  - updatePlayerState(DodgeRainPlayer, float): void
+  + update(float, int): void
+  - spawnRaindrop(int): void
+}
+class DodgeRainMinigame {
+  + DodgeRainMinigame(int): 
+  + dispose(): void
+  + update(float): void
+  + initialize(): void
+  + handleInput(float): void
+  + render(SpriteBatch, ShapeRenderer): void
+  + resize(int, int): void
+   scores: Map<Integer, Integer>
+   winnerId: int
+   finished: boolean
+}
+class DodgeRainPlayer {
+  + DodgeRainPlayer(int, float, float): 
+}
+class DodgeRainRenderer {
+  + DodgeRainRenderer(DodgeRainAssets, DodgeRainLogic): 
+  + render(SpriteBatch, ShapeRenderer): void
+}
+class Duck {
+  + Duck(boolean, int, float, float, float, float, float): 
+  - playerId: int
+  - stealHitCount: int
+  + points: int
+  - velocity: Vector2
+  + y: float
+  - hitbox: Rectangle
+  + x: float
+  - carriedEgg: Egg
+  + move(float, float): void
+  + addPoints(int): void
+  + collectEgg(Egg): boolean
+  + stealEggFrom(Duck): boolean
+  + setVelocity(float, float): void
+  + deliverEggs(): int
+  + setPosition(float, float): void
+  + update(float): void
+   y: float
+   x: float
+   carriedEgg: Egg
+   points: int
+   carriedEggs: List<Egg>
+   playerId: int
+   hitbox: Rectangle
+   deliveredEggs: int
+   velocity: Vector2
+   eggsCarryingCount: int
+   stealHitCount: int
+}
+class Duck {
+  + Duck(int, float, float, DuckType): 
+  - reachedGround: boolean
+  - animation: AnimatedSprite
+  + caught: boolean
+  - bounds: Rectangle
+  + setPosition(float, float): void
+  + update(): void
+  + shouldRemove(): boolean
+  - initializeAnimation(): void
+  + updateBounds(): void
+   bounds: Rectangle
+   reachedGround: boolean
+   animation: AnimatedSprite
+   caught: boolean
+}
+class Duck {
+  + Duck(int, float, float, Color): 
+  - hits: int
+  - alive: boolean
+  - rotation: float
+  + setPosition(float, float): void
+  + takeDamage(): boolean
+  + heal(): boolean
+  + move(float, float, float): void
+  + update(float): void
+   alive: boolean
+   radius: float
+   invulnerable: boolean
+   rotation: float
+   hits: int
+}
+class DuckEliminated {
+  + DuckEliminated(): 
+}
+class DuckPlaceholder {
+  + DuckPlaceholder(Skin): 
+  + text(String): DuckPlaceholder
+  + build(): Table
+  + size(float): DuckPlaceholder
+}
+class DuckRemoved {
+  + DuckRemoved(): 
+}
+class DuckShooter {
+  + DuckShooter(): 
+}
+class DuckShooterClientHandler {
+  - DuckShooterClientHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class DuckShooterMinigame {
+  + DuckShooterMinigame(int): 
+  - winnerId: int
+  - finished: boolean
+  - scores: Map<Integer, Integer>
+  - sendDuckState(): void
+  + update(float): void
+  - handleGameEnd(GameEnd): void
+  - checkQuackCollisions(Quack): void
+  - handleDuckState(DuckState): void
+  + dispose(): void
+  + resize(int, int): void
+  - shoot(): void
+  + initialize(): void
+  - handleQuackHit(QuackHit): void
+  - handleShootQuack(ShootQuack): void
+  - endGame(): void
+  + render(SpriteBatch, ShapeRenderer): void
+  - handleDuckEliminated(DuckEliminated): void
+  + handleInput(float): void
+   scores: Map<Integer, Integer>
+   winnerId: int
+   finished: boolean
+}
+class DuckShooterPackets {
+  + DuckShooterPackets(): 
+}
+class DuckShooterServerHandler {
+  - DuckShooterServerHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ServerPacketContext, NetworkPacket): void
+}
+class DuckSpawned {
+  + DuckSpawned(): 
+}
+class DuckSpawner {
+  + DuckSpawner(): 
+  + update(float): List<Duck>
+  + reset(): void
+  - spawnDuck(): Duck
+  + forceSpawn(DuckType, float): Duck
+   randomSpawnInterval: float
+   randomDuckType: DuckType
+}
+class DuckState {
+  + DuckState(): 
+}
+enum DuckType << enumeration >> {
+  - DuckType(int, float, float, float): 
+  + valueOf(String): DuckType
+  + values(): DuckType[]
+}
+class DuckUpdate {
+  + DuckUpdate(): 
+}
+class DuckUpdate {
+  + DuckUpdate(): 
+}
+class Egg {
+  + Egg(int, float, float, boolean): 
+  + y: float
+  + isGolden: boolean
+  - isCollected: boolean
+  + points: int
+  + id: int
+  - hitbox: Rectangle
+  + x: float
+  + collected(): void
+  + setPosition(float, float): void
+  + update(float): void
+   y: float
+   x: float
+   isGolden: boolean
+   points: int
+   hitbox: Rectangle
+   id: int
+   isCollected: boolean
+}
+class EggCollected {
+  + EggCollected(): 
+}
+class EggRemoved {
+  + EggRemoved(): 
+}
+class EggSpawned {
+  + EggSpawned(): 
+}
+class EggSpawner {
+  + EggSpawner(): 
+  + update(float): List<Egg>
+  + onEggCollected(): void
+  + reset(): void
+  + spawnInitialEggs(): List<Egg>
+  - spawnEgg(): Egg
+}
+class EggStolen {
+  + EggStolen(): 
+}
+class EggThiefClientHandler {
+  - EggThiefClientHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class EggThiefMinigame {
+  + EggThiefMinigame(int): 
+  - scores: Map<Integer, Integer>
+  - finished: boolean
+  - onEggSpawned(EggSpawned): void
+  - createRemotePlayer(int): void
+  - recreateNests(): void
+  + initialize(): void
+  - onScoreUpdate(ScoreUpdate): void
+  - onPlayerLeft(PlayerLeft): void
+  - onEggUpdate(EggUpdate): void
+  - registerNetworkHandlers(): void
+  - onPlayerPosition(PlayerPosition): void
+  - onPlayerJoined(PlayerJoined): void
+  + dispose(): void
+  + resize(int, int): void
+  + render(SpriteBatch, ShapeRenderer): void
+  - onEggRemoved(EggRemoved): void
+  - createLocalPlayer(int): void
+  + update(float): void
+  + handleInput(float): void
+   scores: Map<Integer, Integer>
+   winnerId: int
+   finished: boolean
+}
+class EggThiefPackets {
+  + EggThiefPackets(): 
+}
+class EggThiefServerHandler {
+  - EggThiefServerHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ServerPacketContext, NetworkPacket): void
+}
+class EggUpdate {
+  + EggUpdate(): 
+}
+class EggsDelivered {
+  + EggsDelivered(): 
+}
+class FinaleClientHandler {
+  - FinaleClientHandler(): 
+  + handle(ClientPacketContext, NetworkPacket): void
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+}
+class FinaleServerHandler {
+  - FinaleServerHandler(): 
+  + handle(ServerPacketContext, NetworkPacket): void
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+}
+class FinaleSpriteManager {
+  - FinaleSpriteManager(): 
+  - particles: Texture
+  - crosshair: Texture
+  - instance: FinaleSpriteManager
+  - background: Texture
+  - player: Texture
+  - heal: Texture
+  - loaded: boolean
+  + dispose(): void
+  + loadSprites(): void
+   player: Texture
+   crosshair: Texture
+   instance: FinaleSpriteManager
+   background: Texture
+   loaded: boolean
+   heal: Texture
+   particles: Texture
+}
+class FirewallHelper {
+  + FirewallHelper(): 
+  - requestLinuxFirewall(int): void
+  - requestWindowsFirewall(int): void
+  - requestMacFirewall(int): void
+  + requestFirewallPermission(int): void
+}
+class Fonts {
+  + Fonts(): 
+  + loadSixtyfour(int, Color): BitmapFont
+}
+class GameConstants {
+  - GameConstants(): 
+}
+class GameEnd {
+  + GameEnd(): 
+}
+class GameEnd {
+  + GameEnd(): 
+}
+class GameFlowManager {
+  - GameFlowManager(): 
+  - initialized: boolean
+  - totalRounds: int
+  - currentRound: int
+  - instance: GameFlowManager
+  + isSpectator(int): boolean
+  + endRound(Map<Integer, Integer>): void
+  + reset(): void
+  + removePlayer(int): void
+  + initialize(int): void
+  + startRound(): void
+  + shouldPlayFinale(): boolean
+   gameComplete: boolean
+   currentRound: int
+   totalScores: Map<Integer, Integer>
+   totalRounds: int
+   instance: GameFlowManager
+   initialized: boolean
+   spectators: Set<Integer>
+   activePlayerCount: int
+   finalePlayerIds: List<Integer>
+}
+class GameLoop {
+  + GameLoop(): 
+  + updateHost(float, GameState): void
+  + updateClient(float, GameState): void
+}
+class GameRenderer {
+  + GameRenderer(): 
+  + dispose(): void
+  + render(SpriteBatch, ShapeRenderer, IntMap<Player>, List<Duck>, Map<Integer, Integer>, float[][], int): void
+  - renderPlayer(SpriteBatch, Player): void
+  + initialize(): void
+  + update(float): void
+  - renderDuck(SpriteBatch, Duck): void
+}
+class GameRenderer {
+  + GameRenderer(): 
+  + render(SpriteBatch, ShapeRenderer, IntMap<Duck>, List<Egg>, List<Nest>, Map<Integer, Integer>, int, float): void
+  - renderPlayerRanking(SpriteBatch, ShapeRenderer, IntMap<Duck>, Map<Integer, Integer>, int): void
+  + initialize(): void
+  + dispose(): void
+}
+class GameScreen {
+  + GameScreen(Main, MinigameType): 
+  + GameScreen(Main, MinigameType, int, int): 
+  + render(float): void
+  + resize(int, int): void
+  + show(): void
+  + hide(): void
+  - endGame(): void
+  + resume(): void
+  + pause(): void
+  + dispose(): void
+}
+class GameState {
+  + GameState(int): 
+  - players: IntMap<Player>
+  - scores: Map<Integer, Integer>
+  - localPlayerId: int
+  - duckSpawner: DuckSpawner
+  - ducks: List<Duck>
+  - finished: boolean
+  - localPlayer: Player
+  + reset(): void
+  + updateScore(int, int): void
+  + removePlayer(int): void
+  + createLocalPlayer(): void
+  + addDuck(Duck): void
+  + removeDuck(int): void
+  + addScore(int, int): void
+  + initializeDuckSpawner(): void
+  + createRemotePlayer(int): void
+   players: IntMap<Player>
+   finished: boolean
+   duckSpawner: DuckSpawner
+   scores: Map<Integer, Integer>
+   localPlayerId: int
+   localPlayer: Player
+   winnerId: int
+   ducks: List<Duck>
+}
+class GameTimerUpdate {
+  + GameTimerUpdate(): 
+}
+class HealthPack {
+  + HealthPack(int, float, float): 
+  - active: boolean
+  + pickup(): void
+  + checkCollision(Duck): boolean
+  + update(float): void
+   radius: float
+   remainingTime: float
+   renderColor: Color
+   active: boolean
+}
+class HealthPackPickup {
+  + HealthPackPickup(): 
+}
+class HealthPackSpawned {
+  + HealthPackSpawned(): 
+}
+class InputField {
+  + InputField(Skin): 
+  + filter(TextFieldFilter): InputField
+  + height(float): InputField
+  + messageText(String): InputField
+  + defaultValue(String): InputField
+  + width(float): InputField
+  + buildField(): TextField
+  + label(String): InputField
+  + build(): Table
+  + maxLength(int): InputField
+}
+class InputHandler {
+  + InputHandler(): 
+  + handleInput(Player, float): void
+}
+class InputHandler {
+  + InputHandler(): 
+  + handleInput(Duck, float): void
+}
+class JoinLobbyScreen {
+  + JoinLobbyScreen(Main): 
+  + render(float): void
+  - joinGame(): void
+  + show(): void
+  + dispose(): void
+  + pause(): void
+  + hide(): void
+  + resize(int, int): void
+  + resume(): void
+}
+class KryoClassRegistrar {
+  - KryoClassRegistrar(): 
+  + registerCoreClasses(Kryo): void
+}
+class Layout {
+  + Layout(): 
+}
+class LobbyClientHandler {
+  - LobbyClientHandler(): 
+  + receivablePackets(): List<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class LobbyScreen {
+  + LobbyScreen(Main, boolean, int): 
+  + LobbyScreen(Main, boolean): 
+  + LobbyScreen(Main, boolean, String, int): 
+  - onGameStart(StartGame): void
+  + resume(): void
+  + resize(int, int): void
+  + pause(): void
+  - startGame(): void
+  + show(): void
+  - updatePlayersList(): void
+  - onPlayerJoined(PlayerJoined): void
+  - toggleSpectator(): void
+  + render(float): void
+  + dispose(): void
+  - onPlayerLeft(PlayerLeft): void
+  + hide(): void
+  - onSpectatorStatusChanged(SpectatorStatus): void
+}
+class LobbyServerHandler {
+  - LobbyServerHandler(): 
+  - handleDisconnect(ServerPacketContext, ClientDisconnected): void
+  + handle(ServerPacketContext, NetworkPacket): void
+  - handleJoin(ServerPacketContext, PlayerJoinRequest): void
+  + receivablePackets(): List<Class<NetworkPacket>>
+}
+class Main {
+  + Main(): 
+  - settingsOverlayManager: SettingsOverlayManager
+  + create(): void
+  + dispose(): void
+  + resume(): void
+  + render(): void
+  + resize(int, int): void
+  + pause(): void
+  + toggleSettings(): void
+   screen: Screen
+   settingsOverlayManager: SettingsOverlayManager
+}
+class MainMenuScreen {
+  + MainMenuScreen(Main): 
+  + render(float): void
+  + resize(int, int): void
+  + hide(): void
+  + pause(): void
+  + resume(): void
+  + show(): void
+  + dispose(): void
+}
+class ManagerPackets {
+  + ManagerPackets(): 
+}
+interface Minigame << interface >> {
+  + dispose(): void
+  + resize(int, int): void
+  + initialize(): void
+  + update(float): void
+  + render(SpriteBatch, ShapeRenderer): void
+  + handleInput(float): void
+   scores: Map<Integer, Integer>
+   winnerId: int
+   finished: boolean
+}
+class MinigameFactory {
+  + MinigameFactory(): 
+  + createMinigame(MinigameType, int): Minigame
+}
+class MinigameIntroScreen {
+  + MinigameIntroScreen(Main, MinigameType, int, int): 
+  + MinigameIntroScreen(Main, MinigameType, int, int, boolean): 
+  + show(): void
+  + resume(): void
+  + hide(): void
+  - createPreviewContainer(float, float): Table
+  - loadPreviewImage(): void
+  + pause(): void
+  + render(float): void
+  + dispose(): void
+  + resize(int, int): void
+}
+class MinigameSelectionScreen {
+  + MinigameSelectionScreen(Main, boolean): 
+  + pause(): void
+  + render(float): void
+  + resize(int, int): void
+  + show(): void
+  + hide(): void
+  + resume(): void
+  - selectMinigame(MinigameType): void
+  + dispose(): void
+  - startGame(MinigameType): void
+}
+enum MinigameType << enumeration >> {
+  - MinigameType(String, String, String, int, int): 
+  - displayName: String
+  - description: String
+  - minPlayers: int
+  - controls: String
+  - maxPlayers: int
+  + values(): MinigameType[]
+  + valueOf(String): MinigameType
+   description: String
+   maxPlayers: int
+   displayName: String
+   controls: String
+   minPlayers: int
+}
+class Nest {
+  + Nest(int, float, float, float, float, float): 
+  - hitbox: Rectangle
+  - ownerId: int
+  - position: Vector2
+   y: float
+   ownerId: int
+   x: float
+   hitbox: Rectangle
+   position: Vector2
+}
+class NetworkClient {
+  + NetworkClient(): 
+  - connectedPlayers: ConcurrentHashMap<Integer, String>
+  - myPlayerName: String
+  - myPlayerId: int
+  + disconnect(): void
+  + resendJoinRequestIfNeeded(): void
+  + sendTCP(NetworkPacket): void
+  + unregisterHandler(ClientPacketHandler): void
+  - dispatchPacket(NetworkPacket): void
+  + sendUDP(NetworkPacket): void
+  - handleInternalPacket(NetworkPacket): void
+  + send(NetworkPacket): void
+  + connect(String, int, String): void
+  + registerHandler(ClientPacketHandler): void
+  + registerAdditionalClasses(Class<?>[]): void
+  - sendJoinRequest(): void
+   myPlayerName: String
+   initialized: boolean
+   myPlayerId: int
+   connected: boolean
+   connectedPlayers: ConcurrentHashMap<Integer, String>
+}
+class NetworkConfig {
+  + NetworkConfig(): 
+}
+class NetworkHandler {
+  + NetworkHandler(): 
+  + sendDuckSpawned(Duck): void
+  + sendDuckUpdates(List<Duck>): void
+  + sendPlayerPosition(int, Player): void
+  + sendAllPlayerPositions(IntMap<Player>): void
+  + sendScoreUpdate(int, int): void
+  + sendDuckRemoved(Duck): void
+}
+class NetworkHandler {
+  + NetworkHandler(): 
+  + sendEggUpdates(List<Egg>): void
+  + sendEggCollected(int, int): void
+  + sendEggRemoved(int): void
+  + sendEggSpawned(Egg): void
+  + sendDuckUpdate(Duck): void
+  + sendEggStolen(int, int): void
+  + sendScoreUpdate(int, int): void
+  + sendGameTimerUpdate(float): void
+  + sendEggsDelivered(int, int, int): void
+  + sendPlayerPosition(int, Duck): void
+  + sendAllDuckUpdates(IntMap<Duck>): void
+}
+class NetworkManager {
+  - NetworkManager(): 
+  - isHost: boolean
+  - instance: NetworkManager
+  + unregisterClientHandler(ClientPacketHandler): void
+  + disconnect(): void
+  + registerAdditionalClasses(Class<?>[]): void
+  + broadcastFromHost(NetworkPacket): void
+  + unregisterServerHandler(ServerPacketHandler): void
+  + ensureJoinHandshake(): void
+  + registerServerHandler(ServerPacketHandler): void
+  + joinGame(String, int, String): void
+  + sendPacket(NetworkPacket): void
+  + hostGame(String, int): void
+  + registerClientHandler(ClientPacketHandler): void
+   isHost: boolean
+   myId: int
+   instance: NetworkManager
+   playerCount: int
+   connected: boolean
+   connectedPlayers: ConcurrentHashMap<Integer, String>
+}
+class NetworkPacket {
+  # NetworkPacket(): 
+  - transportMode: Transports
+  # preferTransport(Transports): void
+   transportMode: Transports
+}
+interface NetworkPacketHandler<C> << interface >> {
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(C, NetworkPacket): void
+}
+class NetworkServer {
+  + NetworkServer(): 
+  - connectedPlayers: ConcurrentHashMap<Integer, String>
+  + stop(): void
+  + unregisterHandler(ServerPacketHandler): void
+  + broadcastExcept(Connection, NetworkPacket): void
+  - dispatchPacket(NetworkPacket, Connection): void
+  + registerAdditionalClasses(Class<?>[]): void
+  + unbindConnection(Connection): Integer
+  + broadcast(NetworkPacket): void
+  + registerHandler(ServerPacketHandler): void
+  + allocatePlayerId(): int
+  + start(int): void
+  - handleDisconnection(Connection): void
+  + bindConnectionToPlayer(Connection, int, String): void
+  + send(Connection, NetworkPacket): void
+   running: boolean
+   connectionCount: int
+   connectedPlayers: ConcurrentHashMap<Integer, String>
+}
+interface OnVolumeChange << interface >> {
+  + onChanged(float): void
+}
+class PacketContext {
+  + PacketContext(): 
+}
+class PacketHandlers {
+  + PacketHandlers(): 
+}
+class Packets {
+  + Packets(): 
+}
+class Ping {
+  + Ping(): 
+}
+class PlaceholderPanel {
+  + PlaceholderPanel(Skin): 
+  + padding(float): PlaceholderPanel
+  + text(String): PlaceholderPanel
+  + width(float): PlaceholderPanel
+  + build(): Table
+}
+class Player {
+  + Player(boolean, float, float, float, float, float): 
+  - facingRight: boolean
+  - isLocallyOwned: boolean
+  - runAnimation: AnimatedSprite
+  - basketBounds: Rectangle
+  - bounds: Rectangle
+  + update(): void
+  - updateAnimation(float): void
+  - initializeAnimation(): void
+  + updateBounds(): void
+   bounds: Rectangle
+   facingRight: boolean
+   basketBounds: Rectangle
+   runAnimation: AnimatedSprite
+   isLocallyOwned: boolean
+}
+class Player {
+  + Player(boolean, float, float, float, float, float): 
+  + setPosition(float, float): void
+}
+class Player {
+  + Player(): 
+}
+class PlayerData {
+  + PlayerData(int, String, int): 
+  + PlayerData(int, String): 
+  - playerName: String
+  - playerId: int
+  - score: int
+  + compareTo(PlayerData): int
+  + equals(Object): boolean
+  + toString(): String
+  + addScore(int): void
+  + hashCode(): int
+   score: int
+   playerId: int
+   playerName: String
+}
+class PlayerFell {
+  + PlayerFell(): 
+}
+class PlayerJoinRequest {
+  + PlayerJoinRequest(): 
+}
+class PlayerJoined {
+  + PlayerJoined(): 
+}
+class PlayerKnockback {
+  + PlayerKnockback(): 
+}
+class PlayerLeft {
+  + PlayerLeft(): 
+}
+class PlayerListItem {
+  + PlayerListItem(Skin): 
+  + role(String): PlayerListItem
+  + build(): Table
+  + height(float): PlayerListItem
+  - getRoleColor(String): Color
+  + playerName(String): PlayerListItem
+  + score(Integer): PlayerListItem
+  + width(float): PlayerListItem
+}
+class PlayerPosition {
+  + PlayerPosition(): 
+}
+class Pong {
+  + Pong(): 
+}
+class Quack {
+  + Quack(int, float, float, float, float, Color): 
+  - active: boolean
+  + deactivate(): void
+  + update(float): void
+  + checkCollision(Duck): boolean
+   radius: float
+   active: boolean
+}
+class QuackHit {
+  + QuackHit(): 
+}
+class RPC {
+  + RPC(): 
+}
+class RandomGameSelection {
+  + RandomGameSelection(): 
+  + selectGame(int): MinigameType
+}
+class ResultsScreen {
+  + ResultsScreen(Main, Map<Integer, Integer>): 
+  - updateScrollingState(): void
+  + dispose(): void
+  + hide(): void
+  + resume(): void
+  + resize(int, int): void
+  + render(float): void
+  - renderPodiumView(): void
+  - renderCurrentView(): void
+  - returnToLobby(): void
+  - createPodiumPosition(PlayerData, int): Table
+  + show(): void
+  - renderFullListView(): void
+  + pause(): void
+  - renderWinnerSpotlightView(): void
+   viewMode: ViewMode
+}
+class ReturnToLobby {
+  + ReturnToLobby(): 
+}
+class ReturnToLobbyHandler {
+  - ReturnToLobbyHandler(): 
+  + handle(ClientPacketContext, NetworkPacket): void
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+}
+class RoomConfig {
+  + RoomConfig(int): 
+  + RoomConfig(int, List<Integer>): 
+  + RoomConfig(): 
+}
+class RoomConfigClientHandler {
+  - RoomConfigClientHandler(): 
+  + handle(ClientPacketContext, NetworkPacket): void
+  + receivablePackets(): List<Class<NetworkPacket>>
+}
+class RoundReset {
+  + RoundReset(): 
+}
+class ScoreItem {
+  + ScoreItem(Skin): 
+  - getRankText(int): String
+  + nameFontSize(int): ScoreItem
+  + build(): Table
+  + highlighted(boolean): ScoreItem
+  + rank(int): ScoreItem
+  + score(int): ScoreItem
+  + playerName(String): ScoreItem
+  + rankFontSize(int): ScoreItem
+  + scoreFontSize(int): ScoreItem
+}
+class ScoreUpdate {
+  + ScoreUpdate(): 
+}
+class ScoreUpdate {
+  + ScoreUpdate(): 
+}
+class ScoreUpdate {
+  + ScoreUpdate(): 
+}
+class ScoreboardScreen {
+  + ScoreboardScreen(Main, Map<Integer, Integer>, int, int, int): 
+  - advanceToNextRound(): void
+  + pause(): void
+  + hide(): void
+  - updateScoresList(): void
+  + render(float): void
+  + dispose(): void
+  + show(): void
+  + resize(int, int): void
+  + resume(): void
+}
+class Scoring {
+  + Scoring(): 
+}
+class Screen {
+  + Screen(): 
+}
+class ScreenTransition {
+  + ScreenTransition(): 
+  + fadeIn(Stage, TransitionCallback): void
+  + fadeOut(Stage, float, TransitionCallback): void
+  + fadeIn(Stage, float, TransitionCallback): void
+  + fadeOut(Stage, TransitionCallback): void
+}
+class ServerEvents {
+  - ServerEvents(): 
+}
+class ServerPacketContext {
+  + ServerPacketContext(NetworkServer, Connection): 
+  - connection: Connection
+  - server: NetworkServer
+  + reply(NetworkPacket): void
+  + broadcastExceptSender(NetworkPacket): void
+  + broadcast(NetworkPacket): void
+   server: NetworkServer
+   connection: Connection
+}
+interface ServerPacketHandler << interface >>
+class ServerRelay {
+  + ServerRelay(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ServerPacketContext, NetworkPacket): void
+}
+class SettingsOverlay {
+  + SettingsOverlay(Main, Stage, Skin): 
+  - isVisible: boolean
+  - currentVolume: float
+  - onVolumeChanged(float): void
+  + show(): void
+  - createOverlay(): Table
+  - exitToMainMenu(): void
+  + hide(): void
+  + toggle(): void
+   currentVolume: float
+   volume: float
+   isVisible: boolean
+}
+class SettingsOverlayManager {
+  + SettingsOverlayManager(Main): 
+  - inputMultiplexer: InputMultiplexer
+  - rebuildInputPipeline(): void
+  + toggle(): void
+  + hide(): void
+  + attachStage(Stage): void
+  + renderOverlay(float): void
+  + resize(int, int): void
+  + dispose(): void
+   visible: boolean
+   inputMultiplexer: InputMultiplexer
+}
+class ShootQuack {
+  + ShootQuack(): 
+}
+class ShowResults {
+  + ShowResults(): 
+  + ShowResults(Map<Integer, Integer>): 
+}
+class ShowResultsHandler {
+  - ShowResultsHandler(): 
+  + handle(ClientPacketContext, NetworkPacket): void
+  + receivablePackets(): List<Class<NetworkPacket>>
+}
+class ShowResultsPacketHandler {
+  - ShowResultsPacketHandler(): 
+  + handle(ClientPacketContext, NetworkPacket): void
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+}
+class ShowResultsPacketHandler {
+  - ShowResultsPacketHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class ShowScoreboard {
+  + ShowScoreboard(): 
+  + ShowScoreboard(int, int, Map<Integer, Integer>): 
+}
+class ShowScoreboardPacketHandler {
+  - ShowScoreboardPacketHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class ShowScoreboardPacketHandler {
+  - ShowScoreboardPacketHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class Sizes {
+  + Sizes(): 
+}
+class Spacing {
+  + Spacing(): 
+}
+class SpectatorScreen {
+  + SpectatorScreen(Main, MinigameType, int, int): 
+  + show(): void
+  + render(float): void
+  + pause(): void
+  + dispose(): void
+  + hide(): void
+  + resume(): void
+  + resize(int, int): void
+}
+class SpectatorStatus {
+  + SpectatorStatus(): 
+}
+class SpriteManager {
+  - SpriteManager(): 
+  - instance: SpriteManager
+  - background: Texture
+  - clouds: Texture
+  - loaded: boolean
+  - playerFrame1: Texture
+  - playerFrame2: Texture
+  + loadSprites(): void
+  + getDuckFrame(DuckType, int): Texture
+  + dispose(): void
+   playerFrame2: Texture
+   clouds: Texture
+   loaded: boolean
+   instance: SpriteManager
+   playerFrame1: Texture
+   background: Texture
+}
+class StartGame {
+  + StartGame(): 
+}
+class StartGameClientHandler {
+  - StartGameClientHandler(): 
+  + receivablePackets(): List<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class StartGamePacketHandler {
+  - StartGamePacketHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class StartNextRound {
+  + StartNextRound(): 
+  + StartNextRound(int, String, List<Integer>): 
+}
+class StartNextRoundHandler {
+  - StartNextRoundHandler(): 
+  + handle(ClientPacketContext, NetworkPacket): void
+  + receivablePackets(): List<Class<NetworkPacket>>
+}
+class StartNextRoundPacketHandler {
+  - StartNextRoundPacketHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+interface StealCallback << interface >> {
+  + onSteal(int, int, int, int): void
+}
+class StyledButton {
+  + StyledButton(Skin): 
+  + text(String): StyledButton
+  + onClick(Runnable): StyledButton
+  + style(String): StyledButton
+  + height(float): StyledButton
+  + wrapText(): StyledButton
+  + size(float, float): StyledButton
+  + disabled(boolean): StyledButton
+  + fontSize(int): StyledButton
+  + width(float): StyledButton
+  + build(): TextButton
+}
+class Sumo {
+  + Sumo(): 
+}
+class SumoClientHandler {
+  - SumoClientHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class SumoMinigame {
+  + SumoMinigame(int): 
+  - winnerId: int
+  - finished: boolean
+  - scores: Map<Integer, Integer>
+  + dispose(): void
+  + update(float): void
+  + render(SpriteBatch, ShapeRenderer): void
+  + resize(int, int): void
+  - checkRoundReset(): void
+  + initialize(): void
+  - spawnPlayer(int): void
+  - checkCollisions(): void
+  - checkFallout(): void
+  + handleInput(float): void
+  - resetRoundLocally(): void
+   scores: Map<Integer, Integer>
+   winnerId: int
+   finished: boolean
+}
+class SumoPackets {
+  + SumoPackets(): 
+}
+class SumoPlayer {
+  + SumoPlayer(int, float, float, Color): 
+  + reset(float, float): void
+  + update(float): void
+}
+class SumoServerHandler {
+  - SumoServerHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ServerPacketContext, NetworkPacket): void
+}
+class SyncClientHandler {
+  - SyncClientHandler(): 
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+  + handle(ClientPacketContext, NetworkPacket): void
+}
+class SyncServerRelay {
+  - SyncServerRelay(): 
+  + handle(ServerPacketContext, NetworkPacket): void
+  + receivablePackets(): Collection<Class<NetworkPacket>>
+}
+class SyncUpdate {
+  + SyncUpdate(): 
+}
+class SyncedObject {
+  + SyncedObject(boolean): 
+  - objectId: UUID
+  - isLocallyOwned: boolean
+  + update(): void
+  - copyValue(Object): Object
+  + dispose(): void
+  + clearAll(): void
+  - valueEquals(Object, Object): boolean
+  - ensureHandlersRegistered(): void
+  - handleGlobalSyncUpdate(SyncUpdate): void
+  - sendSyncUpdate(String, Object): void
+  - applySyncUpdate(String, Object): void
+  - announceCreation(): void
+   isLocallyOwned: boolean
+   objectId: UUID
+}
+class SyncedObjectCreated {
+  + SyncedObjectCreated(): 
+}
+annotation Synchronized << annotation >>
+class TheFinale {
+  + TheFinale(): 
+}
+class TheFinaleMinigame {
+  + TheFinaleMinigame(int): 
+  - winnerId: int
+  - scores: Map<Integer, Integer>
+  - finished: boolean
+  + dispose(): void
+  - spawnHealthPack(): void
+  - shoot(): void
+  - endGame(): void
+  - handleShootQuack(ShootQuack): void
+  - handleDuckEliminated(DuckEliminated): void
+  - checkQuackCollisions(Quack): void
+  + resize(int, int): void
+  + update(float): void
+  - handleDuckState(DuckState): void
+  - handleHealthPackSpawned(HealthPackSpawned): void
+  + initialize(): void
+  + render(SpriteBatch, ShapeRenderer): void
+  - handleHealthPackPickup(HealthPackPickup): void
+  + handleInput(float): void
+  - handleQuackHit(QuackHit): void
+  - sendDuckState(): void
+  - checkHealthPackCollisions(HealthPack): void
+  - handleGameEnd(GameEnd): void
+   scores: Map<Integer, Integer>
+   winnerId: int
+   finished: boolean
+}
+class Timing {
+  + Timing(): 
+}
+interface TransitionCallback << interface >> {
+  + onComplete(): void
+}
+enum Transports << enumeration >> {
+  - Transports(): 
+  + values(): Transports[]
+  + valueOf(String): Transports
+}
+class Typography {
+  + Typography(): 
+}
+class UISkinProvider {
+  - UISkinProvider(): 
+  - loadCustomFonts(Skin): void
+  + dispose(): void
+  + obtain(): Skin
+}
+class UIStyles {
+  + UIStyles(): 
+  + createSemiTransparentBackground(float, float, float, float): Drawable
+}
+class UUIDSerializer {
+  - UUIDSerializer(): 
+  + write(Kryo, Output, UUID): void
+  + read(Kryo, Input, Class<UUID>): UUID
+}
+enum ViewMode << enumeration >> {
+  - ViewMode(): 
+  + values(): ViewMode[]
+  + valueOf(String): ViewMode
+}
+class VolumeSlider {
+  + VolumeSlider(Skin): 
+  + range(float, float): VolumeSlider
+  + width(float): VolumeSlider
+  + stepSize(float): VolumeSlider
+  + onChange(OnVolumeChange): VolumeSlider
+  + build(): Table
+  + initialValue(float): VolumeSlider
+}
+class build {
+  + build(): 
+  + invokeMethod(String, Object): Object
+  + setProperty(String, Object): void
+  + getProperty(String): Object
+  + main(String[]): void
+  + run(): Object
+   metaClass: MetaClass
+}
+
+Animation                    +-[#820000,plain]-  UIStyles                    
+AnimationState               +-[#820000,plain]-  ResultsScreen               
+BallMovementClientHandler    +-[#820000,plain]-  BallMovementMinigame        
+BallMovementClientHandler    -[#008200,dashed]-^  ClientPacketHandler         
+BallMovementMinigame         -[#008200,dashed]-^  Minigame                    
+BallMovementServerRelay      +-[#820000,plain]-  BallMovementMinigame        
+BallMovementServerRelay      -[#008200,dashed]-^  ServerPacketHandler         
+Borders                      +-[#820000,plain]-  UIStyles                    
+CatchThemAll                 +-[#820000,plain]-  GameConstants               
+CatchThemAllMinigame         -[#008200,dashed]-^  Minigame                    
+ClientDisconnected           -[#000082,plain]-^  NetworkPacket               
+ClientDisconnected           +-[#820000,plain]-  ServerEvents                
+ClientHandler                -[#008200,dashed]-^  ClientPacketHandler         
+ClientHandler                +-[#820000,plain]-  PacketHandlers              
+ClientPacketContext          -[#000082,plain]-^  PacketContext               
+ClientPacketHandler          -[#008200,plain]-^  NetworkPacketHandler        
+CloudInstance                +-[#820000,plain]-  CloudsLayer                 
+Colors                       +-[#820000,plain]-  UIStyles                    
+DodgeRainMinigame            -[#008200,dashed]-^  Minigame                    
+Duck                         -[#000082,plain]-^  SyncedObject                
+DuckEliminated               +-[#820000,plain]-  DuckShooterPackets          
+DuckEliminated               -[#000082,plain]-^  NetworkPacket               
+DuckRemoved                  +-[#820000,plain]-  CatchThemAllPackets         
+DuckRemoved                  -[#000082,plain]-^  NetworkPacket               
+DuckShooter                  +-[#820000,plain]-  GameConstants               
+DuckShooterClientHandler     -[#008200,dashed]-^  ClientPacketHandler         
+DuckShooterClientHandler     +-[#820000,plain]-  DuckShooterMinigame         
+DuckShooterMinigame          -[#008200,dashed]-^  Minigame                    
+DuckShooterServerHandler     +-[#820000,plain]-  DuckShooterMinigame         
+DuckShooterServerHandler     -[#008200,dashed]-^  ServerPacketHandler         
+DuckSpawned                  +-[#820000,plain]-  CatchThemAllPackets         
+DuckSpawned                  -[#000082,plain]-^  NetworkPacket               
+DuckState                    +-[#820000,plain]-  DuckShooterPackets          
+DuckState                    -[#000082,plain]-^  NetworkPacket               
+DuckType                     +-[#820000,plain]-  Duck                        
+DuckUpdate                   +-[#820000,plain]-  CatchThemAllPackets         
+DuckUpdate                   +-[#820000,plain]-  EggThiefPackets             
+DuckUpdate                   -[#000082,plain]-^  NetworkPacket               
+DuckUpdate                   -[#000082,plain]-^  NetworkPacket               
+Egg                          -[#000082,plain]-^  SyncedObject                
+EggCollected                 +-[#820000,plain]-  EggThiefPackets             
+EggCollected                 -[#000082,plain]-^  NetworkPacket               
+EggRemoved                   +-[#820000,plain]-  EggThiefPackets             
+EggRemoved                   -[#000082,plain]-^  NetworkPacket               
+EggSpawned                   +-[#820000,plain]-  EggThiefPackets             
+EggSpawned                   -[#000082,plain]-^  NetworkPacket               
+EggStolen                    +-[#820000,plain]-  EggThiefPackets             
+EggStolen                    -[#000082,plain]-^  NetworkPacket               
+EggThiefClientHandler        -[#008200,dashed]-^  ClientPacketHandler         
+EggThiefClientHandler        +-[#820000,plain]-  EggThiefMinigame            
+EggThiefMinigame             -[#008200,dashed]-^  Minigame                    
+EggThiefServerHandler        +-[#820000,plain]-  EggThiefMinigame            
+EggThiefServerHandler        -[#008200,dashed]-^  ServerPacketHandler         
+EggUpdate                    +-[#820000,plain]-  EggThiefPackets             
+EggUpdate                    -[#000082,plain]-^  NetworkPacket               
+EggsDelivered                +-[#820000,plain]-  EggThiefPackets             
+EggsDelivered                -[#000082,plain]-^  NetworkPacket               
+FinaleClientHandler          -[#008200,dashed]-^  ClientPacketHandler         
+FinaleClientHandler          +-[#820000,plain]-  TheFinaleMinigame           
+FinaleServerHandler          -[#008200,dashed]-^  ServerPacketHandler         
+FinaleServerHandler          +-[#820000,plain]-  TheFinaleMinigame           
+Fonts                        +-[#820000,plain]-  UIStyles                    
+GameEnd                      +-[#820000,plain]-  DuckShooterPackets          
+GameEnd                      -[#000082,plain]-^  NetworkPacket               
+GameEnd                      -[#000082,plain]-^  NetworkPacket               
+GameEnd                      +-[#820000,plain]-  SumoPackets                 
+GameTimerUpdate              +-[#820000,plain]-  EggThiefPackets             
+GameTimerUpdate              -[#000082,plain]-^  NetworkPacket               
+HealthPackPickup             +-[#820000,plain]-  DuckShooterPackets          
+HealthPackPickup             -[#000082,plain]-^  NetworkPacket               
+HealthPackSpawned            +-[#820000,plain]-  DuckShooterPackets          
+HealthPackSpawned            -[#000082,plain]-^  NetworkPacket               
+Layout                       +-[#820000,plain]-  UIStyles                    
+LobbyClientHandler           -[#008200,dashed]-^  ClientPacketHandler         
+LobbyClientHandler           +-[#820000,plain]-  LobbyScreen                 
+LobbyServerHandler           +-[#820000,plain]-  LobbyScreen                 
+LobbyServerHandler           -[#008200,dashed]-^  ServerPacketHandler         
+NetworkPacketHandler         -[#595959,dashed]->  PacketContext               
+OnVolumeChange               +-[#820000,plain]-  VolumeSlider                
+Ping                         -[#000082,plain]-^  NetworkPacket               
+Ping                         +-[#820000,plain]-  Packets                     
+Player                       +-[#820000,plain]-  BallMovementMinigame        
+Player                       +-[#820000,plain]-  GameConstants               
+Player                       -[#000082,plain]-^  SyncedObject                
+PlayerFell                   -[#000082,plain]-^  NetworkPacket               
+PlayerFell                   +-[#820000,plain]-  SumoPackets                 
+PlayerJoinRequest            -[#000082,plain]-^  NetworkPacket               
+PlayerJoinRequest            +-[#820000,plain]-  Packets                     
+PlayerJoined                 -[#000082,plain]-^  NetworkPacket               
+PlayerJoined                 +-[#820000,plain]-  Packets                     
+PlayerKnockback              -[#000082,plain]-^  NetworkPacket               
+PlayerKnockback              +-[#820000,plain]-  SumoPackets                 
+PlayerLeft                   -[#000082,plain]-^  NetworkPacket               
+PlayerLeft                   +-[#820000,plain]-  Packets                     
+PlayerPosition               -[#000082,plain]-^  NetworkPacket               
+PlayerPosition               +-[#820000,plain]-  Packets                     
+Pong                         -[#000082,plain]-^  NetworkPacket               
+Pong                         +-[#820000,plain]-  Packets                     
+QuackHit                     +-[#820000,plain]-  DuckShooterPackets          
+QuackHit                     -[#000082,plain]-^  NetworkPacket               
+RPC                          -[#000082,plain]-^  NetworkPacket               
+RPC                          +-[#820000,plain]-  Packets                     
+ReturnToLobby                +-[#820000,plain]-  ManagerPackets              
+ReturnToLobby                -[#000082,plain]-^  NetworkPacket               
+ReturnToLobbyHandler         -[#008200,dashed]-^  ClientPacketHandler         
+ReturnToLobbyHandler         +-[#820000,plain]-  ResultsScreen               
+RoomConfig                   +-[#820000,plain]-  ManagerPackets              
+RoomConfig                   -[#000082,plain]-^  NetworkPacket               
+RoomConfigClientHandler      -[#008200,dashed]-^  ClientPacketHandler         
+RoomConfigClientHandler      +-[#820000,plain]-  LobbyScreen                 
+RoundReset                   -[#000082,plain]-^  NetworkPacket               
+RoundReset                   +-[#820000,plain]-  SumoPackets                 
+ScoreUpdate                  +-[#820000,plain]-  CatchThemAllPackets         
+ScoreUpdate                  +-[#820000,plain]-  EggThiefPackets             
+ScoreUpdate                  -[#000082,plain]-^  NetworkPacket               
+ScoreUpdate                  -[#000082,plain]-^  NetworkPacket               
+ScoreUpdate                  -[#000082,plain]-^  NetworkPacket               
+ScoreUpdate                  +-[#820000,plain]-  SumoPackets                 
+Scoring                      +-[#820000,plain]-  GameConstants               
+Screen                       +-[#820000,plain]-  GameConstants               
+ServerPacketContext          -[#000082,plain]-^  PacketContext               
+ServerPacketHandler          -[#008200,plain]-^  NetworkPacketHandler        
+ServerRelay                  +-[#820000,plain]-  PacketHandlers              
+ServerRelay                  -[#008200,dashed]-^  ServerPacketHandler         
+ShootQuack                   +-[#820000,plain]-  DuckShooterPackets          
+ShootQuack                   -[#000082,plain]-^  NetworkPacket               
+ShowResults                  +-[#820000,plain]-  ManagerPackets              
+ShowResults                  -[#000082,plain]-^  NetworkPacket               
+ShowResultsHandler           -[#008200,dashed]-^  ClientPacketHandler         
+ShowResultsHandler           +-[#820000,plain]-  ScoreboardScreen            
+ShowResultsPacketHandler     -[#008200,dashed]-^  ClientPacketHandler         
+ShowResultsPacketHandler     -[#008200,dashed]-^  ClientPacketHandler         
+ShowResultsPacketHandler     +-[#820000,plain]-  GameScreen                  
+ShowResultsPacketHandler     +-[#820000,plain]-  SpectatorScreen             
+ShowScoreboard               +-[#820000,plain]-  ManagerPackets              
+ShowScoreboard               -[#000082,plain]-^  NetworkPacket               
+ShowScoreboardPacketHandler  -[#008200,dashed]-^  ClientPacketHandler         
+ShowScoreboardPacketHandler  -[#008200,dashed]-^  ClientPacketHandler         
+ShowScoreboardPacketHandler  +-[#820000,plain]-  GameScreen                  
+ShowScoreboardPacketHandler  +-[#820000,plain]-  SpectatorScreen             
+Sizes                        +-[#820000,plain]-  UIStyles                    
+Spacing                      +-[#820000,plain]-  UIStyles                    
+SpectatorStatus              -[#000082,plain]-^  NetworkPacket               
+SpectatorStatus              +-[#820000,plain]-  Packets                     
+StartGame                    -[#000082,plain]-^  NetworkPacket               
+StartGame                    +-[#820000,plain]-  Packets                     
+StartGameClientHandler       -[#008200,dashed]-^  ClientPacketHandler         
+StartGameClientHandler       +-[#820000,plain]-  LobbyScreen                 
+StartGamePacketHandler       -[#008200,dashed]-^  ClientPacketHandler         
+StartGamePacketHandler       +-[#820000,plain]-  GameScreen                  
+StartNextRound               +-[#820000,plain]-  ManagerPackets              
+StartNextRound               -[#000082,plain]-^  NetworkPacket               
+StartNextRoundHandler        -[#008200,dashed]-^  ClientPacketHandler         
+StartNextRoundHandler        +-[#820000,plain]-  ScoreboardScreen            
+StartNextRoundPacketHandler  -[#008200,dashed]-^  ClientPacketHandler         
+StartNextRoundPacketHandler  +-[#820000,plain]-  SpectatorScreen             
+StealCallback                +-[#820000,plain]-  CollisionDetector           
+Sumo                         +-[#820000,plain]-  GameConstants               
+SumoClientHandler            -[#008200,dashed]-^  ClientPacketHandler         
+SumoClientHandler            +-[#820000,plain]-  SumoMinigame                
+SumoMinigame                 -[#008200,dashed]-^  Minigame                    
+SumoServerHandler            -[#008200,dashed]-^  ServerPacketHandler         
+SumoServerHandler            +-[#820000,plain]-  SumoMinigame                
+SyncClientHandler            -[#008200,dashed]-^  ClientPacketHandler         
+SyncClientHandler            +-[#820000,plain]-  SyncedObject                
+SyncServerRelay              -[#008200,dashed]-^  ServerPacketHandler         
+SyncServerRelay              +-[#820000,plain]-  SyncedObject                
+SyncUpdate                   -[#000082,plain]-^  NetworkPacket               
+SyncUpdate                   +-[#820000,plain]-  Packets                     
+SyncedObjectCreated          -[#000082,plain]-^  NetworkPacket               
+SyncedObjectCreated          +-[#820000,plain]-  Packets                     
+TheFinale                    +-[#820000,plain]-  GameConstants               
+TheFinaleMinigame            -[#008200,dashed]-^  Minigame                    
+Timing                       +-[#820000,plain]-  GameConstants               
+TransitionCallback           +-[#820000,plain]-  ScreenTransition            
+Typography                   +-[#820000,plain]-  UIStyles                    
+UUIDSerializer               +-[#820000,plain]-  KryoClassRegistrar          
+ViewMode                     +-[#820000,plain]-  ResultsScreen               
+@enduml
